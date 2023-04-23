@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.7.0-devel-ubuntu22.04
+FROM nvidia/cuda:11.7.0-cudnn8-devel-ubuntu22.04
 
 # 言語の設定
 RUN apt-get update && apt-get install -y language-pack-ja-base language-pack-ja
@@ -15,4 +15,3 @@ RUN git clone https://github.com/SakodaShintaro/dotfiles && ./dotfiles/setup.sh
 
 # 対象リポジトリをclone
 RUN git clone https://github.com/SakodaShintaro/f2-nerf
-
