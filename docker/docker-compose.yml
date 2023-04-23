@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  container:
+    image:
+      f2-nerf-image
+    container_name:
+      f2-nerf-container
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - $HOME/data:/root/data
+    command: bash
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    tty: true
+
