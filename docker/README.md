@@ -25,7 +25,7 @@ pip3 install omegaconf
 pip3 install hydra-core
 
 # Run
-python scripts/run.py --config-name=wanjinyou dataset_name=example case_name=ngp_fox mode=train
+python3 scripts/run.py --config-name=wanjinyou dataset_name=example case_name=ngp_fox mode=train
 ```
 
 ## install ros2
