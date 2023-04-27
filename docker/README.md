@@ -43,3 +43,8 @@ sudo apt install ros-humble-ros-base -y
 sudo apt install ros-humble-cv-bridge -y
 echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
 ```
+
+## Others
+```bash
+sudo apt install -y ffmpeg
+```
