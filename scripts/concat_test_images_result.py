@@ -30,7 +30,7 @@ if __name__ == "__main__":
     codec = cv2.VideoWriter_fourcc(*'mp4v')
     video = cv2.VideoWriter(f"{test_images_dir}/../test_images_concat.mp4", codec,
                             10.0, (1280, 360))
-    for test_image_path in test_image_path_list:
+    for i, test_image_path in enumerate(test_image_path_list):
         print(test_image_path)
         test_image_name = os.path.basename(test_image_path)
         frame_no = int(test_image_name.replace(".png", "").split("_")[2])
@@ -45,5 +45,5 @@ if __name__ == "__main__":
         put_text(gt_image, f"Ground Truth (frame={frame_no:04d})", 10, 30)
         concat_image = cv2.hconcat([test_image, gt_image])
         video.write(concat_image)
-        cv2.imwrite(f"{save_dir}/{test_image_name}", concat_image)
+        cv2.imwrite(f"{save_dir}/{i:08d}.png", concat_image)
     video.release()
