@@ -47,4 +47,5 @@ echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
 ## Others
 ```bash
 sudo apt install -y ffmpeg
+sudo apt install -y colmap
 ```
