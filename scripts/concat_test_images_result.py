@@ -5,6 +5,7 @@ import os
 import argparse
 from glob import glob
 import cv2
+import subprocess
 
 
 def parse_args():
@@ -47,3 +48,5 @@ if __name__ == "__main__":
         video.write(concat_image)
         cv2.imwrite(f"{save_dir}/{i:08d}.png", concat_image)
     video.release()
+    subprocess.run("ffmpeg -r 10 -f image2 -i %08d.png -vcodec libx264 -crf 25 -pix_fmt yuv420p ../output.mp4",
+                   shell=True, cwd=save_dir)
