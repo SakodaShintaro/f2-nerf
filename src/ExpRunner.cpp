@@ -65,6 +65,7 @@ void ExpRunner::Train() {
 
   std::string log_dir = base_exp_dir_ + "/logs";
   fs::create_directories(log_dir);
+  std::ofstream ofs_log(log_dir + "/log.txt");
 
   std::vector<float> mse_records;
   float time_per_iter = 0.f;
@@ -158,7 +159,7 @@ void ExpRunner::Train() {
       time_per_iter = time_per_iter * 0.6f + clock.TimeDuration() * 0.4f;
 
       if (iter_step_ % report_freq_ == 0) {
-        std::cout << fmt::format(
+        const std::string log_str = fmt::format(
             "Iter: {:>6d} PSNR: {:.2f} NRays: {:>5d} OctSamples: {:.1f} Samples: {:.1f} MeaningfulSamples: {:.1f} IPS: {:.1f} LR: {:.4f}",
             iter_step_,
             psnr_smooth,
@@ -167,8 +168,9 @@ void ExpRunner::Train() {
             global_data_pool_->sampled_pts_per_ray_,
             global_data_pool_->meaningful_sampled_pts_per_ray_,
             1.f / time_per_iter,
-            optimizer_->param_groups()[0].options().get_lr())
-                  << std::endl;
+            optimizer_->param_groups()[0].options().get_lr());
+        std::cout << log_str << std::endl;
+        ofs_log << log_str << std::endl;
       }
       UpdateAdaParams();
     }
