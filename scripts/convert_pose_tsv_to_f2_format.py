@@ -3,44 +3,56 @@ import pandas as pd
 import numpy as np
 from scipy.spatial.transform import Rotation
 import os
+import yaml
 
-parser = argparse.ArgumentParser()
-parser.add_argument("path_to_pose_tsv", type=str)
-args = parser.parse_args()
 
-path_to_pose_tsv = args.path_to_pose_tsv
-target_dir = os.path.dirname(path_to_pose_tsv)
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("path_to_pose_tsv", type=str)
+    return parser.parse_args()
 
-df_pose = pd.read_csv(path_to_pose_tsv, sep="\t", index_col=0)
-n = len(df_pose)
-pose_xyz = df_pose[['x', 'y', 'z']].values
-pose_xyz -= pose_xyz[0]
-pose_quat = df_pose[['qx', 'qy', 'qz', 'qw']].values
-rotation_mat = Rotation.from_quat(pose_quat).as_matrix()
-mat = np.zeros((n, 3, 4))
-mat[:, 0:3, 0:3] = rotation_mat
-mat[:, 0:3, 3] = pose_xyz
 
-# save pose
-np.save(os.path.join(target_dir, "poses_render.npy"), mat)
+def load_camera_info_from_yaml(filename):
+    with open(filename, "r") as input_file:
+        camera_info_dict = yaml.safe_load(input_file)
+        camera_info_dict["D"] = np.array(camera_info_dict["D"])
+        camera_info_dict["K"] = np.array(camera_info_dict["K"]).reshape((3, 3))
+        camera_info_dict["R"] = np.array(camera_info_dict["R"]).reshape((3, 3))
+        camera_info_dict["P"] = np.array(camera_info_dict["P"]).reshape((3, 4))
+        return camera_info_dict
 
-# save camera meta
-file_camera_info = open(f"{target_dir}/camera_info.txt")
-line = file_camera_info.readline()
-fx, cx, fy, cy = list(map(float, line.split(' ')))
-camera_param = np.zeros((n, 3, 3))
-camera_param[:, 0, 0] = fx
-camera_param[:, 0, 2] = cx
-camera_param[:, 1, 1] = fy
-camera_param[:, 1, 2] = cy
-camera_param[:, 2, 2] = 1
-camera_param = camera_param.reshape((n, 9))
 
-dist_param = np.zeros((n, 4))
+if __name__ == "__main__":
+    args = parse_args()
 
-bounds = np.array([[1.0, 30.0] for _ in range(n)])
+    path_to_pose_tsv = args.path_to_pose_tsv
+    target_dir = os.path.dirname(path_to_pose_tsv)
 
-mat = mat.reshape((n, 12))
+    df_pose = pd.read_csv(path_to_pose_tsv, sep="\t", index_col=0)
+    n = len(df_pose)
+    pose_xyz = df_pose[['x', 'y', 'z']].values
+    pose_xyz -= pose_xyz[0]
+    pose_quat = df_pose[['qx', 'qy', 'qz', 'qw']].values
+    rotation_mat = Rotation.from_quat(pose_quat).as_matrix()
+    mat = np.zeros((n, 3, 4))
+    mat[:, 0:3, 0:3] = rotation_mat
+    mat[:, 0:3, 3] = pose_xyz
 
-data = np.concatenate([mat, camera_param, dist_param, bounds], axis=1)
-np.save(os.path.join(target_dir, "cams_meta.npy"), data)
+    # save pose
+    np.save(os.path.join(target_dir, "poses_render.npy"), mat)
+
+    # save camera meta
+    camera_info = load_camera_info_from_yaml(f"{target_dir}/camera_info.yaml")
+    k = camera_info["K"]
+    camera_param = np.tile(k, (n, 1, 1))
+    camera_param = camera_param.reshape((n, 9))
+
+    dist_param = camera_info["D"]
+    dist_param = np.tile(dist_param, (n, 1))
+
+    bounds = np.array([[1.0, 30.0] for _ in range(n)])
+
+    mat = mat.reshape((n, 12))
+
+    data = np.concatenate([mat, camera_param, dist_param, bounds], axis=1)
+    np.save(os.path.join(target_dir, "cams_meta.npy"), data)
