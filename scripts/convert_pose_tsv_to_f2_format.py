@@ -47,7 +47,7 @@ if __name__ == "__main__":
     camera_param = np.tile(k, (n, 1, 1))
     camera_param = camera_param.reshape((n, 9))
 
-    dist_param = camera_info["D"]
+    dist_param = camera_info["D"][0:4]
     dist_param = np.tile(dist_param, (n, 1))
 
     bounds = np.array([[1.0, 30.0] for _ in range(n)])
