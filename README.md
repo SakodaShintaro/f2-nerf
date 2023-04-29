@@ -33,12 +33,12 @@ cd f2-nerf
 We take `torch-1.13.1+cu117` for example.
 ```shell
 cd External
-https://download.pytorch.org/libtorch/cu117/libtorch-cxx11-abi-shared-with-deps-1.13.1%2Bcu117.zip
+wget https://download.pytorch.org/libtorch/cu117/libtorch-cxx11-abi-shared-with-deps-1.13.1%2Bcu117.zip
 unzip ./libtorch-cxx11-abi-shared-with-deps-1.13.1%2Bcu117.zip
 ```
 
 ### Step 4. Compile
-The lowest G++ version I have tested is 7.5.0.
+The lowest g++ version I have tested is 7.5.0.
 ```shell
 cd ..
 cmake . -B build
@@ -50,13 +50,13 @@ cmake --build build --target main --config RelWithDebInfo -j
 ### Training
 Here is an example command to train F2-NeRF:
 ```shell
-python scripts/run.py --config-name=wanjinyou dataset_name=example case_name=ngp_fox mode=train
+python scripts/run.py --config-name=wanjinyou dataset_name=example case_name=ngp_fox mode=train +work_dir=$(pwd)
 ```
 
 ### Render test images
 Simply run:
 ```shell
-python scripts/run.py --config-name=wanjinyou dataset_name=example case_name=ngp_fox mode=test is_continue=true
+python scripts/run.py --config-name=wanjinyou dataset_name=example case_name=ngp_fox mode=test is_continue=true +work_dir=$(pwd)
 ```
 
 ### Render path
@@ -69,29 +69,35 @@ python scripts/inter_poses.py --data_dir ./data/example/ngp_fox --key_poses 5,10
 The file `poses_render.npy` in the data directory would be generated. Then run
 
 ```shell
-python scripts/run.py --config-name=wanjiyou dataset_name=example case_name=ngp_fox mode=render_path is_continue=true
+python scripts/run.py --config-name=wanjinyou dataset_name=example case_name=ngp_fox mode=render_path is_continue=true +work_dir=$(pwd)
 ```
 
-The synthesized images can be found in `./exp/ngp_fox/novel_images`.
+The synthesized images can be found in `./exp/ngp_fox/test/novel_images`.
 
 ## Train F2-NeRF on your custom data
 Make sure COLMAP has been installed.
 1. Run COLMAP SfM:
+```shell
+bash scripts/local_colmap_and_resize.sh ./data/<your-dataset-name>/<your-case-name>
 ```
-bash scripts/local_colmap_and_resize.sh <your-data-dir>
-```
-Make sure the images are at `<your-data-dir>/images`
+Make sure the images are at `./data/<your-dataset-name>/<your-case-name>/images`
 
 2. Generate cameras file:
+```shell
+python scripts/colmap2poses.py --data_dir ./data/<your-dataset-name>/<your-case-name>
 ```
-python scripts/colmap2poses.py --data_dir <your-data-dir>
+
+3. Run F2-NeRF using the similar command as in the example data:
+```shell
+python scripts/run.py --config-name=wanjinyou \
+dataset_name=<your-dataset-name> case_name=<your-case-name> mode=train \
++work_dir=$(pwd)
 ```
-3. Run F2-NeRF!
 
 ## Train F2-NeRF on LLFF/NeRF-360-V2 dataset
 We provide a script to convert the LLFF camera format to our camera format. For example:
 ```
-python scripts/llff2poses.py --data_dir=xxx/nerf_llff_data/horns 
+python scripts/llff2poses.py --data_dir=xxx/nerf_llff_data/horns
 ```
 
 ## TODO/Future work
