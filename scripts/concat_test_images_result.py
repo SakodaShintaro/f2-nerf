@@ -26,6 +26,9 @@ if __name__ == "__main__":
     test_images_dir = args.test_images_dir
     gt_images_dir = args.gt_images_dir
     test_image_path_list = sorted(glob(f"{test_images_dir}/color*.png"))
+    if len(test_image_path_list) == 0:
+        print(f"No test images found in {test_images_dir}")
+        exit(1)
     save_dir = f"{test_images_dir}/../test_images_concat/"
     os.makedirs(save_dir, exist_ok=True)
     codec = cv2.VideoWriter_fourcc(*'mp4v')
