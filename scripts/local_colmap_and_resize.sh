@@ -12,13 +12,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+set -eux
+
 # Path to a directory `base/` with images in `base/images/`.
 DATASET_PATH=$1
+
+# set for command line
+export QT_QPA_PLATFORM=offscreen
 
 # Recommended CAMERA values: OPENCV for perspective, OPENCV_FISHEYE for fisheye.
 CAMERA=OPENCV
 
-USE_GPU=1
+USE_GPU=0
 # Replace this with your own local copy of the file.
 # Download from: https://demuc.de/colmap/#download
 VOCABTREE_PATH=/home/ppwang/Projects/f2-nerf/data_local/vocab_tree_flickr100K_words32K.bin
@@ -33,17 +39,17 @@ colmap feature_extractor \
     --SiftExtraction.use_gpu "$USE_GPU"
 
 
-colmap exhaustive_matcher \
-    --database_path "$DATASET_PATH"/database.db \
-    --SiftMatching.use_gpu "$USE_GPU"
+# colmap exhaustive_matcher \
+#     --database_path "$DATASET_PATH"/database.db \
+#     --SiftMatching.use_gpu "$USE_GPU"
 
 ## Use if your scene has > 500 images
 ## Replace this path with your own local copy of the file.
 ## Download from: https://demuc.de/colmap/#download
-# colmap vocab_tree_matcher \
-#     --database_path "$DATASET_PATH"/database.db \
-#     --VocabTreeMatching.vocab_tree_path $VOCABTREE_PATH \
-#     --SiftMatching.use_gpu "$USE_GPU"
+colmap vocab_tree_matcher \
+    --database_path "$DATASET_PATH"/database.db \
+    --VocabTreeMatching.vocab_tree_path /root/f2-nerf/vocab_tree_flickr100K_words32K.bin \
+    --SiftMatching.use_gpu "$USE_GPU"
 
 
 
