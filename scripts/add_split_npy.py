@@ -1,9 +1,8 @@
-""" A script to add spli.npy to the data directory.
+""" A script to add split.npy to the data directory.
 """
 
 import argparse
 import numpy as np
-import pandas as pd
 
 
 def parse_args():
@@ -15,9 +14,9 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     path_to_dir = args.path_to_dir
-    path_to_pose_tsv = f"{path_to_dir}/pose.tsv"
-    df = pd.read_csv(path_to_pose_tsv, sep="\t", index_col=0)
-    n = len(df)
+    path_to_cams_meta = f"{path_to_dir}/cams_meta.npy"
+    npy = np.load(path_to_cams_meta)
+    n = len(npy)
 
     # train:0bit, test:1bit, val:2bit
     data = np.array([0b011 for _ in range(n)], dtype=np.uint8)
