@@ -151,6 +151,7 @@ std::tuple<Tensor, Tensor, Tensor> LocalizationExecuter::RenderWholeImage(
 
 float LocalizationExecuter::CalcScore(const Tensor pose, Tensor gt_image)
 {
+  torch::NoGradGuard no_grad_guard;
   auto [rays_o, rays_d, bounds] = dataset_->RaysFromPose(pose);
   auto [pred_colors, first_oct_dis, pred_disps] = RenderWholeImage(rays_o, rays_d, bounds);
 
@@ -175,16 +176,21 @@ void LocalizationExecuter::Localize()
   auto prev_mode = global_data_pool_->mode_;
   global_data_pool_->mode_ = RunningMode::VALIDATE;
 
+  const int H = dataset_->height_;
+  const int W = dataset_->width_;
+  std::cout << "H = " << H << ", W = " << W << std::endl;
+
   constexpr float noise_std = 0.2f;
-  constexpr int NUM_SEARCH = 5;
+  constexpr int NUM_SEARCH = 3;
   fs::create_directories(base_exp_dir_ + "/localization_result");
+  std::cout << std::fixed << std::setprecision(2);
 
   {
     for (int i : dataset_->test_set_) {
-      std::cout << "localize " << i << std::endl;
       std::string filename = fmt::format("/localization_result/{:08d}.tsv", i);
       std::ofstream ofs(base_exp_dir_ + filename);
       ofs << std::fixed << std::setprecision(1);
+      StopWatch stop_watch;
       for (int x = -NUM_SEARCH; x <= NUM_SEARCH; x++) {
         for (int y = -NUM_SEARCH; y <= NUM_SEARCH; y++) {
           Tensor pose = dataset_->poses_[i].clone();
@@ -194,6 +200,8 @@ void LocalizationExecuter::Localize()
           ofs << psnr << (y == NUM_SEARCH ? "\n" : "\t");
         }
       }
+      std::cout << "Finish localize " << i << ", time = " << stop_watch.TimeDuration() << " sec"
+                << std::endl;
     }
   }
 
