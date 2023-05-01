@@ -26,7 +26,7 @@ public:
   void LoadCheckpoint(const std::string & path);
   void UpdateAdaParams();
   std::tuple<Tensor, Tensor, Tensor> RenderWholeImage(Tensor rays_o, Tensor rays_d, Tensor bounds);
-  void VisualizeImage(int idx);
+  float CalcScore(const Tensor pose, Tensor gt_image);
 
   // data
   std::string case_name_, base_dir_, base_exp_dir_;

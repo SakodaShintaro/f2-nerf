@@ -149,28 +149,23 @@ std::tuple<Tensor, Tensor, Tensor> LocalizationExecuter::RenderWholeImage(
   return {pred_colors, first_oct_disp, pred_disp};
 }
 
-void LocalizationExecuter::VisualizeImage(int idx)
+float LocalizationExecuter::CalcScore(const Tensor pose, Tensor gt_image)
 {
-  torch::NoGradGuard no_grad_guard;
-  auto prev_mode = global_data_pool_->mode_;
-  global_data_pool_->mode_ = RunningMode::VALIDATE;
-
-  auto [rays_o, rays_d, bounds] = dataset_->RaysOfCamera(idx);
+  auto [rays_o, rays_d, bounds] = dataset_->RaysFromPose(pose);
   auto [pred_colors, first_oct_dis, pred_disps] = RenderWholeImage(rays_o, rays_d, bounds);
 
-  int H = dataset_->height_;
-  int W = dataset_->width_;
+  const int H = dataset_->height_;
+  const int W = dataset_->width_;
 
-  Tensor img_tensor = torch::cat(
-    {dataset_->image_tensors_[idx].to(torch::kCPU).reshape({H, W, 3}),
-     pred_colors.reshape({H, W, 3}), first_oct_dis.reshape({H, W, 1}).repeat({1, 1, 3}),
-     pred_disps.reshape({H, W, 1}).repeat({1, 1, 3})},
-    1);
-  fs::create_directories(base_exp_dir_ + "/images");
-  Utils::WriteImageTensor(
-    base_exp_dir_ + "/images/" + fmt::format("{}_{}.png", iter_step_, idx), img_tensor);
+  Tensor pred_img = pred_colors.view({H, W, 3});
+  pred_img = pred_img.clip(0.f, 1.f);
 
-  global_data_pool_->mode_ = prev_mode;
+  gt_image = gt_image.view({H, W, 3});
+
+  Tensor diff = pred_img - gt_image;
+  Tensor mse = (diff * diff).mean(-1);
+  Tensor psnr = 10.f * torch::log10(1.f / mse);
+  return psnr.mean().item<float>();
 }
 
 void LocalizationExecuter::Localize()
@@ -180,44 +175,27 @@ void LocalizationExecuter::Localize()
   auto prev_mode = global_data_pool_->mode_;
   global_data_pool_->mode_ = RunningMode::VALIDATE;
 
-  float psnr_sum = 0.f;
-  float cnt = 0.f;
-  YAML::Node out_info;
+  constexpr float noise_std = 0.2f;
+  constexpr int NUM_SEARCH = 5;
+  fs::create_directories(base_exp_dir_ + "/localization_result");
+
   {
     for (int i : dataset_->test_set_) {
-      std::cout << "i = " << i << std::endl;
-      auto [rays_o, rays_d, bounds] = dataset_->RaysOfCamera(i);
-      auto [pred_colors, first_oct_dis, pred_disps] =
-        RenderWholeImage(rays_o, rays_d, bounds);  // At this stage, the returned number is
-
-      int H = dataset_->height_;
-      int W = dataset_->width_;
-
-      auto quantify = [](const Tensor & x) {
-        return (x.clip(0.f, 1.f) * 255.f).to(torch::kUInt8).to(torch::kFloat32) / 255.f;
-      };
-      pred_disps = pred_disps.reshape({H, W, 1});
-      first_oct_dis = first_oct_dis.reshape({H, W, 1});
-      pred_colors = pred_colors.reshape({H, W, 3});
-      pred_colors = quantify(pred_colors);
-      float mse = (pred_colors.reshape({H, W, 3}) -
-                   dataset_->image_tensors_[i].to(torch::kCPU).reshape({H, W, 3}))
-                    .square()
-                    .mean()
-                    .item<float>();
-      float psnr = 20.f * std::log10(1 / std::sqrt(mse));
-      out_info[fmt::format("{}", i)] = psnr;
-      std::cout << fmt::format("{}: {}", i, psnr) << std::endl;
-      psnr_sum += psnr;
-      cnt += 1.f;
+      std::cout << "localize " << i << std::endl;
+      std::string filename = fmt::format("/localization_result/{:08d}.tsv", i);
+      std::ofstream ofs(base_exp_dir_ + filename);
+      ofs << std::fixed << std::setprecision(1);
+      for (int x = -NUM_SEARCH; x <= NUM_SEARCH; x++) {
+        for (int y = -NUM_SEARCH; y <= NUM_SEARCH; y++) {
+          Tensor pose = dataset_->poses_[i].clone();
+          pose[0][3] += x * noise_std;
+          pose[1][3] += y * noise_std;
+          float psnr = CalcScore(pose, dataset_->image_tensors_[i]);
+          ofs << psnr << (y == NUM_SEARCH ? "\n" : "\t");
+        }
+      }
     }
   }
-  float mean_psnr = psnr_sum / cnt;
-  std::cout << fmt::format("Mean psnr: {}", mean_psnr) << std::endl;
-  out_info["mean_psnr"] = mean_psnr;
-
-  std::ofstream info_fout(base_exp_dir_ + "/localization/info.yaml");
-  info_fout << out_info;
 
   global_data_pool_->mode_ = prev_mode;
 }
