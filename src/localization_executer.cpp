@@ -175,6 +175,7 @@ void LocalizationExecuter::VisualizeImage(int idx)
 
 void LocalizationExecuter::Localize()
 {
+  std::cout << "start Localize" << std::endl;
   torch::NoGradGuard no_grad_guard;
   auto prev_mode = global_data_pool_->mode_;
   global_data_pool_->mode_ = RunningMode::VALIDATE;
@@ -183,8 +184,8 @@ void LocalizationExecuter::Localize()
   float cnt = 0.f;
   YAML::Node out_info;
   {
-    fs::create_directories(base_exp_dir_ + "/test_images");
     for (int i : dataset_->test_set_) {
+      std::cout << "i = " << i << std::endl;
       auto [rays_o, rays_d, bounds] = dataset_->RaysOfCamera(i);
       auto [pred_colors, first_oct_dis, pred_disps] =
         RenderWholeImage(rays_o, rays_d, bounds);  // At this stage, the returned number is
@@ -209,22 +210,13 @@ void LocalizationExecuter::Localize()
       std::cout << fmt::format("{}: {}", i, psnr) << std::endl;
       psnr_sum += psnr;
       cnt += 1.f;
-      Utils::WriteImageTensor(
-        base_exp_dir_ + "/test_images/" + fmt::format("color_{}_{:0>3d}.png", iter_step_, i),
-        pred_colors);
-      Utils::WriteImageTensor(
-        base_exp_dir_ + "/test_images/" + fmt::format("depth_{}_{:0>3d}.png", iter_step_, i),
-        pred_disps.repeat({1, 1, 3}));
-      Utils::WriteImageTensor(
-        base_exp_dir_ + "/test_images/" + fmt::format("oct_depth_{}_{:0>3d}.png", iter_step_, i),
-        first_oct_dis.repeat({1, 1, 3}));
     }
   }
   float mean_psnr = psnr_sum / cnt;
   std::cout << fmt::format("Mean psnr: {}", mean_psnr) << std::endl;
   out_info["mean_psnr"] = mean_psnr;
 
-  std::ofstream info_fout(base_exp_dir_ + "/test_images/info.yaml");
+  std::ofstream info_fout(base_exp_dir_ + "/localization/info.yaml");
   info_fout << out_info;
 
   global_data_pool_->mode_ = prev_mode;
@@ -235,5 +227,8 @@ void LocalizationExecuter::Execute()
   std::string mode = global_data_pool_->config_["mode"].as<std::string>();
   if (mode == "localize") {
     Localize();
+  } else {
+    std::cout << "Unknown mode: " << mode << std::endl;
+    exit(-1);
   }
 }
