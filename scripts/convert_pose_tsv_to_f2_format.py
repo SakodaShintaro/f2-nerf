@@ -34,9 +34,19 @@ if __name__ == "__main__":
     pose_xyz -= pose_xyz[0]
     pose_quat = df_pose[['qx', 'qy', 'qz', 'qw']].values
     rotation_mat = Rotation.from_quat(pose_quat).as_matrix()
-    mat = np.zeros((n, 3, 4))
+    mat = np.zeros((n, 4, 4))
     mat[:, 0:3, 0:3] = rotation_mat
     mat[:, 0:3, 3] = pose_xyz
+
+    # convert axis
+    axis_convert_mat = np.array(
+        [[0, -1,  0,  0],
+         [0,  0, -1,  0],
+         [1,  0,  0,  0],
+         [0,  0,  0,  1]], dtype=np.float64
+    )
+    mat = np.matmul(axis_convert_mat, mat)
+    mat = mat[:, 0:3, :]
 
     # save pose
     np.save(os.path.join(target_dir, "poses_render.npy"), mat)
