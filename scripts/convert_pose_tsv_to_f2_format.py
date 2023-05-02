@@ -31,12 +31,12 @@ if __name__ == "__main__":
     df_pose = pd.read_csv(path_to_pose_tsv, sep="\t", index_col=0)
     n = len(df_pose)
     pose_xyz = df_pose[['x', 'y', 'z']].values
-    pose_xyz -= pose_xyz[0]
     pose_quat = df_pose[['qx', 'qy', 'qz', 'qw']].values
     rotation_mat = Rotation.from_quat(pose_quat).as_matrix()
-    mat = np.zeros((n, 4, 4))
-    mat[:, 0:3, 0:3] = rotation_mat
-    mat[:, 0:3, 3] = pose_xyz
+    initial_rot_mat = Rotation.from_euler("zyx", [0, -90, 0], degrees=True).as_matrix()
+    mat = np.tile(np.eye(4), (n, 1, 1))
+    mat[:, 0:3, 0:3] = np.dot(rotation_mat, initial_rot_mat)
+    mat[:, 0:3, 3:4] = pose_xyz.reshape((n, 3, 1))
 
     # convert axis
     axis_convert_mat = np.array(
@@ -47,9 +47,7 @@ if __name__ == "__main__":
     )
     mat = np.matmul(axis_convert_mat, mat)
     mat = mat[:, 0:3, :]
-
-    # save pose
-    np.save(os.path.join(target_dir, "poses_render.npy"), mat)
+    mat = mat.reshape((n, 12))
 
     # save camera meta
     camera_info = load_camera_info_from_yaml(f"{target_dir}/camera_info.yaml")
@@ -61,8 +59,6 @@ if __name__ == "__main__":
     dist_param = np.tile(dist_param, (n, 1))
 
     bounds = np.array([[1.0, 30.0] for _ in range(n)])
-
-    mat = mat.reshape((n, 12))
 
     data = np.concatenate([mat, camera_param, dist_param, bounds], axis=1)
     np.save(os.path.join(target_dir, "cams_meta.npy"), data)
