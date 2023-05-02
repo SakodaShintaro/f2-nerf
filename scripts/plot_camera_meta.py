@@ -22,16 +22,12 @@ if __name__ == "__main__":
     print(camera_meta.shape)
     poses = camera_meta[:, 0:12]
     poses = poses.reshape(-1, 3, 4)
-
-    # calc relative pose to frame 0
-    rotations = poses[:, :, 0:3]
-    rotations = np.dot(rotations, rotations[0].T)
-    poses[:, :, 0:3] = rotations
+    poses[:, :, 3] -= poses[0, :,  3]
 
     rear_pos = poses[:, :, 3]
 
     default_pose_axle = np.array([0, 0, 0, 1])
-    default_pose_front = np.array([0, 0, 1, 1])
+    default_pose_front = np.array([0, 0, -1, 1])
 
     base_dir = os.path.dirname(path_to_camera_meta_npy)
     save_dir = f"{base_dir}/camera_pose"
