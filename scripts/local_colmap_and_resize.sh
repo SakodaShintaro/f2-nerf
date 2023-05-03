@@ -27,7 +27,7 @@ CAMERA=OPENCV
 USE_GPU=0
 # Replace this with your own local copy of the file.
 # Download from: https://demuc.de/colmap/#download
-VOCABTREE_PATH=/home/ppwang/Projects/f2-nerf/data_local/vocab_tree_flickr100K_words32K.bin
+VOCABTREE_PATH=/root/f2-nerf/vocab_tree_flickr100K_words32K.bin
 
 # Run COLMAP.
 
