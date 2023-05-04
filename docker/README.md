@@ -24,6 +24,9 @@ pip3 install numpy
 pip3 install omegaconf
 pip3 install hydra-core
 
+# Prepare directory
+ln -s /root/data/learn_result/ ./exp
+
 # Run
 python3 scripts/run.py --config-name=wanjinyou dataset_name=example case_name=ngp_fox mode=train
 ```
