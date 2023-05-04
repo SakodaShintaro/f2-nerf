@@ -1,6 +1,7 @@
 #ifndef LOCALIZER_CORE_HPP_
 #define LOCALIZER_CORE_HPP_
 
+#include "../../src/Dataset/Dataset.h"
 #include "../../src/Renderer/Renderer.h"
 #include "../../src/Utils/CameraUtils.h"
 
@@ -31,6 +32,7 @@ private:
   Tensor dist_params_;
 
   std::unique_ptr<GlobalDataPool> global_data_pool_;
+  std::unique_ptr<Dataset> dataset_;
   std::unique_ptr<Renderer> renderer_;
 };
 

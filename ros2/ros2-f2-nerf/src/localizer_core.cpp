@@ -8,6 +8,7 @@ LocalizerCore::LocalizerCore(const std::string & conf_path)
 {
   global_data_pool_ = std::make_unique<GlobalDataPool>(conf_path);
   global_data_pool_->mode_ = RunningMode::VALIDATE;
+  dataset_ = std::make_unique<Dataset>(global_data_pool_.get());
   renderer_ = std::make_unique<Renderer>(global_data_pool_.get(), 1);
 }
 
