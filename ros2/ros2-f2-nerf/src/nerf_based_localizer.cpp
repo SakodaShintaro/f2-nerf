@@ -9,7 +9,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   const std::string & name_space, const rclcpp::NodeOptions & options)
 : Node("nerf_based_localizer", name_space, options),
   map_frame_("map"),
-  localizer_core_("path/to/conf")
+  localizer_core_("./runtime_config.yaml")
 {
   RCLCPP_INFO(this->get_logger(), "nerf_based_localizer is created.");
   // TODO : Load NeRF Parameters
