@@ -52,4 +52,9 @@ echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
 sudo apt install -y ffmpeg
 sudo apt install -y colmap
 sudo apt install -y python3-colcon-common-extensions
+sudo apt install -y ccache vim
+
+# add .bashrc
+export CC="/usr/lib/ccache/gcc"
+export CXX="/usr/lib/ccache/g++"
 ```
