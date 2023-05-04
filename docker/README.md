@@ -53,6 +53,7 @@ sudo apt install -y ffmpeg
 sudo apt install -y colmap
 sudo apt install -y python3-colcon-common-extensions
 sudo apt install -y ccache vim
+sudo apt install -y gdb
 
 # add .bashrc
 export CC="/usr/lib/ccache/gcc"
