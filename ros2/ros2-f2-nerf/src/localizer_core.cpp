@@ -9,7 +9,13 @@ LocalizerCore::LocalizerCore(const std::string & conf_path)
   global_data_pool_ = std::make_unique<GlobalDataPool>(conf_path);
   global_data_pool_->mode_ = RunningMode::VALIDATE;
   dataset_ = std::make_unique<Dataset>(global_data_pool_.get());
-  renderer_ = std::make_unique<Renderer>(global_data_pool_.get(), 1);
+  renderer_ = std::make_unique<Renderer>(global_data_pool_.get(), dataset_->n_images_);
+
+  const auto & config = global_data_pool_->config_;
+  const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
+  std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
+  global_data_pool_->base_exp_dir_ = base_exp_dir;
+  load_checkpoint(base_exp_dir + "/checkpoints/latest");
 }
 
 std::pair<float, Tensor> LocalizerCore::monte_carlo_localize(
