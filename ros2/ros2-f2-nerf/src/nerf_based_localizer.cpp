@@ -12,7 +12,6 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   localizer_core_("./runtime_config.yaml")
 {
   RCLCPP_INFO(this->get_logger(), "nerf_based_localizer is created.");
-  // TODO : Load NeRF Parameters
 
   initial_pose_with_covariance_subscriber_ =
     this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
