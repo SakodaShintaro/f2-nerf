@@ -43,7 +43,7 @@ void NerfBasedLocalizer::callback_initial_pose(
   if (initial_pose_msg_ptr->header.frame_id == map_frame_) {
     initial_pose_msg_ptr_array_.push_back(initial_pose_msg_ptr);
   } else {
-    RCLCPP_ERROR(this->get_logger(), "initial_pose_with_covariance is not in map frame. ");
+    RCLCPP_ERROR(this->get_logger(), "initial_pose_with_covariance is not in map frame.");
     std::exit(1);
   }
 }
@@ -67,6 +67,11 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
 
   // lock mutex for initial pose
   std::lock_guard<std::mutex> initial_pose_array_lock(initial_pose_array_mtx_);
+
+  if (initial_pose_msg_ptr_array_.empty()) {
+    RCLCPP_ERROR(this->get_logger(), "initial_pose_with_covariance is not received.");
+    std::exit(1);
+  }
 
   const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr pose =
     initial_pose_msg_ptr_array_.front();
