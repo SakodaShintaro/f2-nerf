@@ -15,7 +15,7 @@ class ImagePosePublisher(Node):
     def __init__(self, data_dir):
         super().__init__('image_pose_publisher')
         self.image_pub = self.create_publisher(Image, 'image', 10)
-        self.pose_pub = self.create_publisher(PoseWithCovarianceStamped, 'pose', 10)
+        self.pose_pub = self.create_publisher(PoseWithCovarianceStamped, 'initial_pose_with_covariance', 10)
         self.bridge = CvBridge()
 
         self.image_files = sorted(glob.glob(f"{data_dir}/images/*.png"))
