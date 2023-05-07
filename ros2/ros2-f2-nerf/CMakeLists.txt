@@ -90,6 +90,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(ament_cmake_gtest REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -123,3 +124,10 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 target_link_libraries(nerf_based_localizer ${ALL_LIBS})
+
+## Test
+ament_add_gtest(test_localizer_core test/test_localizer_core.cpp
+                                    src/localizer_core.cpp
+                                    ${SRC_ALL}
+                                    )
+target_link_libraries(test_localizer_core ${ALL_LIBS})
