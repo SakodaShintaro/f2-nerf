@@ -38,8 +38,8 @@ if __name__ == "__main__":
         gt_image_path = f"{gt_images_dir}/{frame_no:08d}.png"
         test_image = cv2.imread(test_image_path)
         gt_image = cv2.imread(gt_image_path)
-        h = min(test_image.shape[0], gt_image.shape[0])
-        w = min(test_image.shape[1], gt_image.shape[1])
+        h = min(test_image.shape[0], gt_image.shape[0], 384)
+        w = min(test_image.shape[1], gt_image.shape[1], 768)
         test_image = cv2.resize(test_image, (w, h))
         gt_image = cv2.resize(gt_image, (w, h))
         put_text(test_image, f"NeRF result (frame={frame_no:04d})", 10, 30)
