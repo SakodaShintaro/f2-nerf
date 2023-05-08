@@ -39,9 +39,6 @@ std::pair<float, Tensor> LocalizerCore::monte_carlo_localize(
 {
   torch::NoGradGuard no_grad_guard;
 
-  const int H = image_tensor.size(0);
-  const int W = image_tensor.size(1);
-
   constexpr float noise_std = 0.2f;
   constexpr int NUM_SEARCH = 3;
 
