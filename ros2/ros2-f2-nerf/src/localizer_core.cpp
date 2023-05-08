@@ -16,6 +16,22 @@ LocalizerCore::LocalizerCore(const std::string & conf_path)
   std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
   global_data_pool_->base_exp_dir_ = base_exp_dir;
   load_checkpoint(base_exp_dir + "/checkpoints/latest");
+
+  dist_params_ = torch::zeros({4}, torch::kFloat32);
+  dist_params_[0] = -0.129468;
+  dist_params_[1] = 0.018362;
+  dist_params_[2] = -0.000199;
+  dist_params_[3] = -0.000096;
+
+  intri_ = torch::zeros({3, 3}, torch::kFloat32);
+  intri_[0][0] = 854.700195f;
+  intri_[0][2] = 960.000061f;
+  intri_[1][1] = 945.058289f;
+  intri_[1][2] = 640.000061f;
+  intri_[2][2] = 1.0f;
+
+  dist_params_.to(torch::kCUDA);
+  intri_.to(torch::kCUDA);
 }
 
 std::pair<float, Tensor> LocalizerCore::monte_carlo_localize(
