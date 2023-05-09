@@ -2,7 +2,7 @@
 
 set -eux
 
-colcon build
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 set +u
 source install/setup.bash
