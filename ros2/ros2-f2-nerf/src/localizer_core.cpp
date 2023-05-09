@@ -65,8 +65,6 @@ void LocalizerCore::load_checkpoint(const std::string & checkpoint_path)
   {
     Tensor scalars;
     torch::load(scalars, checkpoint_path + "/scalars.pt");
-    // iter_step_ = std::round(scalars[0].item<float>());
-    update_ada_params();
   }
 
   {
@@ -74,32 +72,6 @@ void LocalizerCore::load_checkpoint(const std::string & checkpoint_path)
     torch::load(scene_states, checkpoint_path + "/renderer.pt");
     renderer_->LoadStates(scene_states, 0);
   }
-}
-
-void LocalizerCore::update_ada_params()
-{
-  // Update ray march fineness
-  // if (iter_step_ >= ray_march_fineness_decay_end_iter_) {
-  //   global_data_pool_->ray_march_fineness_ = 1.f;
-  // } else {
-  //   float progress = float(iter_step_) / float(ray_march_fineness_decay_end_iter_);
-  //   global_data_pool_->ray_march_fineness_ =
-  //     std::exp(std::log(1.f) * progress + std::log(ray_march_init_fineness_) * (1.f - progress));
-  // }
-  // // Update learning rate
-  // float lr_factor;
-  // if (iter_step_ >= learning_rate_warm_up_end_iter_) {
-  //   float progress = float(iter_step_ - learning_rate_warm_up_end_iter_) /
-  //                    float(end_iter_ - learning_rate_warm_up_end_iter_);
-  //   lr_factor = (1.f - learning_rate_alpha_) * (std::cos(progress * float(M_PI)) * .5f + .5f) +
-  //               learning_rate_alpha_;
-  // } else {
-  //   lr_factor = float(iter_step_) / float(learning_rate_warm_up_end_iter_);
-  // }
-  // float lr = learning_rate_ * lr_factor;
-  // for (auto & g : optimizer_->param_groups()) {
-  //   g.options().set_lr(lr);
-  // }
 }
 
 std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_whole_image(

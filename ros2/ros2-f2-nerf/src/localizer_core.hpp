@@ -20,7 +20,6 @@ public:
 
 private:
   void load_checkpoint(const std::string & checkpoint_path);
-  void update_ada_params();
   std::tuple<Tensor, Tensor, Tensor> render_whole_image(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
   float calc_score(const Tensor & pose, const Tensor & image);
