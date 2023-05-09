@@ -5,6 +5,8 @@
 
 #include <torch/torch.h>
 
+#include <sstream>
+
 NerfBasedLocalizer::NerfBasedLocalizer(
   const std::string & name_space, const rclcpp::NodeOptions & options)
 : Node("nerf_based_localizer", name_space, options),
@@ -60,6 +62,14 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   uint32_t step = image_msg_ptr->step;
   std::string encoding = image_msg_ptr->encoding;
 
+  // output information about image
+  std::stringstream ss;
+  ss << "Image received. ";
+  ss << "width: " << width << ", ";
+  ss << "height: " << height << ", ";
+  ss << "step: " << step;
+  RCLCPP_INFO(this->get_logger(), ss.str().c_str());
+
   // Accessing image data
   const std::vector<uint8_t> & data = image_msg_ptr->data;
 
@@ -98,7 +108,16 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   initial_pose[2][3] = pose->pose.pose.position.z;
   initial_pose = initial_pose.to(torch::kCUDA);
 
+  // output about pose
+  ss.str("");
+  ss << "initial_pose: ";
+  ss << "x: " << pose->pose.pose.position.x << ", ";
+  ss << "y: " << pose->pose.pose.position.y << ", ";
+  ss << "z: " << pose->pose.pose.position.z;
+  RCLCPP_INFO(this->get_logger(), ss.str().c_str());
+
   // run NeRF
+  RCLCPP_INFO(this->get_logger(), "start localize");
   const auto [score, optimized_pose] =
     localizer_core_.monte_carlo_localize(initial_pose, image_tensor);
 
