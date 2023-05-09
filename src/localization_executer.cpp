@@ -163,6 +163,15 @@ float LocalizationExecuter::CalcScore(const Tensor pose, Tensor gt_image)
 
   gt_image = gt_image.view({H, W, 3});
 
+  static int cnt = 0;
+
+  std::stringstream ss;
+  ss << base_exp_dir_ << "/localization_result/pred_img_";
+  ss << std::setfill('0') << std::setw(4) << cnt;
+  ss << ".png";
+  Utils::WriteImageTensor(ss.str(), pred_img);
+  cnt++;
+
   Tensor diff = pred_img - gt_image;
   Tensor mse = (diff * diff).mean(-1);
   Tensor psnr = 10.f * torch::log10(1.f / mse);
@@ -181,7 +190,7 @@ void LocalizationExecuter::Localize()
   std::cout << "H = " << H << ", W = " << W << std::endl;
 
   constexpr float noise_std = 0.2f;
-  constexpr int NUM_SEARCH = 3;
+  constexpr int NUM_SEARCH = 0;
   fs::create_directories(base_exp_dir_ + "/localization_result");
   std::cout << std::fixed << std::setprecision(2);
 
