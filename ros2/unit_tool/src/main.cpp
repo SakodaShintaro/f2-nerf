@@ -22,11 +22,9 @@ int main(int argc, char * argv[])
   std::vector<uint8_t> data(height * width * channels, 0);
   std::copy(image.data, image.data + image.total() * image.elemSize(), data.data());
   torch::Tensor image_tensor = torch::tensor(data);
-  image_tensor = image_tensor.view({1, height, width, channels});
-  image_tensor = image_tensor.permute({0, 3, 1, 2});
-
-  Eigen::Quaternionf quat(1, 0, 0, 0);
-  Eigen::Matrix3f rot = quat.toRotationMatrix();
+  image_tensor = image_tensor.view({height, width, channels});
+  image_tensor = image_tensor.to(torch::kFloat32);
+  image_tensor /= 255.0;
 
   torch::Tensor initial_pose = localizer_core.dataset_->poses_[0];
 
