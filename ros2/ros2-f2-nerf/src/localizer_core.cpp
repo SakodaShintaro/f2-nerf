@@ -2,6 +2,8 @@
 
 #include "../../src/Dataset/Dataset.h"
 
+#include <opencv2/opencv.hpp>
+
 using Tensor = torch::Tensor;
 
 LocalizerCore::LocalizerCore(const std::string & conf_path)
@@ -40,7 +42,7 @@ std::pair<float, Tensor> LocalizerCore::monte_carlo_localize(
   torch::NoGradGuard no_grad_guard;
 
   constexpr float noise_std = 0.2f;
-  constexpr int NUM_SEARCH = 3;
+  constexpr int NUM_SEARCH = 0;
 
   std::pair<float, Tensor> result = {-1.0f, initial_pose};
 
@@ -140,6 +142,22 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_whole_image(
   return {pred_colors, first_oct_disp, pred_disp};
 }
 
+void save_image(const Tensor image_tensor, const std::string & prefix, int save_id)
+{
+  const int H = image_tensor.sizes()[0];
+  const int W = image_tensor.sizes()[1];
+  cv::Mat pred_img_cv(H, W, CV_8UC3);
+  Tensor pred_img_uint = (image_tensor * 255.f).to(torch::kUInt8).to(torch::kCPU);
+  std::copy(
+    pred_img_uint.data_ptr<uint8_t>(), pred_img_uint.data_ptr<uint8_t>() + pred_img_uint.numel(),
+    pred_img_cv.data);
+  std::stringstream ss;
+  ss << "result_images/" << prefix << "_";
+  ss << std::setfill('0') << std::setw(8) << save_id;
+  ss << ".png";
+  cv::imwrite(ss.str(), pred_img_cv);
+}
+
 float LocalizerCore::calc_score(const Tensor & pose, const Tensor & image)
 {
   torch::NoGradGuard no_grad_guard;
@@ -149,6 +167,11 @@ float LocalizerCore::calc_score(const Tensor & pose, const Tensor & image)
   Tensor pred_img = pred_colors.view({H, W, 3});
   pred_img = pred_img.clip(0.f, 1.f);
   pred_img = pred_img.to(image.device());
+
+  static int cnt = 0;
+  save_image(pred_img, "pred", cnt);
+  save_image(image.view({H, W, 3}), "gt", cnt);
+  cnt++;
 
   Tensor diff = pred_img - image.view({H, W, 3});
   Tensor mse = (diff * diff).mean(-1);

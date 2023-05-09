@@ -71,10 +71,11 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   RCLCPP_INFO(this->get_logger(), ss.str().c_str());
 
   // Accessing image data
-  const std::vector<uint8_t> & data = image_msg_ptr->data;
-
-  torch::Tensor image_tensor = torch::zeros({1, 3, height, width});
+  torch::Tensor image_tensor = torch::tensor(image_msg_ptr->data);
+  image_tensor = image_tensor.view({height, width, 3});
   image_tensor = image_tensor.to(torch::kCUDA);
+  image_tensor = image_tensor.to(torch::kFloat32);
+  image_tensor /= 255.0;
 
   // lock mutex for initial pose
   std::lock_guard<std::mutex> initial_pose_array_lock(initial_pose_array_mtx_);

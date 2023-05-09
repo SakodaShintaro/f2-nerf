@@ -50,9 +50,14 @@ include_directories(${ROOT_DIR}/External/yaml-cpp/include)
 # eigen
 include_directories(${ROOT_DIR}/External/eigen-3.4.0)
 
+# OpenCV
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
 set(ALL_LIBS ${TORCH_LIBRARIES}
              ${TORCH_CUDA_LIBRARIES}
              ${ZLIB_LIBRARIES}
+             ${OpenCV_LIBS}
              yaml-cpp
              fmt::fmt
              tiny-cuda-nn
