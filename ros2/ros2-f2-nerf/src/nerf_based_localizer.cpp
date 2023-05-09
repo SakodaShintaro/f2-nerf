@@ -94,7 +94,7 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
     pose->pose.pose.orientation.z);
   Eigen::Matrix3f rot = quat.toRotationMatrix();
 
-  torch::Tensor initial_pose = torch::zeros({3, 4});
+  torch::Tensor initial_pose = torch::eye(4);
   initial_pose[0][0] = rot(0, 0);
   initial_pose[0][1] = rot(0, 1);
   initial_pose[0][2] = rot(0, 2);
@@ -108,13 +108,30 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   initial_pose[2][2] = rot(2, 2);
   initial_pose[2][3] = pose->pose.pose.position.z;
   initial_pose = initial_pose.to(torch::kCUDA);
+  initial_pose = initial_pose.to(torch::kFloat32);
+
+  // torch::Tensor mat = torch::zeros({4, 4});
+  // mat[0][0] = 0.001807;
+  // mat[0][1] = -0.750991;
+  // mat[0][2] = -0.009577;
+  // mat[0][3] = 2.456662;
+  // mat[1][0] = 0.026115;
+  // mat[1][1] = 0.009634;
+  // mat[1][2] = -0.750538;
+  // mat[1][3] = 0.161284;
+  // mat[2][0] = 0.750598;
+  // mat[2][1] = 0.001472;
+  // mat[2][2] = 0.026136;
+  // mat[2][3] = -1.306355;
+  // mat[3][3] = 1.0;
+  // mat = mat.to(torch::kCUDA);
+  // initial_pose = mat * initial_pose;
+
+  initial_pose = initial_pose.index({Slc(0, 3), Slc(0, 4)});
 
   // output about pose
   ss.str("");
-  ss << "initial_pose: ";
-  ss << "x: " << pose->pose.pose.position.x << ", ";
-  ss << "y: " << pose->pose.pose.position.y << ", ";
-  ss << "z: " << pose->pose.pose.position.z;
+  ss << "initial_pose: " << initial_pose;
   RCLCPP_INFO(this->get_logger(), ss.str().c_str());
 
   // run NeRF
