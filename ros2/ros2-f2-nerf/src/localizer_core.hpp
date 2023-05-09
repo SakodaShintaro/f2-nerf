@@ -16,6 +16,8 @@ public:
 
   std::pair<float, Tensor> monte_carlo_localize(Tensor initial_pose, Tensor image_tensor);
 
+  Tensor normalize_position(Tensor pose);
+
   std::unique_ptr<Dataset> dataset_;
 
 private:

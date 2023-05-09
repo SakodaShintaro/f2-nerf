@@ -170,3 +170,11 @@ BoundedRays LocalizerCore::rays_from_pose(const Tensor & pose, int reso_level)
 
   return {rays_o, rays_d, bounds};
 }
+
+Tensor LocalizerCore::normalize_position(Tensor pose)
+{
+  Tensor cam_pos = pose.index({Slc(0, 3), 3}).clone();
+  cam_pos = (cam_pos - dataset_->center_.unsqueeze(0)) / dataset_->radius_;
+  pose.index_put_({Slc(0, 3), 3}, cam_pos);
+  return pose;
+}
