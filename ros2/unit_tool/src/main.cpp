@@ -28,23 +28,19 @@ int main(int argc, char * argv[])
   Eigen::Quaternionf quat(1, 0, 0, 0);
   Eigen::Matrix3f rot = quat.toRotationMatrix();
 
-  torch::Tensor initial_pose = torch::zeros({4, 4});
-  initial_pose[0][0] = rot(0, 0);
-  initial_pose[0][1] = rot(0, 1);
-  initial_pose[0][2] = rot(0, 2);
-  initial_pose[0][3] = 0;
-  initial_pose[1][0] = rot(1, 0);
-  initial_pose[1][1] = rot(1, 1);
-  initial_pose[1][2] = rot(1, 2);
-  initial_pose[1][3] = 0;
-  initial_pose[2][0] = rot(2, 0);
-  initial_pose[2][1] = rot(2, 1);
-  initial_pose[2][2] = rot(2, 2);
-  initial_pose[2][3] = 0;
-  initial_pose[3][0] = 0;
-  initial_pose[3][1] = 0;
-  initial_pose[3][2] = 0;
-  initial_pose[3][3] = 1;
+  torch::Tensor initial_pose = torch::zeros({3, 4});
+  initial_pose[0][0] = 0.9856;
+  initial_pose[0][1] = 0.0329;
+  initial_pose[0][2] = -0.1660;
+  initial_pose[0][3] = 0.4609;
+  initial_pose[1][0] = 0.0328;
+  initial_pose[1][1] = -0.9995;
+  initial_pose[1][2] = 0.0036;
+  initial_pose[1][3] = 0.0287;
+  initial_pose[2][0] = -0.1660;
+  initial_pose[2][1] = -0.0019;
+  initial_pose[2][2] = -0.9861;
+  initial_pose[2][3] = -0.3729;
 
   std::cout << initial_pose << std::endl;
 

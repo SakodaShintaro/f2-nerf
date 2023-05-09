@@ -30,8 +30,8 @@ LocalizerCore::LocalizerCore(const std::string & conf_path)
   intri_[1][2] = 640.000061f;
   intri_[2][2] = 1.0f;
 
-  dist_params_.to(torch::kCUDA);
-  intri_.to(torch::kCUDA);
+  dist_params_.to(CUDAFloat);
+  intri_.to(CUDAFloat);
 }
 
 std::pair<float, Tensor> LocalizerCore::monte_carlo_localize(

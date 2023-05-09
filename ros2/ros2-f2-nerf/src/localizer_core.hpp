@@ -25,8 +25,8 @@ private:
 
   BoundedRays rays_from_pose(const Tensor & pose, int reso_level = 1);
 
-  const int H = 320;
-  const int W = 320;
+  const int H = 227;
+  const int W = 388;
 
   Tensor intri_;
   Tensor dist_params_;
