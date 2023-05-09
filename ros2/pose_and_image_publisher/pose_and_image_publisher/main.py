@@ -8,6 +8,7 @@ from geometry_msgs.msg import PoseWithCovarianceStamped
 from cv_bridge import CvBridge
 import argparse
 import time
+from scipy.spatial.transform import Rotation
 
 
 class ImagePosePublisher(Node):
@@ -34,16 +35,20 @@ class ImagePosePublisher(Node):
         self.get_logger().info(f'Publishing images and poses {self.idx}.')
 
         # Publish pose
+        curr_pose = self.poses[self.idx][0:12].reshape(3, 4)
         pose_msg = PoseWithCovarianceStamped()
         pose_msg.header.stamp = self.get_clock().now().to_msg()
         pose_msg.header.frame_id = 'map'
-        pose_msg.pose.pose.position.x = self.poses[self.idx, 0]
-        pose_msg.pose.pose.position.y = self.poses[self.idx, 1]
-        pose_msg.pose.pose.position.z = self.poses[self.idx, 2]
-        pose_msg.pose.pose.orientation.x = self.poses[self.idx, 3]
-        pose_msg.pose.pose.orientation.y = self.poses[self.idx, 4]
-        pose_msg.pose.pose.orientation.z = self.poses[self.idx, 5]
-        pose_msg.pose.pose.orientation.w = self.poses[self.idx, 6]
+        pose_msg.pose.pose.position.x = curr_pose[0, 3]
+        pose_msg.pose.pose.position.y = curr_pose[1, 3]
+        pose_msg.pose.pose.position.z = curr_pose[2, 3]
+        rotation_mat = curr_pose[0:3, 0:3]
+        r = Rotation.from_matrix(rotation_mat)
+        q = r.as_quat()
+        pose_msg.pose.pose.orientation.x = q[0]
+        pose_msg.pose.pose.orientation.y = q[1]
+        pose_msg.pose.pose.orientation.z = q[2]
+        pose_msg.pose.pose.orientation.w = q[3]
         self.pose_pub.publish(pose_msg)
 
         # wait for 0.05 sec
