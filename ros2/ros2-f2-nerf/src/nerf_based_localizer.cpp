@@ -64,6 +64,7 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   const std::vector<uint8_t> & data = image_msg_ptr->data;
 
   torch::Tensor image_tensor = torch::zeros({1, 3, height, width});
+  image_tensor = image_tensor.to(torch::kCUDA);
 
   // lock mutex for initial pose
   std::lock_guard<std::mutex> initial_pose_array_lock(initial_pose_array_mtx_);
@@ -82,7 +83,7 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
     pose->pose.pose.orientation.z);
   Eigen::Matrix3f rot = quat.toRotationMatrix();
 
-  torch::Tensor initial_pose = torch::zeros({4, 4});
+  torch::Tensor initial_pose = torch::zeros({3, 4});
   initial_pose[0][0] = rot(0, 0);
   initial_pose[0][1] = rot(0, 1);
   initial_pose[0][2] = rot(0, 2);
@@ -95,14 +96,11 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   initial_pose[2][1] = rot(2, 1);
   initial_pose[2][2] = rot(2, 2);
   initial_pose[2][3] = pose->pose.pose.position.z;
-  initial_pose[3][0] = 0;
-  initial_pose[3][1] = 0;
-  initial_pose[3][2] = 0;
-  initial_pose[3][3] = 1;
+  initial_pose = initial_pose.to(torch::kCUDA);
 
   // run NeRF
   const auto [score, optimized_pose] =
     localizer_core_.monte_carlo_localize(initial_pose, image_tensor);
 
-  // publish pose and score
+  RCLCPP_INFO(this->get_logger(), ("score = " + std::to_string(score)).c_str());
 }
