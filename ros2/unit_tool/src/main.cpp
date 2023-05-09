@@ -28,24 +28,12 @@ int main(int argc, char * argv[])
   Eigen::Quaternionf quat(1, 0, 0, 0);
   Eigen::Matrix3f rot = quat.toRotationMatrix();
 
-  torch::Tensor initial_pose = torch::zeros({3, 4});
-  initial_pose[0][0] = 0.9856;
-  initial_pose[0][1] = 0.0329;
-  initial_pose[0][2] = -0.1660;
-  initial_pose[0][3] = 0.4609;
-  initial_pose[1][0] = 0.0328;
-  initial_pose[1][1] = -0.9995;
-  initial_pose[1][2] = 0.0036;
-  initial_pose[1][3] = 0.0287;
-  initial_pose[2][0] = -0.1660;
-  initial_pose[2][1] = -0.0019;
-  initial_pose[2][2] = -0.9861;
-  initial_pose[2][3] = -0.3729;
-
-  std::cout << initial_pose << std::endl;
+  torch::Tensor initial_pose = localizer_core.dataset_->poses_[0];
 
   image_tensor = image_tensor.to(CUDAFloat).contiguous();
   initial_pose = initial_pose.to(CUDAFloat).contiguous();
+
+  std::cout << initial_pose << std::endl;
 
   // run NeRF
   const auto [score, optimized_pose] =

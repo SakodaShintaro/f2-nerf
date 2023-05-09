@@ -16,12 +16,14 @@ public:
 
   std::pair<float, Tensor> monte_carlo_localize(Tensor initial_pose, Tensor image_tensor);
 
+  std::unique_ptr<Dataset> dataset_;
+
 private:
   void load_checkpoint(const std::string & checkpoint_path);
   void update_ada_params();
   std::tuple<Tensor, Tensor, Tensor> render_whole_image(
-    Tensor rays_o, Tensor rays_d, Tensor bounds);
-  float calc_score(Tensor pose, Tensor image);
+    const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
+  float calc_score(const Tensor & pose, const Tensor & image);
 
   BoundedRays rays_from_pose(const Tensor & pose, int reso_level = 1);
 
@@ -32,7 +34,6 @@ private:
   Tensor dist_params_;
 
   std::unique_ptr<GlobalDataPool> global_data_pool_;
-  std::unique_ptr<Dataset> dataset_;
   std::unique_ptr<Renderer> renderer_;
 };
 
