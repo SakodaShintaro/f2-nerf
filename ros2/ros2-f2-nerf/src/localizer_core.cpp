@@ -57,11 +57,11 @@ std::tuple<float, Tensor, Tensor> LocalizerCore::monte_carlo_localize(
       Tensor curr_pose = initial_pose.clone();
       curr_pose[0][3] += x * noise_std;
       curr_pose[1][3] += y * noise_std;
-      float psnr = calc_score(curr_pose, image_tensor);
+      const auto [psnr, pred_image] = calc_score(curr_pose, image_tensor);
       if (psnr > best_score) {
         best_score = psnr;
         best_pose = curr_pose.clone();
-        best_image = image_tensor.clone();
+        best_image = pred_image.clone();
       }
     }
   }
@@ -131,7 +131,7 @@ void save_image(const Tensor image_tensor, const std::string & prefix, int save_
   Utils::WriteImageTensor(ss.str(), image_tensor);
 }
 
-float LocalizerCore::calc_score(const Tensor & pose, const Tensor & image)
+std::tuple<float, Tensor> LocalizerCore::calc_score(const Tensor & pose, const Tensor & image)
 {
   torch::NoGradGuard no_grad_guard;
   auto [rays_o, rays_d, bounds] = dataset_->RaysFromPose(pose);
@@ -149,7 +149,7 @@ float LocalizerCore::calc_score(const Tensor & pose, const Tensor & image)
   Tensor diff = pred_img - image.view({H, W, 3});
   Tensor mse = (diff * diff).mean(-1);
   Tensor psnr = 10.f * torch::log10(1.f / mse);
-  return psnr.mean().item<float>();
+  return { psnr.mean().item<float>(), pred_img  };
 }
 
 BoundedRays LocalizerCore::rays_from_pose(const Tensor & pose, int reso_level)
