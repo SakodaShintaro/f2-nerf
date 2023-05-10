@@ -34,6 +34,11 @@ LocalizerCore::LocalizerCore(const std::string & conf_path)
 
   dist_params_.to(CUDAFloat);
   intri_.to(CUDAFloat);
+
+  // set
+  const float factor = global_data_pool_->config_["dataset"]["factor_to_infer"].as<float>();
+  std::cout << "H = " << H << ", W = " << W << ", factor = " << factor << std::endl;
+  dataset_->intri_ /= factor;
 }
 
 std::pair<float, Tensor> LocalizerCore::monte_carlo_localize(
