@@ -6,6 +6,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <deque>
@@ -38,6 +39,8 @@ private:
   // (2) nerf_pose_with_covariance [geometry_msgs::msg::PoseWithCovarianceStamped]
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     nerf_pose_with_covariance_publisher_;
+  // (3) nerf_score [std_msgs::msg::Float32]
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr nerf_score_publisher_;
 
   std::string map_frame_;
 
