@@ -52,6 +52,9 @@ void NerfBasedLocalizer::callback_initial_pose(
 
   if (initial_pose_msg_ptr->header.frame_id == map_frame_) {
     initial_pose_msg_ptr_array_.push_back(initial_pose_msg_ptr);
+    if (initial_pose_msg_ptr_array_.size() > 1) {
+      initial_pose_msg_ptr_array_.pop_front();
+    }
   } else {
     RCLCPP_ERROR(this->get_logger(), "initial_pose_with_covariance is not in map frame.");
     std::exit(1);
@@ -90,12 +93,12 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
 
   if (initial_pose_msg_ptr_array_.empty()) {
     RCLCPP_ERROR(this->get_logger(), "initial_pose_with_covariance is not received.");
-    std::exit(1);
+    return;
   }
 
   const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr pose =
-    initial_pose_msg_ptr_array_.front();
-  initial_pose_msg_ptr_array_.pop_front();
+    initial_pose_msg_ptr_array_.back();
+  initial_pose_msg_ptr_array_.pop_back();
 
   Eigen::Quaternionf quat(
     pose->pose.pose.orientation.w, pose->pose.pose.orientation.x, pose->pose.pose.orientation.y,
