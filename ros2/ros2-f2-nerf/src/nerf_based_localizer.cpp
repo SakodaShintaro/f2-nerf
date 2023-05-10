@@ -127,6 +127,8 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   // mat = mat.to(torch::kCUDA);
   // initial_pose = mat * initial_pose;
 
+  initial_pose = localizer_core_.normalize_position(initial_pose);
+
   initial_pose = initial_pose.index({Slc(0, 3), Slc(0, 4)});
 
   // output about pose
