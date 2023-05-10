@@ -25,6 +25,14 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   image_subscriber_ = this->create_subscription<sensor_msgs::msg::Image>(
     "image", rclcpp::SensorDataQoS().keep_last(image_queue_size),
     std::bind(&NerfBasedLocalizer::callback_image, this, std::placeholders::_1));
+
+  // create publishers
+  nerf_pose_publisher_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("nerf_pose", 10);
+  nerf_pose_with_covariance_publisher_ =
+    this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+      "nerf_pose_with_covariance", 10);
+  nerf_score_publisher_ = this->create_publisher<std_msgs::msg::Float32>("nerf_score", 10);
+  nerf_image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("nerf_image", 10);
 }
 
 void NerfBasedLocalizer::callback_initial_pose(
@@ -138,8 +146,29 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
 
   // run NeRF
   RCLCPP_INFO(this->get_logger(), "start localize");
-  const auto [score, optimized_pose] =
+  auto [score, optimized_pose, nerf_image] =
     localizer_core_.monte_carlo_localize(initial_pose, image_tensor);
 
   RCLCPP_INFO(this->get_logger(), ("score = " + std::to_string(score)).c_str());
+
+  // publish image
+  nerf_image = nerf_image * 255;
+  nerf_image = nerf_image.to(torch::kUInt8);
+  nerf_image = nerf_image.to(torch::kCPU);
+  nerf_image = nerf_image.contiguous();
+  std::cout << nerf_image.sizes() << " " << nerf_image.numel() << " " << nerf_image.device()
+            << std::endl;
+  sensor_msgs::msg::Image nerf_image_msg;
+  nerf_image_msg.header = header;
+  nerf_image_msg.width = nerf_image.size(1);
+  nerf_image_msg.height = nerf_image.size(0);
+  nerf_image_msg.step = nerf_image.size(1) * 3;
+  nerf_image_msg.encoding = "rgb8";
+  nerf_image_msg.data.resize(nerf_image.numel());
+  std::cout << "before copy" << std::endl;
+  std::copy(
+    nerf_image.data_ptr<uint8_t>(), nerf_image.data_ptr<uint8_t>() + nerf_image.numel(),
+    nerf_image_msg.data.begin());
+  std::cout << "after copy" << std::endl;
+  nerf_image_publisher_->publish(nerf_image_msg);
 }

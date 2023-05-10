@@ -14,7 +14,7 @@ class LocalizerCore
 public:
   LocalizerCore(const std::string & conf_path);
 
-  std::pair<float, Tensor> monte_carlo_localize(Tensor initial_pose, Tensor image_tensor);
+  std::tuple<float, Tensor, Tensor> monte_carlo_localize(Tensor initial_pose, Tensor image_tensor);
 
   Tensor normalize_position(Tensor pose);
 

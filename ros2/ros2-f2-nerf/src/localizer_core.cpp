@@ -40,7 +40,7 @@ LocalizerCore::LocalizerCore(const std::string & conf_path)
   dataset_->intri_ /= factor;
 }
 
-std::pair<float, Tensor> LocalizerCore::monte_carlo_localize(
+std::tuple<float, Tensor, Tensor> LocalizerCore::monte_carlo_localize(
   Tensor initial_pose, Tensor image_tensor)
 {
   torch::NoGradGuard no_grad_guard;
@@ -48,7 +48,9 @@ std::pair<float, Tensor> LocalizerCore::monte_carlo_localize(
   constexpr float noise_std = 0.2f;
   constexpr int NUM_SEARCH = 0;
 
-  std::pair<float, Tensor> result = {-1.0f, initial_pose};
+  float best_score = -1.0f;
+  Tensor best_pose = initial_pose.clone();
+  Tensor best_image = image_tensor.clone();
 
   for (int x = -NUM_SEARCH; x <= NUM_SEARCH; x++) {
     for (int y = -NUM_SEARCH; y <= NUM_SEARCH; y++) {
@@ -56,12 +58,14 @@ std::pair<float, Tensor> LocalizerCore::monte_carlo_localize(
       curr_pose[0][3] += x * noise_std;
       curr_pose[1][3] += y * noise_std;
       float psnr = calc_score(curr_pose, image_tensor);
-      if (psnr > result.first) {
-        result = {psnr, curr_pose};
+      if (psnr > best_score) {
+        best_score = psnr;
+        best_pose = curr_pose.clone();
+        best_image = image_tensor.clone();
       }
     }
   }
-  return result;
+  return {best_score, best_pose, best_image};
 }
 
 void LocalizerCore::load_checkpoint(const std::string & checkpoint_path)

@@ -41,6 +41,8 @@ private:
     nerf_pose_with_covariance_publisher_;
   // (3) nerf_score [std_msgs::msg::Float32]
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr nerf_score_publisher_;
+  // (4) nerf_image [sensor_msgs::msg::Image]
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr nerf_image_publisher_;
 
   std::string map_frame_;
 
