@@ -187,7 +187,10 @@ void LocalizationExecuter::Localize()
 
   const int H = dataset_->height_;
   const int W = dataset_->width_;
-  std::cout << "H = " << H << ", W = " << W << std::endl;
+  const float factor = global_data_pool_->config_["dataset"]["factor_to_infer"].as<float>();
+  std::cout << "H = " << H << ", W = " << W << ", factor = " << factor << std::endl;
+
+  dataset_->intri_ /= factor;
 
   constexpr float noise_std = 0.2f;
   constexpr int NUM_SEARCH = 0;
