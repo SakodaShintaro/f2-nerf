@@ -59,6 +59,7 @@ class ImagePosePublisher(Node):
 
         # Publish image
         image = cv2.imread(self.image_files[self.idx])
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         msg_image = self.bridge.cv2_to_imgmsg(image, 'bgr8')
         self.image_pub.publish(msg_image)
 
