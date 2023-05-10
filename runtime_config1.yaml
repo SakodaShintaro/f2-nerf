@@ -22,12 +22,12 @@ dataset:
   ray_sample_mode: all_images
   data_at_gpu: true
   bounds_factor:
-  - 0.25
-  - 2.0
+  - 0.5
+  - 4.0
   data_path: /root/f2-nerf/data/converted/20230503_raw_colmap_try1
 renderer:
   bg_color: rand_noise
-  use_app_emb: false
+  use_app_emb: true
 pts_sampler:
   type: PersSampler
   bbox_min:
@@ -67,9 +67,9 @@ shader:
   n_hiddens: 2
   degree: 4
 dataset_name: converted
-case_name: 20230503_raw_colmap_try1
+case_name: 20230503_raw_colmap_try1_nice
 exp_name: test
 is_continue: true
 mode: localize
 base_dir: /root/f2-nerf
-base_exp_dir: /root/f2-nerf/exp/20230503_raw_colmap_try1/test
+base_exp_dir: /root/f2-nerf/exp/20230503_raw_colmap_try1_nice/test
