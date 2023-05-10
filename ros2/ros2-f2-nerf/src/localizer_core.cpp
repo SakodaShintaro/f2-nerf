@@ -1,8 +1,7 @@
 #include "localizer_core.hpp"
 
 #include "../../src/Dataset/Dataset.h"
-
-#include <opencv2/opencv.hpp>
+#include "../../src/Utils/Utils.h"
 
 using Tensor = torch::Tensor;
 
@@ -121,18 +120,11 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_whole_image(
 
 void save_image(const Tensor image_tensor, const std::string & prefix, int save_id)
 {
-  const int H = image_tensor.sizes()[0];
-  const int W = image_tensor.sizes()[1];
-  cv::Mat pred_img_cv(H, W, CV_8UC3);
-  Tensor pred_img_uint = (image_tensor * 255.f).to(torch::kUInt8).to(torch::kCPU);
-  std::copy(
-    pred_img_uint.data_ptr<uint8_t>(), pred_img_uint.data_ptr<uint8_t>() + pred_img_uint.numel(),
-    pred_img_cv.data);
   std::stringstream ss;
   ss << "result_images/" << prefix << "_";
   ss << std::setfill('0') << std::setw(8) << save_id;
   ss << ".png";
-  cv::imwrite(ss.str(), pred_img_cv);
+  Utils::WriteImageTensor(ss.str(), image_tensor);
 }
 
 float LocalizerCore::calc_score(const Tensor & pose, const Tensor & image)
