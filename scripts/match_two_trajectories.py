@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.linalg import orthogonal_procrustes
+from scipy.spatial.transform import Rotation
 
 
 def parse_args():
@@ -130,7 +131,7 @@ if __name__ == "__main__":
     traj_A_converted = apply_mat(mat_c2m, traj_A.copy())
     traj_B_converted = apply_mat(mat_m2c, traj_B.copy())
 
-    fig, axes = plt.subplots(3, 2, figsize=(10, 10))
+    fig, axes = plt.subplots(3, 2, figsize=(15, 15))
 
     # Upper left: A alone
     # Upper right: B alone
@@ -167,6 +168,23 @@ if __name__ == "__main__":
     axes[1, 1].set_aspect('equal')
     axes[2, 0].set_aspect('equal')
     axes[2, 1].set_aspect('equal')
+
+    plt.tight_layout()
+
+    n = min_length
+    for i in range(0, n, n // 10):
+        orientation_A = pose[i, 0:3, 0:3]
+        quat_B = df_B.iloc[i, 3:7].values
+        orientation_B = Rotation.from_quat(quat_B).as_matrix()
+        print(orientation_A, orientation_B)
+        front_A = orientation_A @ np.array([0, 0, 1])
+        front_B = orientation_B @ np.array([1, 0, 0])
+        axes[0, 0].arrow(traj_A[i, 2], traj_A[i, 0],
+                         front_A[2], front_A[0], color='red',
+                         width=0.1)
+        axes[0, 1].arrow(traj_B[i, 0], traj_B[i, 1],
+                         front_B[0], front_B[1], color='red',
+                         width=0.1)
 
     plt.axis('equal')
     plt.xlabel('x')
