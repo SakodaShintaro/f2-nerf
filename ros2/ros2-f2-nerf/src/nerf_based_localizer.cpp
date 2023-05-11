@@ -121,22 +121,60 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   initial_pose = initial_pose.to(torch::kCUDA);
   initial_pose = initial_pose.to(torch::kFloat32);
 
-  // torch::Tensor mat = torch::zeros({4, 4});
-  // mat[0][0] = 0.001807;
-  // mat[0][1] = -0.750991;
-  // mat[0][2] = -0.009577;
-  // mat[0][3] = 2.456662;
-  // mat[1][0] = 0.026115;
-  // mat[1][1] = 0.009634;
-  // mat[1][2] = -0.750538;
-  // mat[1][3] = 0.161284;
-  // mat[2][0] = 0.750598;
-  // mat[2][1] = 0.001472;
-  // mat[2][2] = 0.026136;
-  // mat[2][3] = -1.306355;
-  // mat[3][3] = 1.0;
-  // mat = mat.to(torch::kCUDA);
-  // initial_pose = mat * initial_pose;
+  ss.str("");
+  ss << "initial_pose_fist: " << initial_pose;
+  RCLCPP_INFO(this->get_logger(), ss.str().c_str());
+
+  /*
+   [[ 0.7352  0.16    0.0506  2.0536]
+   [-0.0435 -0.0378  0.7519  0.3601]
+   [-0.1621  0.736   0.0276 -1.7599]]
+   [ 0.      0.      0.      1.]]
+  */
+  torch::Tensor mat_translation = torch::zeros({4, 4});
+  mat_translation[0][0] = 0.7352;
+  mat_translation[0][1] = 0.16;
+  mat_translation[0][2] = 0.0506;
+  mat_translation[0][3] = 2.0536;
+  mat_translation[1][0] = -0.0435;
+  mat_translation[1][1] = -0.0378;
+  mat_translation[1][2] = 0.7519;
+  mat_translation[1][3] = 0.3601;
+  mat_translation[2][0] = -0.1621;
+  mat_translation[2][1] = 0.736;
+  mat_translation[2][2] = 0.0276;
+  mat_translation[2][3] = -1.7599;
+  mat_translation[3][3] = 1.0;
+  mat_translation = mat_translation.to(torch::kCUDA);
+  torch::Tensor translation = torch::mm(mat_translation, initial_pose);
+
+  // Change orientation
+  /*
+    [0.985575,  0.032919, -0.166004],
+    [0.032773, -0.999456, -0.003616],
+    [-0.166033, -0.001877, -0.986118]])
+  */
+  torch::Tensor mat_rotation = torch::eye(3);
+  mat_rotation[0][0] = 0.985575;
+  mat_rotation[0][1] = 0.032919;
+  mat_rotation[0][2] = -0.166004;
+  mat_rotation[1][0] = 0.032773;
+  mat_rotation[1][1] = -0.999456;
+  mat_rotation[1][2] = -0.003616;
+  mat_rotation[2][0] = -0.166033;
+  mat_rotation[2][1] = -0.001877;
+  mat_rotation[2][2] = -0.986118;
+  mat_rotation = mat_rotation.to(torch::kCUDA);
+  torch::Tensor rotation = torch::mm(mat_rotation, initial_pose.index({Slc(0, 3), Slc(0, 3)}));
+
+  // set initial pose
+  initial_pose.index_put_({Slc(0, 3), Slc(0, 3)}, rotation);
+  initial_pose.index_put_({Slc(0, 3), 3}, translation.index({Slc(0, 3), 3}));
+
+  // output about pose
+  ss.str("");
+  ss << "initial_pose_before_norm: " << initial_pose;
+  RCLCPP_INFO(this->get_logger(), ss.str().c_str());
 
   initial_pose = localizer_core_.normalize_position(initial_pose);
 
@@ -144,7 +182,7 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
 
   // output about pose
   ss.str("");
-  ss << "initial_pose: " << initial_pose;
+  ss << "initial_pose_final: " << initial_pose;
   RCLCPP_INFO(this->get_logger(), ss.str().c_str());
 
   // run NeRF
