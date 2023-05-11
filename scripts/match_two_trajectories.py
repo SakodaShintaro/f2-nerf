@@ -16,14 +16,16 @@ def parse_args():
     return parser.parse_args()
 
 
+axis_convert_mat_B_to_A = np.array(
+    [[0, -1,  0,  0],
+        [0,  0, -1,  0],
+        [1,  0,  0,  0],
+        [0,  0,  0,  1]], dtype=np.float64
+)
+axis_convert_mat_A_to_B = axis_convert_mat_B_to_A.T
+
+
 def calc_mat_A_to_B(traj_A: np.array, traj_B: np.array):
-    axis_convert_mat_B_to_A = np.array(
-        [[0, -1,  0,  0],
-         [0,  0, -1,  0],
-         [1,  0,  0,  0],
-         [0,  0,  0,  1]], dtype=np.float64
-    )
-    axis_convert_mat_A_to_B = axis_convert_mat_B_to_A.T
 
     # Replace the axis.
     traj_A = np.hstack((traj_A, np.ones((traj_A.shape[0], 1))))
@@ -112,26 +114,26 @@ if __name__ == "__main__":
 
     print(traj_A[0], traj_B[0])
 
-    mat_axis_convert_c2m, mat_proc_c2m, scaling_factor = calc_mat_A_to_B(
+    mat_axis_convert_A2B, mat_proc_A2B, scaling_factor = calc_mat_A_to_B(
         traj_A.copy(), traj_B.copy())
-    mat_c2m = np.dot(mat_proc_c2m, mat_axis_convert_c2m)
+    mat_A2B = np.dot(mat_proc_A2B, mat_axis_convert_A2B)
 
-    mat_proc_m2c = invert_affine_transform(mat_proc_c2m, scaling_factor)
-    mat_axis_convert_m2c = mat_axis_convert_c2m.T
-    mat_m2c = np.dot(mat_axis_convert_m2c, mat_proc_m2c)
+    mat_proc_B2A = invert_affine_transform(mat_proc_A2B, scaling_factor)
+    mat_axis_convert_B2A = mat_axis_convert_A2B.T
+    mat_B2A = np.dot(mat_axis_convert_B2A, mat_proc_B2A)
 
     # Fixed decimal point representation
     np.set_printoptions(precision=6, suppress=True)
-    print("mat_c2m")
-    print(mat_c2m)
-    print("mat_m2c")
-    print(mat_m2c)
+    print("mat_A2B")
+    print(mat_A2B)
+    print("mat_B2A")
+    print(mat_B2A)
 
     # apply
-    traj_A_converted = apply_mat(mat_c2m, traj_A.copy())
-    traj_B_converted = apply_mat(mat_m2c, traj_B.copy())
+    traj_A_converted = apply_mat(mat_A2B, traj_A.copy())
+    traj_B_converted = apply_mat(mat_B2A, traj_B.copy())
 
-    fig, axes = plt.subplots(3, 2, figsize=(15, 15))
+    fig, axes = plt.subplots(2, 2, figsize=(15, 15))
 
     # Upper left: A alone
     # Upper right: B alone
@@ -151,39 +153,49 @@ if __name__ == "__main__":
                     traj_A_converted[:, 1], label='A')
     axes[1, 1].set_title('A to B')
     axes[1, 1].legend()
-    axes[2, 0].plot(traj_A[:, 2], traj_A[:, 1], label='A')
-    axes[2, 0].plot(traj_B_converted[:, 2],
-                    traj_B_converted[:, 1], label='B')
-    axes[2, 0].set_title('B to A')
-    axes[2, 0].legend()
-    axes[2, 1].plot(traj_B[:, 0], traj_B[:, 2], label='B')
-    axes[2, 1].plot(traj_A_converted[:, 0],
-                    traj_A_converted[:, 2], label='A')
-    axes[2, 1].set_title('A to B')
-    axes[2, 1].legend()
-
     axes[0, 0].set_aspect('equal')
     axes[0, 1].set_aspect('equal')
     axes[1, 0].set_aspect('equal')
     axes[1, 1].set_aspect('equal')
-    axes[2, 0].set_aspect('equal')
-    axes[2, 1].set_aspect('equal')
 
     plt.tight_layout()
 
     n = min_length
-    for i in range(0, n, n // 10):
+    for i in range(0, n, n // 6):
         orientation_A = pose[i, 0:3, 0:3]
         quat_B = df_B.iloc[i, 3:7].values
         orientation_B = Rotation.from_quat(quat_B).as_matrix()
-        print(orientation_A, orientation_B)
-        front_A = orientation_A @ np.array([0, 0, 1])
+        front_A = orientation_A @ np.array([0, 0, -1])
         front_B = orientation_B @ np.array([1, 0, 0])
         axes[0, 0].arrow(traj_A[i, 2], traj_A[i, 0],
                          front_A[2], front_A[0], color='red',
                          width=0.1)
         axes[0, 1].arrow(traj_B[i, 0], traj_B[i, 1],
                          front_B[0], front_B[1], color='red',
+                         width=0.1)
+
+        # calc converted_B
+        converted_B = axis_convert_mat_B_to_A[0:3, 0:3] @ \
+            orientation_B  @ \
+            Rotation.from_euler("zyx", [0, -90, 0], degrees=True).as_matrix()
+        front_B2 = converted_B @ np.array([0, 0, -1])
+        axes[1, 0].arrow(traj_A[i, 2], traj_A[i, 0],
+                         front_A[2], front_A[0], color='red',
+                         width=0.1)
+        axes[1, 0].arrow(traj_B_converted[i, 2], traj_B_converted[i, 0],
+                         front_B2[2], front_B2[0], color='blue',
+                         width=0.1)
+
+        # calc converted_A
+        converted_A = axis_convert_mat_A_to_B[0:3, 0:3] @ \
+            orientation_A @ \
+            Rotation.from_euler("zyx", [0, +90, 0], degrees=True).as_matrix()
+        front_A2 = converted_A @ np.array([1, 0, 0])
+        axes[1, 1].arrow(traj_B[i, 0], traj_B[i, 1],
+                         front_B[0], front_B[1], color='red',
+                         width=0.1)
+        axes[1, 1].arrow(traj_A_converted[i, 0], traj_A_converted[i, 1],
+                         front_A2[0], front_A2[1], color='blue',
                          width=0.1)
 
     plt.axis('equal')
