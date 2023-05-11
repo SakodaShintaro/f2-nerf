@@ -160,43 +160,44 @@ if __name__ == "__main__":
 
     plt.tight_layout()
 
+    def plot_arrow(ax, pose_mat, initial_dir, position, color):
+        if initial_dir == "x":
+            vec1 = pose_mat @ np.array([1, -0.25, 0])
+            vec2 = pose_mat @ np.array([1, +0.25, 0])
+            ax.arrow(position[0], position[1],
+                        vec1[0], vec1[1], color=color, width=0.1)
+            ax.arrow(position[0], position[1],
+                        vec2[0], vec2[1], color=color, width=0.1)
+        else:
+            vec1 = pose_mat @ np.array([-0.25, 0, 1])
+            vec2 = pose_mat @ np.array([+0.25, 0, 1])
+            ax.arrow(position[2], position[0],
+                        vec1[2], vec1[0], color=color, width=0.1)
+            ax.arrow(position[2], position[0],
+                        vec2[2], vec2[0], color=color, width=0.1)
+
     n = min_length
     for i in range(0, n, n // 6):
         orientation_A = pose[i, 0:3, 0:3]
         quat_B = df_B.iloc[i, 3:7].values
         orientation_B = Rotation.from_quat(quat_B).as_matrix()
-        front_A = orientation_A @ np.array([0, 0, -1])
-        front_B = orientation_B @ np.array([1, 0, 0])
-        axes[0, 0].arrow(traj_A[i, 2], traj_A[i, 0],
-                         front_A[2], front_A[0], color='red',
-                         width=0.1)
-        axes[0, 1].arrow(traj_B[i, 0], traj_B[i, 1],
-                         front_B[0], front_B[1], color='red',
-                         width=0.1)
+
+        plot_arrow(axes[0, 0], orientation_A, "z", traj_A[i, 0:3], "red")
+        plot_arrow(axes[0, 1], orientation_B, "x", traj_B[i, 0:3], "red")
 
         # calc converted_B
         converted_B = axis_convert_mat_B_to_A[0:3, 0:3] @ \
             orientation_B  @ \
             Rotation.from_euler("zyx", [0, -90, 0], degrees=True).as_matrix()
-        front_B2 = converted_B @ np.array([0, 0, -1])
-        axes[1, 0].arrow(traj_A[i, 2], traj_A[i, 0],
-                         front_A[2], front_A[0], color='red',
-                         width=0.1)
-        axes[1, 0].arrow(traj_B_converted[i, 2], traj_B_converted[i, 0],
-                         front_B2[2], front_B2[0], color='blue',
-                         width=0.1)
+        plot_arrow(axes[1, 0], orientation_A, "z", traj_A[i, 0:3], "red")
+        plot_arrow(axes[1, 0], converted_B, "z", traj_B_converted[i, 0:3], "blue")
 
         # calc converted_A
         converted_A = axis_convert_mat_A_to_B[0:3, 0:3] @ \
             orientation_A @ \
             Rotation.from_euler("zyx", [0, +90, 0], degrees=True).as_matrix()
-        front_A2 = converted_A @ np.array([1, 0, 0])
-        axes[1, 1].arrow(traj_B[i, 0], traj_B[i, 1],
-                         front_B[0], front_B[1], color='red',
-                         width=0.1)
-        axes[1, 1].arrow(traj_A_converted[i, 0], traj_A_converted[i, 1],
-                         front_A2[0], front_A2[1], color='blue',
-                         width=0.1)
+        plot_arrow(axes[1, 1], orientation_B, "x", traj_B[i, 0:3], "red")
+        plot_arrow(axes[1, 1], converted_A, "x", traj_A_converted[i, 0:3], "blue")
 
     plt.axis('equal')
     plt.xlabel('x')
