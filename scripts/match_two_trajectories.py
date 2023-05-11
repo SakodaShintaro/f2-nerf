@@ -18,9 +18,9 @@ def parse_args():
 
 axis_convert_mat_B_to_A = np.array(
     [[0, -1,  0,  0],
-        [0,  0, -1,  0],
-        [1,  0,  0,  0],
-        [0,  0,  0,  1]], dtype=np.float64
+    [0,  0, -1,  0],
+    [1,  0,  0,  0],
+    [0,  0,  0,  1]], dtype=np.float64
 )
 axis_convert_mat_A_to_B = axis_convert_mat_B_to_A.T
 
