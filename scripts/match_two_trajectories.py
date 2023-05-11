@@ -165,16 +165,16 @@ if __name__ == "__main__":
             vec1 = pose_mat @ np.array([1, -0.25, 0])
             vec2 = pose_mat @ np.array([1, +0.25, 0])
             ax.arrow(position[0], position[1],
-                        vec1[0], vec1[1], color=color, width=0.1)
+                     vec1[0], vec1[1], color=color, width=0.1)
             ax.arrow(position[0], position[1],
-                        vec2[0], vec2[1], color=color, width=0.1)
+                     vec2[0], vec2[1], color=color, width=0.1)
         else:
             vec1 = pose_mat @ np.array([-0.25, 0, 1])
             vec2 = pose_mat @ np.array([+0.25, 0, 1])
             ax.arrow(position[2], position[0],
-                        vec1[2], vec1[0], color=color, width=0.1)
+                     vec1[2], vec1[0], color=color, width=0.1)
             ax.arrow(position[2], position[0],
-                        vec2[2], vec2[0], color=color, width=0.1)
+                     vec2[2], vec2[0], color=color, width=0.1)
 
     n = min_length
     for i in range(0, n, n // 6):
@@ -190,14 +190,16 @@ if __name__ == "__main__":
             orientation_B  @ \
             Rotation.from_euler("zyx", [0, -90, 0], degrees=True).as_matrix()
         plot_arrow(axes[1, 0], orientation_A, "z", traj_A[i, 0:3], "red")
-        plot_arrow(axes[1, 0], converted_B, "z", traj_B_converted[i, 0:3], "blue")
+        plot_arrow(axes[1, 0], converted_B, "z",
+                   traj_B_converted[i, 0:3], "blue")
 
         # calc converted_A
         converted_A = axis_convert_mat_A_to_B[0:3, 0:3] @ \
             orientation_A @ \
             Rotation.from_euler("zyx", [0, +90, 0], degrees=True).as_matrix()
         plot_arrow(axes[1, 1], orientation_B, "x", traj_B[i, 0:3], "red")
-        plot_arrow(axes[1, 1], converted_A, "x", traj_A_converted[i, 0:3], "blue")
+        plot_arrow(axes[1, 1], converted_A, "x",
+                   traj_A_converted[i, 0:3], "blue")
 
     plt.axis('equal')
     plt.xlabel('x')
