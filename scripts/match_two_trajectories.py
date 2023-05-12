@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.linalg import orthogonal_procrustes
 from scipy.spatial.transform import Rotation
+from convert_pose_tsv_to_f2_format import AXIS_CONVERT_MAT1, AXIS_CONVERT_MAT2
 
 
 def parse_args():
@@ -16,21 +17,11 @@ def parse_args():
     return parser.parse_args()
 
 
-axis_convert_mat_B_to_A = np.array(
-    [[0, -1,  0,  0],
-    [0,  0, -1,  0],
-    [1,  0,  0,  0],
-    [0,  0,  0,  1]], dtype=np.float64
-)
-axis_convert_mat_A_to_B = axis_convert_mat_B_to_A.T
-
-
-def calc_mat_A_to_B(traj_A: np.array, traj_B: np.array):
-
+def calc_mat_B2A(traj_A: np.array, traj_B: np.array):
     # Replace the axis.
-    traj_A = np.hstack((traj_A, np.ones((traj_A.shape[0], 1))))
-    traj_A = np.dot(axis_convert_mat_A_to_B, traj_A.T).T
-    traj_A = traj_A[:, 0:3]
+    traj_B = traj_B.T
+    traj_B = AXIS_CONVERT_MAT2[0:3, 0:3] @ traj_B
+    traj_B = traj_B.T
 
     # Make the origin the center.
     center_A = traj_A[0].copy()
@@ -52,17 +43,18 @@ def calc_mat_A_to_B(traj_A: np.array, traj_B: np.array):
     traj_B /= norm_B
 
     # Align rotation and scale.
-    rotation_matrix, _ = orthogonal_procrustes(traj_A, traj_B)
+    rotation_matrix, _ = orthogonal_procrustes(traj_B, traj_A)
 
     rotation_matrix_4x4 = np.eye(4)
     rotation_matrix_4x4[0:3, 0:3] = rotation_matrix.T
 
-    scaling_factor = norm_B / norm_A
+    scaling_factor = norm_A / norm_B
     scaling_matrix_4x4 = np.eye(4)
     scaling_matrix_4x4[0:3, 0:3] = scaling_factor * np.eye(3)
 
-    translation_vec = center_A - center_B
+    translation_vec = center_B - center_A
     translation_matrix_4x4 = np.eye(4)
+    translation_vec[0] -= 1
     translation_matrix_4x4[0:3, 3] = -translation_vec
 
     # Composition of matrices.
@@ -70,7 +62,7 @@ def calc_mat_A_to_B(traj_A: np.array, traj_B: np.array):
     mat = np.dot(translation_matrix_4x4, mat)
     mat = np.dot(scaling_matrix_4x4, mat)
     mat = np.dot(rotation_matrix_4x4, mat)
-    return axis_convert_mat_A_to_B, mat, scaling_factor
+    return mat, scaling_factor
 
 
 def invert_affine_transform(matrix, scaling_factor):
@@ -90,7 +82,11 @@ def invert_affine_transform(matrix, scaling_factor):
 
 def apply_mat(mat, vec):
     result = np.hstack((vec, np.ones((vec.shape[0], 1))))
-    result = np.dot(mat, result.T).T
+    # result = result @ AXIS_CONVERT_MAT1
+    result = result.T
+    result = AXIS_CONVERT_MAT2 @ result
+    result = mat @ result
+    result = result.T
     result = result[:, 0:3]
     return result
 
@@ -112,15 +108,8 @@ if __name__ == "__main__":
     traj_A = traj_A[:min_length]
     traj_B = traj_B[:min_length]
 
-    print(traj_A[0], traj_B[0])
-
-    mat_axis_convert_A2B, mat_proc_A2B, scaling_factor = calc_mat_A_to_B(
-        traj_A.copy(), traj_B.copy())
-    mat_A2B = np.dot(mat_proc_A2B, mat_axis_convert_A2B)
-
-    mat_proc_B2A = invert_affine_transform(mat_proc_A2B, scaling_factor)
-    mat_axis_convert_B2A = mat_axis_convert_A2B.T
-    mat_B2A = np.dot(mat_axis_convert_B2A, mat_proc_B2A)
+    mat_B2A, scale = calc_mat_B2A(traj_A.copy(), traj_B.copy())
+    mat_A2B = np.linalg.inv(mat_B2A)
 
     # Fixed decimal point representation
     np.set_printoptions(precision=6, suppress=True)
@@ -186,20 +175,21 @@ if __name__ == "__main__":
         plot_arrow(axes[0, 1], orientation_B, "x", traj_B[i, 0:3], "red")
 
         # calc converted_B
-        converted_B = axis_convert_mat_B_to_A[0:3, 0:3] @ \
+        converted_B = mat_B2A[0:3, 0:3] @ \
+            AXIS_CONVERT_MAT2[0:3, 0:3] @ \
             orientation_B  @ \
-            Rotation.from_euler("zyx", [0, -90, 0], degrees=True).as_matrix()
+            AXIS_CONVERT_MAT1[0:3, 0:3]
         plot_arrow(axes[1, 0], orientation_A, "z", traj_A[i, 0:3], "red")
         plot_arrow(axes[1, 0], converted_B, "z",
                    traj_B_converted[i, 0:3], "blue")
 
         # calc converted_A
-        converted_A = axis_convert_mat_A_to_B[0:3, 0:3] @ \
-            orientation_A @ \
-            Rotation.from_euler("zyx", [0, +90, 0], degrees=True).as_matrix()
+        # converted_A = axis_convert_mat_A_to_B[0:3, 0:3] @ \
+        #     orientation_A @ \
+        #     Rotation.from_euler("zyx", [0, +90, 0], degrees=True).as_matrix()
         plot_arrow(axes[1, 1], orientation_B, "x", traj_B[i, 0:3], "red")
-        plot_arrow(axes[1, 1], converted_A, "x",
-                   traj_A_converted[i, 0:3], "blue")
+        # plot_arrow(axes[1, 1], converted_A, "x",
+        #            traj_A_converted[i, 0:3], "blue")
 
     plt.axis('equal')
     plt.xlabel('x')
