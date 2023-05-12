@@ -34,6 +34,6 @@ int main(int argc, char * argv[])
   std::cout << initial_pose << std::endl;
 
   // run NeRF
-  const auto [score, optimized_pose] =
+  const auto [score, optimized_pose, pred_image] =
     localizer_core.monte_carlo_localize(initial_pose, image_tensor);
 }
