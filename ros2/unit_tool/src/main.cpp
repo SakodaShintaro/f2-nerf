@@ -4,6 +4,28 @@
 #include <Eigen/Geometry>
 #include <opencv2/opencv.hpp>
 
+class Timer
+{
+public:
+  Timer() { start(); }
+  void start() { start_time_ = std::chrono::steady_clock::now(); }
+  double elapsedMicroSeconds() const
+  {
+    auto elapsed = std::chrono::steady_clock::now() - start_time_;
+    double microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+    return microseconds;
+  }
+  int64_t elapsedSeconds() const
+  {
+    auto elapsed = std::chrono::steady_clock::now() - start_time_;
+    int64_t seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed).count();
+    return seconds;
+  }
+
+private:
+  std::chrono::steady_clock::time_point start_time_;
+};
+
 int main(int argc, char * argv[])
 {
   std::cout << "unit_tool" << std::endl;
@@ -34,6 +56,14 @@ int main(int argc, char * argv[])
   std::cout << initial_pose << std::endl;
 
   // run NeRF
-  const auto [score, optimized_pose, pred_image] =
-    localizer_core.monte_carlo_localize(initial_pose, image_tensor);
+  Timer timer;
+  constexpr int TRIAL_NUM = 100;
+  for (int i = 0; i < TRIAL_NUM; i++) {
+    const auto [score, optimized_pose, pred_image] =
+      localizer_core.monte_carlo_localize(initial_pose, image_tensor);
+  }
+  const double average_microsec = timer.elapsedMicroSeconds() / TRIAL_NUM;
+  const double average_millisec = average_microsec / 1000;
+  std::cout << std::fixed << std::setprecision(1) << std::endl;
+  std::cout << "Average = " << average_millisec << " msec" << std::endl;
 }
