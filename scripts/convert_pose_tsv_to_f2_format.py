@@ -33,19 +33,24 @@ if __name__ == "__main__":
     pose_xyz = df_pose[['x', 'y', 'z']].values
     pose_quat = df_pose[['qx', 'qy', 'qz', 'qw']].values
     rotation_mat = Rotation.from_quat(pose_quat).as_matrix()
-    initial_rot_mat = Rotation.from_euler("zyx", [0, -90, 0], degrees=True).as_matrix()
     mat = np.tile(np.eye(4), (n, 1, 1))
-    mat[:, 0:3, 0:3] = np.dot(rotation_mat, initial_rot_mat)
+    mat[:, 0:3, 0:3] = rotation_mat
     mat[:, 0:3, 3:4] = pose_xyz.reshape((n, 3, 1))
 
     # convert axis
-    axis_convert_mat = np.array(
+    axis_convert_mat1 = np.array(
+        [[ 0,  0,  -1, 0],
+         [-1,  0,  0,  0],
+         [ 0,  1,  0,  0],
+         [ 0,  0,  0,  1]], dtype=np.float64
+    )
+    axis_convert_mat2 = np.array(
         [[0, -1,  0,  0],
          [0,  0, -1,  0],
          [1,  0,  0,  0],
          [0,  0,  0,  1]], dtype=np.float64
     )
-    mat = np.matmul(axis_convert_mat, mat)
+    mat = axis_convert_mat2 @ mat @ axis_convert_mat1
     mat = mat[:, 0:3, :]
     mat = mat.reshape((n, 12))
 
