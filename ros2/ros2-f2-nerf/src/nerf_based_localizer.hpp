@@ -11,7 +11,10 @@
 
 #include <deque>
 
+// If you include this first, you will get an error.
+// clang-format off
 #include "localizer_core.hpp"
+// clang-format on
 
 class NerfBasedLocalizer : public rclcpp::Node
 {
@@ -25,6 +28,8 @@ private:
     const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr pose_conv_msg_ptr);
   void callback_image(const sensor_msgs::msg::Image::ConstSharedPtr image_msg_ptr);
   void publish_pose();
+
+  void save_image(const torch::Tensor image_tensor, const std::string & prefix, int save_id);
 
   // NerfBasedLocalizer subscribes to the following topics:
   // (1) initial_pose_with_covariance [geometry_msgs::msg::PoseWithCovarianceStamped]

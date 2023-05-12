@@ -1,7 +1,6 @@
 #include "localizer_core.hpp"
 
 #include "../../src/Dataset/Dataset.h"
-#include "../../src/Utils/Utils.h"
 
 using Tensor = torch::Tensor;
 
@@ -122,15 +121,6 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_whole_image(
   return {pred_colors, first_oct_disp, pred_disp};
 }
 
-void save_image(const Tensor image_tensor, const std::string & prefix, int save_id)
-{
-  std::stringstream ss;
-  ss << "result_images/" << prefix << "_";
-  ss << std::setfill('0') << std::setw(8) << save_id;
-  ss << ".png";
-  Utils::WriteImageTensor(ss.str(), image_tensor);
-}
-
 std::tuple<float, Tensor> LocalizerCore::calc_score(const Tensor & pose, const Tensor & image)
 {
   torch::NoGradGuard no_grad_guard;
@@ -140,11 +130,6 @@ std::tuple<float, Tensor> LocalizerCore::calc_score(const Tensor & pose, const T
   Tensor pred_img = pred_colors.view({H, W, 3});
   pred_img = pred_img.clip(0.f, 1.f);
   pred_img = pred_img.to(image.device());
-
-  static int cnt = 0;
-  save_image(pred_img, "pred", cnt);
-  save_image(image.view({H, W, 3}), "gt", cnt);
-  cnt++;
 
   Tensor diff = pred_img - image.view({H, W, 3});
   Tensor mse = (diff * diff).mean(-1);
