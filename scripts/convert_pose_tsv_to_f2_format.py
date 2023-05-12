@@ -25,7 +25,7 @@ def load_camera_info_from_yaml(filename):
 AXIS_CONVERT_MAT1 = np.array(
     [[0,  0,  -1, 0],
     [-1,  0,  0,  0],
-    [0,  1,  0,  0],
+    [0,  -1,  0,  0],
     [0,  0,  0,  1]], dtype=np.float64
 )
 AXIS_CONVERT_MAT2 = np.array(

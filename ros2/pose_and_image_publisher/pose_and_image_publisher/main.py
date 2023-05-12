@@ -21,7 +21,7 @@ class ImagePosePublisher(Node):
         self.bridge = CvBridge()
 
         self.image_files = sorted(glob.glob(f"{data_dir}/images/*.png"))
-        self.from_cams_meta = True
+        self.from_cams_meta = False
         if self.from_cams_meta:
             self.poses = np.load(f"{data_dir}/cams_meta.npy")
         else:

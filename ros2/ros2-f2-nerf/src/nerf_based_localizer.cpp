@@ -126,50 +126,56 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   RCLCPP_INFO(this->get_logger(), ss.str().c_str());
 
   /*
-   [[ 0.7352  0.16    0.0506  2.0536]
-   [-0.0435 -0.0378  0.7519  0.3601]
-   [-0.1621  0.736   0.0276 -1.7599]]
-   [ 0.      0.      0.      1.]]
+    [[0, 0, -1, 0],
+    [-1, 0, 0, 0],
+    [0, -1, 0, 0],
+    [0, 0, 0, 1]]
   */
-  torch::Tensor mat_translation = torch::zeros({4, 4});
-  mat_translation[0][0] = 0.7352;
-  mat_translation[0][1] = 0.16;
-  mat_translation[0][2] = 0.0506;
-  mat_translation[0][3] = 2.0536;
-  mat_translation[1][0] = -0.0435;
-  mat_translation[1][1] = -0.0378;
-  mat_translation[1][2] = 0.7519;
-  mat_translation[1][3] = 0.3601;
-  mat_translation[2][0] = -0.1621;
-  mat_translation[2][1] = 0.736;
-  mat_translation[2][2] = 0.0276;
-  mat_translation[2][3] = -1.7599;
-  mat_translation[3][3] = 1.0;
-  mat_translation = mat_translation.to(torch::kCUDA);
-  torch::Tensor translation = torch::mm(mat_translation, initial_pose);
+  torch::Tensor axis_convert_mat1 = torch::zeros({4, 4});
+  axis_convert_mat1[0][2] = -1;
+  axis_convert_mat1[1][0] = -1;
+  axis_convert_mat1[2][1] = -1;
+  axis_convert_mat1[3][3] = 1;
+  axis_convert_mat1 = axis_convert_mat1.to(torch::kCUDA);
 
-  // Change orientation
   /*
-    [0.985575,  0.032919, -0.166004],
-    [0.032773, -0.999456, -0.003616],
-    [-0.166033, -0.001877, -0.986118]])
+    [[0, -1, 0, 0],
+    [0, 0, -1, 0],
+    [1, 0, 0, 0],
+    [0, 0, 0, 1]]
   */
-  torch::Tensor mat_rotation = torch::eye(3);
-  mat_rotation[0][0] = 0.985575;
-  mat_rotation[0][1] = 0.032919;
-  mat_rotation[0][2] = -0.166004;
-  mat_rotation[1][0] = 0.032773;
-  mat_rotation[1][1] = -0.999456;
-  mat_rotation[1][2] = -0.003616;
-  mat_rotation[2][0] = -0.166033;
-  mat_rotation[2][1] = -0.001877;
-  mat_rotation[2][2] = -0.986118;
-  mat_rotation = mat_rotation.to(torch::kCUDA);
-  torch::Tensor rotation = torch::mm(mat_rotation, initial_pose.index({Slc(0, 3), Slc(0, 3)}));
+  torch::Tensor axis_convert_mat2 = torch::zeros({4, 4});
+  axis_convert_mat2[0][1] = -1;
+  axis_convert_mat2[1][2] = -1;
+  axis_convert_mat2[2][0] = 1;
+  axis_convert_mat2[3][3] = 1;
+  axis_convert_mat2 = axis_convert_mat2.to(torch::kCUDA);
 
-  // set initial pose
-  initial_pose.index_put_({Slc(0, 3), Slc(0, 3)}, rotation);
-  initial_pose.index_put_({Slc(0, 3), 3}, translation.index({Slc(0, 3), 3}));
+  /*
+   [[ 0.737494  0.021281  0.155938  2.00682 ]
+   [ 0.029287 -0.752681 -0.035792 -0.044822]
+   [-0.154634 -0.04106   0.736932 -1.760475]
+   [ 0.        0.        0.        1.      ]]
+  */
+  torch::Tensor convert_mat = torch::zeros({4, 4});
+  convert_mat[0][0] = 0.737494;
+  convert_mat[0][1] = 0.021281;
+  convert_mat[0][2] = 0.155938;
+  convert_mat[0][3] = 2.00682;
+  convert_mat[1][0] = 0.029287;
+  convert_mat[1][1] = -0.752681;
+  convert_mat[1][2] = -0.035792;
+  convert_mat[1][3] = -0.044822;
+  convert_mat[2][0] = -0.154634;
+  convert_mat[2][1] = -0.04106;
+  convert_mat[2][2] = 0.736932;
+  convert_mat[2][3] = -1.760475;
+  convert_mat[3][3] = 1;
+  convert_mat = convert_mat.to(torch::kCUDA);
+
+  initial_pose = initial_pose.matmul(axis_convert_mat1);
+  initial_pose = axis_convert_mat2.matmul(initial_pose);
+  initial_pose = convert_mat.matmul(initial_pose);
 
   // output about pose
   ss.str("");
