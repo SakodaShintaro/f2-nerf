@@ -18,9 +18,6 @@ def parse_args():
 
 
 def calc_mat_B2A(traj_A: np.array, traj_B: np.array):
-    # Replace the axis.
-    traj_B = apply_mat(np.eye(4), traj_B)
-
     # Make the origin the center.
     center_A = traj_A[0].copy()
     center_B = traj_B[0].copy()
@@ -63,14 +60,25 @@ def calc_mat_B2A(traj_A: np.array, traj_B: np.array):
     mat = np.dot(scaling_matrix_4x4, mat)
     mat = np.dot(rotation_matrix_4x4, mat)
     mat = np.dot(translation_matrix_4x4_A, mat)
-    return mat, scaling_factor
+    return mat
 
 
-def apply_mat(mat, vec):
+def apply_mat_B2A(mat, vec):
     result = np.hstack((vec, np.ones((vec.shape[0], 1))))
     # result = result @ AXIS_CONVERT_MAT1
     result = result.T
     result = AXIS_CONVERT_MAT2 @ result
+    result = mat @ result
+    result = result.T
+    result = result[:, 0:3]
+    return result
+
+
+def apply_mat_A2B(mat, vec):
+    result = np.hstack((vec, np.ones((vec.shape[0], 1))))
+    # result = result @ AXIS_CONVERT_MAT1
+    result = result.T
+    result = AXIS_CONVERT_MAT2.T @ result
     result = mat @ result
     result = result.T
     result = result[:, 0:3]
@@ -94,8 +102,11 @@ if __name__ == "__main__":
     traj_A = traj_A[:min_length]
     traj_B = traj_B[:min_length]
 
-    mat_B2A, scale = calc_mat_B2A(traj_A.copy(), traj_B.copy())
-    mat_A2B = np.linalg.inv(mat_B2A)
+    traj_A_axis_converted = apply_mat_A2B(np.eye(4), traj_A.copy())
+    traj_B_axis_converted = apply_mat_B2A(np.eye(4), traj_B.copy())
+
+    mat_B2A = calc_mat_B2A(traj_A.copy(), traj_B_axis_converted.copy())
+    mat_A2B = calc_mat_B2A(traj_B.copy(), traj_A_axis_converted.copy())
 
     # Fixed decimal point representation
     np.set_printoptions(precision=6, suppress=True)
@@ -105,8 +116,8 @@ if __name__ == "__main__":
     print(mat_B2A)
 
     # apply
-    traj_A_converted = apply_mat(mat_A2B, traj_A.copy())
-    traj_B_converted = apply_mat(mat_B2A, traj_B.copy())
+    traj_A_converted = apply_mat_A2B(mat_A2B, traj_A.copy())
+    traj_B_converted = apply_mat_B2A(mat_B2A, traj_B.copy())
 
     fig, axes = plt.subplots(2, 2, figsize=(15, 15))
 
@@ -170,12 +181,13 @@ if __name__ == "__main__":
                    traj_B_converted[i, 0:3], "blue")
 
         # calc converted_A
-        # converted_A = axis_convert_mat_A_to_B[0:3, 0:3] @ \
-        #     orientation_A @ \
-        #     Rotation.from_euler("zyx", [0, +90, 0], degrees=True).as_matrix()
+        converted_A = mat_A2B[0:3, 0:3] @ \
+            AXIS_CONVERT_MAT2[0:3, 0:3].T @ \
+            orientation_A @ \
+            AXIS_CONVERT_MAT1[0:3, 0:3].T
         plot_arrow(axes[1, 1], orientation_B, "x", traj_B[i, 0:3], "red")
-        # plot_arrow(axes[1, 1], converted_A, "x",
-        #            traj_A_converted[i, 0:3], "blue")
+        plot_arrow(axes[1, 1], converted_A, "x",
+                   traj_A_converted[i, 0:3], "blue")
 
     plt.axis('equal')
     plt.xlabel('x')
