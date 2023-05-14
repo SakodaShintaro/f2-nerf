@@ -19,9 +19,7 @@ def parse_args():
 
 def calc_mat_B2A(traj_A: np.array, traj_B: np.array):
     # Replace the axis.
-    traj_B = traj_B.T
-    traj_B = AXIS_CONVERT_MAT2[0:3, 0:3] @ traj_B
-    traj_B = traj_B.T
+    traj_B = apply_mat(np.eye(4), traj_B)
 
     # Make the origin the center.
     center_A = traj_A[0].copy()
@@ -52,32 +50,20 @@ def calc_mat_B2A(traj_A: np.array, traj_B: np.array):
     scaling_matrix_4x4 = np.eye(4)
     scaling_matrix_4x4[0:3, 0:3] = scaling_factor * np.eye(3)
 
-    translation_vec = center_B - center_A
-    translation_matrix_4x4 = np.eye(4)
-    translation_vec[0] -= 1
-    translation_matrix_4x4[0:3, 3] = -translation_vec
+    translation_vec_B = center_B
+    translation_matrix_4x4_B = np.eye(4)
+    translation_matrix_4x4_B[0:3, 3] = -translation_vec_B
+    translation_vec_A = center_A
+    translation_matrix_4x4_A = np.eye(4)
+    translation_matrix_4x4_A[0:3, 3] = translation_vec_A
 
     # Composition of matrices.
     mat = np.eye(4)
-    mat = np.dot(translation_matrix_4x4, mat)
+    mat = np.dot(translation_matrix_4x4_B, mat)
     mat = np.dot(scaling_matrix_4x4, mat)
     mat = np.dot(rotation_matrix_4x4, mat)
+    mat = np.dot(translation_matrix_4x4_A, mat)
     return mat, scaling_factor
-
-
-def invert_affine_transform(matrix, scaling_factor):
-    R = matrix[:3, :3]
-    t = matrix[:3, 3]
-
-    R_inv = R.T
-
-    t_inv = -R_inv @ t
-
-    matrix_inv = np.eye(4)
-    matrix_inv[:3, :3] = R_inv / scaling_factor / scaling_factor
-    matrix_inv[:3, 3] = t_inv / scaling_factor / scaling_factor
-
-    return matrix_inv
 
 
 def apply_mat(mat, vec):
