@@ -35,6 +35,8 @@ LocalizerCore::LocalizerCore(const std::string & conf_path)
 
   // set
   const float factor = global_data_pool_->config_["dataset"]["factor_to_infer"].as<float>();
+  H = 1280 / factor;
+  W = 1920 / factor;
   std::cout << "H = " << H << ", W = " << W << ", factor = " << factor << std::endl;
   dataset_->intri_ /= factor;
 }

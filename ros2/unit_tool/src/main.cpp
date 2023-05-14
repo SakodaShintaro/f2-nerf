@@ -32,7 +32,7 @@ int main(int argc, char * argv[])
   LocalizerCore localizer_core("./runtime_config.yaml");
 
   cv::Mat image =
-    cv::imread("/root/f2-nerf/data/converted/20230503_raw_colmap_try1/images/00000000.png");
+    cv::imread("/root/f2-nerf/data/converted/20230501_try1/images/00000000.png");
 
   // Accessing image data
   const int height = image.rows;
