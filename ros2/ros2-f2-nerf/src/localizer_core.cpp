@@ -96,7 +96,7 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_whole_image(
   Tensor first_oct_disp = torch::full({n_rays, 1}, 1.f, CPUFloat);
   Tensor pred_disp = torch::zeros({n_rays, 1}, CPUFloat);
 
-  const int ray_batch_size = 8192;
+  const int ray_batch_size = H * W;
   for (int i = 0; i < n_rays; i += ray_batch_size) {
     int i_high = std::min(i + ray_batch_size, n_rays);
     Tensor cur_rays_o = rays_o.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
