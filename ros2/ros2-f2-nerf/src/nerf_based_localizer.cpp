@@ -1,13 +1,14 @@
 #include "nerf_based_localizer.hpp"
 
+#include "../../src/Utils/Utils.h"
+
 #include <Eigen/Eigen>
+#include <experimental/filesystem>
 #include <rclcpp/rclcpp.hpp>
 
 #include <torch/torch.h>
 
 #include <sstream>
-
-#include "../../src/Utils/Utils.h"
 
 NerfBasedLocalizer::NerfBasedLocalizer(
   const std::string & name_space, const rclcpp::NodeOptions & options)
@@ -202,8 +203,11 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
 
   // save image
   static int cnt = 0;
-  save_image(nerf_image, "pred", cnt);
-  save_image(image_tensor, "gt", cnt);
+  namespace fs = std::experimental::filesystem::v1;
+  fs::create_directories("./result_images/trial/pred/");
+  fs::create_directories("./result_images/trial/gt/");
+  save_image(nerf_image, "./result_images/trial/pred/", cnt);
+  save_image(image_tensor, "./result_images/trial/gt/", cnt);
   cnt++;
 
   // publish image
@@ -228,7 +232,7 @@ void NerfBasedLocalizer::save_image(
   const torch::Tensor image_tensor, const std::string & prefix, int save_id)
 {
   std::stringstream ss;
-  ss << "result_images/" << prefix << "_";
+  ss << prefix;
   ss << std::setfill('0') << std::setw(8) << save_id;
   ss << ".png";
   Utils::WriteImageTensor(ss.str(), image_tensor);
