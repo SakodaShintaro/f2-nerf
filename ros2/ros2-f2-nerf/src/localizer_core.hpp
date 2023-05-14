@@ -26,13 +26,8 @@ private:
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
   std::tuple<float, Tensor> calc_score(const Tensor & pose, const Tensor & image);
 
-  BoundedRays rays_from_pose(const Tensor & pose, int reso_level = 1);
-
   int H;
   int W;
-
-  Tensor intri_;
-  Tensor dist_params_;
 
   std::unique_ptr<GlobalDataPool> global_data_pool_;
   std::unique_ptr<Renderer> renderer_;

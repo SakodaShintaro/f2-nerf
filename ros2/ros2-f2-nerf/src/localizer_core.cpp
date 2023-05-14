@@ -17,22 +17,6 @@ LocalizerCore::LocalizerCore(const std::string & conf_path)
   global_data_pool_->base_exp_dir_ = base_exp_dir;
   load_checkpoint(base_exp_dir + "/checkpoints/latest");
 
-  dist_params_ = torch::zeros({4}, torch::kFloat32);
-  dist_params_[0] = -0.129468;
-  dist_params_[1] = 0.018362;
-  dist_params_[2] = -0.000199;
-  dist_params_[3] = -0.000096;
-
-  intri_ = torch::zeros({3, 3}, torch::kFloat32);
-  intri_[0][0] = 854.700195f;
-  intri_[0][2] = 960.000061f;
-  intri_[1][1] = 945.058289f;
-  intri_[1][2] = 640.000061f;
-  intri_[2][2] = 1.0f;
-
-  dist_params_.to(CUDAFloat);
-  intri_.to(CUDAFloat);
-
   // set
   const float factor = global_data_pool_->config_["dataset"]["factor_to_infer"].as<float>();
   H = 1280 / factor;
@@ -137,26 +121,6 @@ std::tuple<float, Tensor> LocalizerCore::calc_score(const Tensor & pose, const T
   Tensor mse = (diff * diff).mean(-1);
   Tensor psnr = 10.f * torch::log10(1.f / mse);
   return { psnr.mean().item<float>(), pred_img  };
-}
-
-BoundedRays LocalizerCore::rays_from_pose(const Tensor & pose, int reso_level)
-{
-  Tensor ii = torch::linspace(0.f, H - 1.f, H, CUDAFloat);
-  Tensor jj = torch::linspace(0.f, W - 1.f, W, CUDAFloat);
-  auto ij = torch::meshgrid({ii, jj}, "ij");
-  Tensor i = ij[0].reshape({-1});
-  Tensor j = ij[1].reshape({-1});
-
-  auto [rays_o, rays_d] =
-    Dataset::Img2WorldRay(pose, intri_, dist_params_, torch::stack({i, j}, -1));
-  float near = 1.0f;
-  float far = 30.0f;
-
-  Tensor bounds =
-    torch::stack({torch::full({H * W}, near, CUDAFloat), torch::full({H * W}, far, CUDAFloat)}, -1)
-      .contiguous();
-
-  return {rays_o, rays_d, bounds};
 }
 
 Tensor LocalizerCore::normalize_position(Tensor pose)
