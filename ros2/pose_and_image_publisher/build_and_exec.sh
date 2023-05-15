@@ -2,6 +2,8 @@
 
 set -eux
 
+cd $(dirname $0)
+
 colcon build
 
 set +u
