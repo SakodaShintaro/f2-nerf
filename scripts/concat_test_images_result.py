@@ -46,5 +46,5 @@ if __name__ == "__main__":
         put_text(gt_image, f"Ground Truth (frame={frame_no:04d})", 10, 30)
         concat_image = cv2.hconcat([test_image, gt_image])
         cv2.imwrite(f"{save_dir}/{i:08d}.png", concat_image)
-    subprocess.run("ffmpeg -r 10 -f image2 -i %08d.png -vcodec libx264 -crf 25 -pix_fmt yuv420p ../output.mp4",
+    subprocess.run("ffmpeg -y -r 10 -f image2 -i %08d.png -vcodec libx264 -crf 25 -pix_fmt yuv420p ../output.mp4",
                    shell=True, cwd=save_dir)
