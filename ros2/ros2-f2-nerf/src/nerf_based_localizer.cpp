@@ -13,6 +13,8 @@
 NerfBasedLocalizer::NerfBasedLocalizer(
   const std::string & name_space, const rclcpp::NodeOptions & options)
 : Node("nerf_based_localizer", name_space, options),
+  tf_buffer_(this->get_clock()),
+  tf_listener_(tf_buffer_),
   map_frame_("map"),
   localizer_core_("./runtime_config.yaml")
 {
@@ -99,28 +101,37 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
     return;
   }
 
-  const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr pose =
+  const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr pose_base_link =
     initial_pose_msg_ptr_array_.back();
   initial_pose_msg_ptr_array_.pop_back();
+  geometry_msgs::msg::PoseWithCovarianceStamped pose_lidar;
+  try {
+    geometry_msgs::msg::TransformStamped transform =
+      tf_buffer_.lookupTransform("base_link", "lidar", tf2::TimePointZero);
+    tf2::doTransform(*pose_base_link, pose_lidar, transform);
+  } catch (tf2::TransformException & ex) {
+    RCLCPP_WARN(this->get_logger(), "%s", ex.what());
+  }
+
+  const geometry_msgs::msg::Pose pose = pose_lidar.pose.pose;
 
   Eigen::Quaternionf quat(
-    pose->pose.pose.orientation.w, pose->pose.pose.orientation.x, pose->pose.pose.orientation.y,
-    pose->pose.pose.orientation.z);
+    pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
   Eigen::Matrix3f rot = quat.toRotationMatrix();
 
   torch::Tensor initial_pose = torch::eye(4);
   initial_pose[0][0] = rot(0, 0);
   initial_pose[0][1] = rot(0, 1);
   initial_pose[0][2] = rot(0, 2);
-  initial_pose[0][3] = pose->pose.pose.position.x;
+  initial_pose[0][3] = pose.position.x;
   initial_pose[1][0] = rot(1, 0);
   initial_pose[1][1] = rot(1, 1);
   initial_pose[1][2] = rot(1, 2);
-  initial_pose[1][3] = pose->pose.pose.position.y;
+  initial_pose[1][3] = pose.position.y;
   initial_pose[2][0] = rot(2, 0);
   initial_pose[2][1] = rot(2, 1);
   initial_pose[2][2] = rot(2, 2);
-  initial_pose[2][3] = pose->pose.pose.position.z;
+  initial_pose[2][3] = pose.position.z;
   initial_pose = initial_pose.to(torch::kCUDA);
   initial_pose = initial_pose.to(torch::kFloat32);
 

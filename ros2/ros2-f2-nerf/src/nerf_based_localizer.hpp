@@ -9,6 +9,9 @@
 #include <std_msgs/msg/float32.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+
 #include <deque>
 
 // If you include this first, you will get an error.
@@ -48,6 +51,10 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr nerf_score_publisher_;
   // (4) nerf_image [sensor_msgs::msg::Image]
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr nerf_image_publisher_;
+
+  // tf
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_listener_;
 
   std::string map_frame_;
 

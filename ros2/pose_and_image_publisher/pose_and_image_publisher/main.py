@@ -10,6 +10,8 @@ import argparse
 import time
 from scipy.spatial.transform import Rotation
 import pandas as pd
+import tf2_ros
+import geometry_msgs.msg
 
 
 class ImagePosePublisher(Node):
@@ -30,6 +32,23 @@ class ImagePosePublisher(Node):
 
         assert len(self.image_files) == len(self.poses), \
             f"Number of images ({len(self.image_files)}) and poses ({len(self.poses)}) do not match."
+
+        self.offset = [0.7, 0.0, 0.1]
+
+        # Publish tf
+        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
+        self.tf_msg = geometry_msgs.msg.TransformStamped()
+        self.tf_msg.header.stamp = self.get_clock().now().to_msg()
+        self.tf_msg.header.frame_id = "base_link"
+        self.tf_msg.child_frame_id = "lidar"
+        self.tf_msg.transform.translation.x = self.offset[0]
+        self.tf_msg.transform.translation.y = self.offset[1]
+        self.tf_msg.transform.translation.z = self.offset[2]
+        self.tf_msg.transform.rotation.x = 0.0
+        self.tf_msg.transform.rotation.y = 0.0
+        self.tf_msg.transform.rotation.z = 0.0
+        self.tf_msg.transform.rotation.w = 1.0
+        self.tf_broadcaster.sendTransform(self.tf_msg)
 
         self.timer = self.create_timer(0.1, self.timer_callback)  # Publish at 10 Hz
         self.idx = 0
