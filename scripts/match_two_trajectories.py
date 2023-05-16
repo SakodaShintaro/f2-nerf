@@ -91,12 +91,19 @@ if __name__ == "__main__":
     path_to_trajectory_B = args.path_to_trajectory_B
 
     npy_A = np.load(path_to_trajectory_A)
-    pose = npy_A[:, 0:12]
-    pose = pose.reshape(-1, 3, 4)
-    traj_A = pose[:, 0:3, 3]
+    pose_A = npy_A[:, 0:12]
+    pose_A = pose_A.reshape(-1, 3, 4)
+    pose_A = np.concatenate(
+        (pose_A, np.tile(np.array([[0, 0, 0, 1]]), (pose_A.shape[0], 1, 1))), axis=1)
+    traj_A = pose_A[:, 0:3, 3]
 
     df_B = pd.read_csv(path_to_trajectory_B, sep='\t', index_col=0)
-    traj_B = df_B[['x', 'y', 'z']].values
+    quat_B = df_B.iloc[:, 3:7].values
+    orientation_B = Rotation.from_quat(quat_B).as_matrix()
+    pose_B = np.tile(np.eye(4), (len(quat_B), 1, 1))
+    pose_B[:, 0:3, 0:3] = orientation_B
+    pose_B[:, 0:3, 3] = df_B.iloc[:, 0:3].values
+    traj_B = pose_B[:, 0:3, 3]
 
     min_length = min(traj_A.shape[0], traj_B.shape[0])
     traj_A = traj_A[:min_length]
@@ -116,8 +123,17 @@ if __name__ == "__main__":
     print(mat_B2A)
 
     # apply
-    traj_A_converted = apply_mat_A2B(mat_A2B, traj_A.copy())
-    traj_B_converted = apply_mat_B2A(mat_B2A, traj_B.copy())
+    pose_B_from_A = mat_A2B @ \
+        AXIS_CONVERT_MAT2.T @ \
+        pose_A @ \
+        AXIS_CONVERT_MAT1.T
+    pose_A_from_B = mat_B2A @ \
+        AXIS_CONVERT_MAT2 @ \
+        pose_B @ \
+        AXIS_CONVERT_MAT1
+
+    traj_B_from_A = pose_B_from_A[:, 0:3, 3]
+    traj_A_from_B = pose_A_from_B[:, 0:3, 3]
 
     fig, axes = plt.subplots(2, 2, figsize=(15, 15))
 
@@ -130,13 +146,13 @@ if __name__ == "__main__":
     axes[0, 1].plot(traj_B[:, 0], traj_B[:, 1])
     axes[0, 1].set_title('B')
     axes[1, 0].plot(traj_A[:, 2], traj_A[:, 0], label='A')
-    axes[1, 0].plot(traj_B_converted[:, 2],
-                    traj_B_converted[:, 0], label='B')
+    axes[1, 0].plot(traj_A_from_B[:, 2],
+                    traj_A_from_B[:, 0], label='B')
     axes[1, 0].set_title('B to A')
     axes[1, 0].legend()
     axes[1, 1].plot(traj_B[:, 0], traj_B[:, 1], label='B')
-    axes[1, 1].plot(traj_A_converted[:, 0],
-                    traj_A_converted[:, 1], label='A')
+    axes[1, 1].plot(traj_B_from_A[:, 0],
+                    traj_B_from_A[:, 1], label='A')
     axes[1, 1].set_title('A to B')
     axes[1, 1].legend()
     axes[0, 0].set_aspect('equal')
@@ -164,30 +180,21 @@ if __name__ == "__main__":
 
     n = min_length
     for i in range(0, n, n // 6):
-        orientation_A = pose[i, 0:3, 0:3]
-        quat_B = df_B.iloc[i, 3:7].values
-        orientation_B = Rotation.from_quat(quat_B).as_matrix()
+        orientation_A = pose_A[i, 0:3, 0:3]
+        orientation_B = pose_B[i, 0:3, 0:3]
 
         plot_arrow(axes[0, 0], orientation_A, "z", traj_A[i, 0:3], "red")
         plot_arrow(axes[0, 1], orientation_B, "x", traj_B[i, 0:3], "red")
 
         # calc converted_B
-        converted_B = mat_B2A[0:3, 0:3] @ \
-            AXIS_CONVERT_MAT2[0:3, 0:3] @ \
-            orientation_B  @ \
-            AXIS_CONVERT_MAT1[0:3, 0:3]
         plot_arrow(axes[1, 0], orientation_A, "z", traj_A[i, 0:3], "red")
-        plot_arrow(axes[1, 0], converted_B, "z",
-                   traj_B_converted[i, 0:3], "blue")
+        plot_arrow(axes[1, 0], pose_A_from_B[i, 0:3, 0:3], "z",
+                   traj_A_from_B[i, 0:3], "blue")
 
         # calc converted_A
-        converted_A = mat_A2B[0:3, 0:3] @ \
-            AXIS_CONVERT_MAT2[0:3, 0:3].T @ \
-            orientation_A @ \
-            AXIS_CONVERT_MAT1[0:3, 0:3].T
         plot_arrow(axes[1, 1], orientation_B, "x", traj_B[i, 0:3], "red")
-        plot_arrow(axes[1, 1], converted_A, "x",
-                   traj_A_converted[i, 0:3], "blue")
+        plot_arrow(axes[1, 1], pose_B_from_A[i, 0:3, 0:3], "x",
+                   traj_B_from_A[i, 0:3], "blue")
 
     plt.axis('equal')
     plt.xlabel('x')
