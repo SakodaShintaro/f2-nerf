@@ -106,6 +106,8 @@ if __name__ == "__main__":
     traj_B = pose_B[:, 0:3, 3]
 
     min_length = min(traj_A.shape[0], traj_B.shape[0])
+    pose_A = pose_A[:min_length]
+    pose_B = pose_B[:min_length]
     traj_A = traj_A[:min_length]
     traj_B = traj_B[:min_length]
 
@@ -163,23 +165,24 @@ if __name__ == "__main__":
     plt.tight_layout()
 
     def plot_arrow(ax, pose_mat, initial_dir, position, color):
+        scale = 0.5
         if initial_dir == "x":
-            vec_r = pose_mat @ np.array([1, -0.25, 0])
-            vec_l = pose_mat @ np.array([1, +0.25, 0])
+            vec_r = pose_mat @ np.array([1, -0.25, 0]) * scale
+            vec_l = pose_mat @ np.array([1, +0.25, 0]) * scale
             ax.arrow(position[0], position[1],
-                     vec_r[0], vec_r[1], color=color, width=0.2)
+                     vec_r[0], vec_r[1], color=color, width=0.2 * scale)
             ax.arrow(position[0], position[1],
-                     vec_l[0], vec_l[1], color=color, width=0.1)
+                     vec_l[0], vec_l[1], color=color, width=0.1 * scale)
         else:
-            vec_r = pose_mat @ np.array([+0.25, 0, 1])
-            vec_l = pose_mat @ np.array([-0.25, 0, 1])
+            vec_r = pose_mat @ np.array([+0.25, 0, -1]) * scale
+            vec_l = pose_mat @ np.array([-0.25, 0, -1]) * scale
             ax.arrow(position[2], position[0],
-                     vec_r[2], vec_r[0], color=color, width=0.2)
+                     vec_r[2], vec_r[0], color=color, width=0.2 * scale)
             ax.arrow(position[2], position[0],
-                     vec_l[2], vec_l[0], color=color, width=0.1)
+                     vec_l[2], vec_l[0], color=color, width=0.1 * scale)
 
     n = min_length
-    for i in range(0, n, n // 6):
+    for i in range(0, n, n // 20):
         orientation_A = pose_A[i, 0:3, 0:3]
         orientation_B = pose_B[i, 0:3, 0:3]
 
