@@ -19,7 +19,8 @@ class ImagePosePublisher(Node):
     def __init__(self, data_dir):
         super().__init__('image_pose_publisher')
         self.image_pub = self.create_publisher(Image, 'image', 10)
-        self.pose_pub = self.create_publisher(PoseWithCovarianceStamped, 'initial_pose_with_covariance', 10)
+        self.pose_pub = self.create_publisher(
+            PoseWithCovarianceStamped, 'initial_pose_with_covariance', 10)
         self.bridge = CvBridge()
 
         self.image_files = sorted(glob.glob(f"{data_dir}/images/*.png"))
@@ -27,20 +28,21 @@ class ImagePosePublisher(Node):
         if self.from_cams_meta:
             self.poses = np.load(f"{data_dir}/cams_meta.npy")
         else:
-            self.poses = pd.read_csv(f"{data_dir}/pose.tsv", sep="\t", index_col=0)
+            self.poses = pd.read_csv(
+                f"{data_dir}/pose.tsv", sep="\t", index_col=0)
             self.image_files = self.image_files[0:len(self.poses)]
 
         assert len(self.image_files) == len(self.poses), \
             f"Number of images ({len(self.image_files)}) and poses ({len(self.poses)}) do not match."
 
-        self.offset = [0.7, 0.0, 0.1]
+        self.offset = [0.705, 0.0, 0.262]
 
         # Publish tf
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
         self.tf_msg = geometry_msgs.msg.TransformStamped()
         self.tf_msg.header.stamp = self.get_clock().now().to_msg()
         self.tf_msg.header.frame_id = "base_link"
-        self.tf_msg.child_frame_id = "lidar"
+        self.tf_msg.child_frame_id = "velodyne_front"
         self.tf_msg.transform.translation.x = self.offset[0]
         self.tf_msg.transform.translation.y = self.offset[1]
         self.tf_msg.transform.translation.z = self.offset[2]
@@ -50,7 +52,8 @@ class ImagePosePublisher(Node):
         self.tf_msg.transform.rotation.w = 1.0
         self.tf_broadcaster.sendTransform(self.tf_msg)
 
-        self.timer = self.create_timer(0.1, self.timer_callback)  # Publish at 10 Hz
+        # Publish at 10 Hz
+        self.timer = self.create_timer(0.1, self.timer_callback)
         self.idx = 0
 
     def timer_callback(self):

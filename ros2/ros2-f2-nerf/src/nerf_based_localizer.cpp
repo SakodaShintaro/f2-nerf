@@ -109,7 +109,7 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   geometry_msgs::msg::PoseWithCovarianceStamped pose_lidar;
   try {
     geometry_msgs::msg::TransformStamped transform =
-      tf_buffer_.lookupTransform("base_link", "lidar", tf2::TimePointZero);
+      tf_buffer_.lookupTransform("base_link", "velodyne_front", tf2::TimePointZero);
     tf2::doTransform(*pose_base_link, pose_lidar, transform);
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(this->get_logger(), "%s", ex.what());
