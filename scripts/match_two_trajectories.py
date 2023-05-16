@@ -148,19 +148,19 @@ if __name__ == "__main__":
 
     def plot_arrow(ax, pose_mat, initial_dir, position, color):
         if initial_dir == "x":
-            vec1 = pose_mat @ np.array([1, -0.25, 0])
-            vec2 = pose_mat @ np.array([1, +0.25, 0])
+            vec_r = pose_mat @ np.array([1, -0.25, 0])
+            vec_l = pose_mat @ np.array([1, +0.25, 0])
             ax.arrow(position[0], position[1],
-                     vec1[0], vec1[1], color=color, width=0.1)
+                     vec_r[0], vec_r[1], color=color, width=0.2)
             ax.arrow(position[0], position[1],
-                     vec2[0], vec2[1], color=color, width=0.1)
+                     vec_l[0], vec_l[1], color=color, width=0.1)
         else:
-            vec1 = pose_mat @ np.array([-0.25, 0, 1])
-            vec2 = pose_mat @ np.array([+0.25, 0, 1])
+            vec_r = pose_mat @ np.array([+0.25, 0, 1])
+            vec_l = pose_mat @ np.array([-0.25, 0, 1])
             ax.arrow(position[2], position[0],
-                     vec1[2], vec1[0], color=color, width=0.1)
+                     vec_r[2], vec_r[0], color=color, width=0.2)
             ax.arrow(position[2], position[0],
-                     vec2[2], vec2[0], color=color, width=0.1)
+                     vec_l[2], vec_l[0], color=color, width=0.1)
 
     n = min_length
     for i in range(0, n, n // 6):
