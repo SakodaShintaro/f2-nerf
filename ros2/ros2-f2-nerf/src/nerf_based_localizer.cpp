@@ -18,7 +18,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   map_frame_("map"),
   localizer_core_("./runtime_config.yaml")
 {
-  RCLCPP_INFO(this->get_logger(), "nerf_based_localizer is created.");
+  this->declare_parameter("save_image", false);
 
   initial_pose_with_covariance_subscriber_ =
     this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -38,6 +38,8 @@ NerfBasedLocalizer::NerfBasedLocalizer(
       "nerf_pose_with_covariance", 10);
   nerf_score_publisher_ = this->create_publisher<std_msgs::msg::Float32>("nerf_score", 10);
   nerf_image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("nerf_image", 10);
+
+  RCLCPP_INFO(this->get_logger(), "nerf_based_localizer is created.");
 }
 
 void NerfBasedLocalizer::callback_initial_pose(
@@ -213,13 +215,15 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   RCLCPP_INFO(this->get_logger(), ("score = " + std::to_string(score)).c_str());
 
   // save image
-  static int cnt = 0;
-  namespace fs = std::experimental::filesystem::v1;
-  fs::create_directories("./result_images/trial/pred/");
-  fs::create_directories("./result_images/trial/gt/");
-  save_image(nerf_image, "./result_images/trial/pred/", cnt);
-  save_image(image_tensor, "./result_images/trial/gt/", cnt);
-  cnt++;
+  if (this->get_parameter("save_image").as_bool()) {
+    static int cnt = 0;
+    namespace fs = std::experimental::filesystem::v1;
+    fs::create_directories("./result_images/trial/pred/");
+    fs::create_directories("./result_images/trial/gt/");
+    save_image(nerf_image, "./result_images/trial/pred/", cnt);
+    save_image(image_tensor, "./result_images/trial/gt/", cnt);
+    cnt++;
+  }
 
   // publish image
   nerf_image = nerf_image * 255;
