@@ -12,6 +12,7 @@ def parse_args():
     parse = argparse.ArgumentParser()
     parse.add_argument("test_images_dir", type=str)
     parse.add_argument("gt_images_dir", type=str)
+    parse.add_argument("--prefix", type=str, default="color_20000_")
     args = parse.parse_args()
     return args
 
@@ -25,7 +26,8 @@ if __name__ == "__main__":
     args = parse_args()
     test_images_dir = args.test_images_dir
     gt_images_dir = args.gt_images_dir
-    test_image_path_list = sorted(glob(f"{test_images_dir}/color*.png"))
+    prefix = args.prefix
+    test_image_path_list = sorted(glob(f"{test_images_dir}/{prefix}*.png"))
     if len(test_image_path_list) == 0:
         print(f"No test images found in {test_images_dir}")
         exit(1)
@@ -34,7 +36,7 @@ if __name__ == "__main__":
     for i, test_image_path in enumerate(test_image_path_list):
         print(test_image_path)
         test_image_name = os.path.basename(test_image_path)
-        frame_no = int(test_image_name.replace(".png", "").split("_")[2])
+        frame_no = int(test_image_name.replace(".png", "").replace(prefix, ""))
         gt_image_path = f"{gt_images_dir}/{frame_no:08d}.png"
         test_image = cv2.imread(test_image_path)
         gt_image = cv2.imread(gt_image_path)
