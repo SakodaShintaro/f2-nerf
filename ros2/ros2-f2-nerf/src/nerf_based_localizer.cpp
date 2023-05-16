@@ -39,6 +39,54 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   nerf_score_publisher_ = this->create_publisher<std_msgs::msg::Float32>("nerf_score", 10);
   nerf_image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("nerf_image", 10);
 
+  /*
+    [[0, 0, -1, 0],
+    [-1, 0, 0, 0],
+    [0, -1, 0, 0],
+    [0, 0, 0, 1]]
+  */
+  axis_convert_mat1_ = torch::zeros({4, 4});
+  axis_convert_mat1_[0][2] = -1;
+  axis_convert_mat1_[1][0] = -1;
+  axis_convert_mat1_[2][1] = -1;
+  axis_convert_mat1_[3][3] = 1;
+  axis_convert_mat1_ = axis_convert_mat1_.to(torch::kCUDA);
+
+  /*
+    [[0, -1, 0, 0],
+    [0, 0, -1, 0],
+    [1, 0, 0, 0],
+    [0, 0, 0, 1]]
+  */
+  axis_convert_mat2_ = torch::zeros({4, 4});
+  axis_convert_mat2_[0][1] = -1;
+  axis_convert_mat2_[1][2] = -1;
+  axis_convert_mat2_[2][0] = 1;
+  axis_convert_mat2_[3][3] = 1;
+  axis_convert_mat2_ = axis_convert_mat2_.to(torch::kCUDA);
+
+  /*
+    [[ 0.750144  0.020519 -0.004703  2.473535]
+     [ 0.020022 -0.747218 -0.066506  0.061556]
+     [ 0.006501 -0.066354  0.747471 -1.274295]
+     [ 0.        0.        0.        1.      ]]
+  */
+  convert_mat_ = torch::zeros({4, 4});
+  convert_mat_[0][0] = 0.750144;
+  convert_mat_[0][1] = 0.020519;
+  convert_mat_[0][2] = -0.004703;
+  convert_mat_[0][3] = 2.473535;
+  convert_mat_[1][0] = 0.020022;
+  convert_mat_[1][1] = -0.747218;
+  convert_mat_[1][2] = -0.066506;
+  convert_mat_[1][3] = 0.061556;
+  convert_mat_[2][0] = 0.006501;
+  convert_mat_[2][1] = -0.066354;
+  convert_mat_[2][2] = 0.747471;
+  convert_mat_[2][3] = -1.274295;
+  convert_mat_[3][3] = 1;
+  convert_mat_ = convert_mat_.to(torch::kCUDA);
+
   RCLCPP_INFO(this->get_logger(), "nerf_based_localizer is created.");
 }
 
@@ -141,57 +189,9 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   ss << "initial_pose_fist: " << initial_pose;
   RCLCPP_INFO(this->get_logger(), ss.str().c_str());
 
-  /*
-    [[0, 0, -1, 0],
-    [-1, 0, 0, 0],
-    [0, -1, 0, 0],
-    [0, 0, 0, 1]]
-  */
-  torch::Tensor axis_convert_mat1 = torch::zeros({4, 4});
-  axis_convert_mat1[0][2] = -1;
-  axis_convert_mat1[1][0] = -1;
-  axis_convert_mat1[2][1] = -1;
-  axis_convert_mat1[3][3] = 1;
-  axis_convert_mat1 = axis_convert_mat1.to(torch::kCUDA);
-
-  /*
-    [[0, -1, 0, 0],
-    [0, 0, -1, 0],
-    [1, 0, 0, 0],
-    [0, 0, 0, 1]]
-  */
-  torch::Tensor axis_convert_mat2 = torch::zeros({4, 4});
-  axis_convert_mat2[0][1] = -1;
-  axis_convert_mat2[1][2] = -1;
-  axis_convert_mat2[2][0] = 1;
-  axis_convert_mat2[3][3] = 1;
-  axis_convert_mat2 = axis_convert_mat2.to(torch::kCUDA);
-
-  /*
-   [[ 0.737494  0.021281  0.155938  2.00682 ]
-   [ 0.029287 -0.752681 -0.035792 -0.044822]
-   [-0.154634 -0.04106   0.736932 -1.760475]
-   [ 0.        0.        0.        1.      ]]
-  */
-  torch::Tensor convert_mat = torch::zeros({4, 4});
-  convert_mat[0][0] = 0.737494;
-  convert_mat[0][1] = 0.021281;
-  convert_mat[0][2] = 0.155938;
-  convert_mat[0][3] = 2.00682;
-  convert_mat[1][0] = 0.029287;
-  convert_mat[1][1] = -0.752681;
-  convert_mat[1][2] = -0.035792;
-  convert_mat[1][3] = -0.044822;
-  convert_mat[2][0] = -0.154634;
-  convert_mat[2][1] = -0.04106;
-  convert_mat[2][2] = 0.736932;
-  convert_mat[2][3] = -1.760475;
-  convert_mat[3][3] = 1;
-  convert_mat = convert_mat.to(torch::kCUDA);
-
-  initial_pose = initial_pose.matmul(axis_convert_mat1);
-  initial_pose = axis_convert_mat2.matmul(initial_pose);
-  initial_pose = convert_mat.matmul(initial_pose);
+  initial_pose = initial_pose.matmul(axis_convert_mat1_);
+  initial_pose = axis_convert_mat2_.matmul(initial_pose);
+  initial_pose = convert_mat_.matmul(initial_pose);
 
   // output about pose
   ss.str("");

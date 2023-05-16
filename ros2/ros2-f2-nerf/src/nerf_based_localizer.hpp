@@ -56,6 +56,11 @@ private:
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
 
+  // Convert mat
+  torch::Tensor axis_convert_mat1_;
+  torch::Tensor axis_convert_mat2_;
+  torch::Tensor convert_mat_;
+
   std::string map_frame_;
 
   std::deque<geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr>
