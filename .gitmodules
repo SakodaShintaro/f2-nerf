@@ -4,3 +4,12 @@
 [submodule "External/yaml-cpp"]
 	path = External/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
+[submodule "ros2/src/external/tier4_autoware_msgs"]
+	path = ros2/src/external/tier4_autoware_msgs
+	url = https://github.com/tier4/tier4_autoware_msgs.git
+[submodule "ros2/src/external/autoware_msgs"]
+	path = ros2/src/external/autoware_msgs
+	url = https://github.com/autowarefoundation/autoware_msgs
+[submodule "ros2/src/external/autoware_auto_msgs"]
+	path = ros2/src/external/autoware_auto_msgs
+	url = https://github.com/tier4/autoware_auto_msgs
