@@ -12,6 +12,7 @@ from scipy.spatial.transform import Rotation
 import pandas as pd
 import tf2_ros
 import geometry_msgs.msg
+import tf2_geometry_msgs
 
 
 class ImagePosePublisher(Node):
@@ -52,6 +53,9 @@ class ImagePosePublisher(Node):
         self.tf_msg.transform.rotation.w = 1.0
         self.tf_broadcaster.sendTransform(self.tf_msg)
 
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+
         # Publish at 10 Hz
         self.timer = self.create_timer(0.1, self.timer_callback)
         self.idx = 0
@@ -88,6 +92,16 @@ class ImagePosePublisher(Node):
             pose_msg.pose.pose.orientation.y = curr_pose["qy"]
             pose_msg.pose.pose.orientation.z = curr_pose["qz"]
             pose_msg.pose.pose.orientation.w = curr_pose["qw"]
+
+        # Transform the pose_msg from the frame "velodyne_front" to the frame "base_link"
+        try:
+            transform = self.tf_buffer.lookup_transform("base_link", "velodyne_front", rclpy.time.Time())
+            pose_transformed_msg = tf2_geometry_msgs.do_transform_pose(pose_msg.pose.pose, transform)
+            self.pose_pub.publish(pose_transformed_msg)
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            self.get_logger().error('Failed to get transform from velodyne_front to base_link')
+            return
+
         self.pose_pub.publish(pose_msg)
 
         # wait for 0.05 sec
