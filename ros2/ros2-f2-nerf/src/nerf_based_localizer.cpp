@@ -225,7 +225,12 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
     cnt++;
   }
 
-  // publish image
+  // (3) publish score
+  std_msgs::msg::Float32 score_msg;
+  score_msg.data = score;
+  nerf_score_publisher_->publish(score_msg);
+
+  // (4) publish image
   nerf_image = nerf_image * 255;
   nerf_image = nerf_image.to(torch::kUInt8);
   nerf_image = nerf_image.to(torch::kCPU);
