@@ -96,8 +96,7 @@ class ImagePosePublisher(Node):
         # Transform the pose_msg from the frame "velodyne_front" to the frame "base_link"
         try:
             transform = self.tf_buffer.lookup_transform("base_link", "velodyne_front", rclpy.time.Time())
-            pose_transformed_msg = tf2_geometry_msgs.do_transform_pose(pose_msg.pose.pose, transform)
-            self.pose_pub.publish(pose_transformed_msg)
+            pose_msg.pose.pose = tf2_geometry_msgs.do_transform_pose(pose_msg.pose.pose, transform)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             self.get_logger().error('Failed to get transform from velodyne_front to base_link')
             return
