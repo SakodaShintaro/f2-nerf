@@ -214,19 +214,12 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   initial_pose = initial_pose.matmul(axis_convert_mat1_);
   initial_pose = axis_convert_mat2_.matmul(initial_pose);
   initial_pose = convert_mat_B2A_.matmul(initial_pose);
-
-  // output about pose
-  ss.str("");
-  ss << "initial_pose_before_norm: " << initial_pose;
-  RCLCPP_INFO(this->get_logger(), ss.str().c_str());
-
   initial_pose = localizer_core_.normalize_position(initial_pose);
-
   initial_pose = initial_pose.index({Slc(0, 3), Slc(0, 4)});
 
   // output about pose
   ss.str("");
-  ss << "initial_pose_final: " << initial_pose;
+  ss << "initial_pose_converted: " << initial_pose;
   RCLCPP_INFO(this->get_logger(), ss.str().c_str());
 
   // run NeRF
@@ -248,12 +241,12 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   }
 
   // Convert pose to base_link
-  // Added 4th row
-  optimized_pose = torch::cat({optimized_pose, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
+  optimized_pose =
+    torch::cat({optimized_pose, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
   optimized_pose = localizer_core_.inverse_normalize_position(optimized_pose);
   optimized_pose = optimized_pose.matmul(axis_convert_mat1_.t());
   optimized_pose = axis_convert_mat2_.t().matmul(optimized_pose);
-  optimized_pose = convert_mat_B2A_.matmul(optimized_pose);
+  optimized_pose = convert_mat_A2B_.matmul(optimized_pose);
 
   geometry_msgs::msg::Pose pose_msg;
   pose_msg.position.x = optimized_pose[0][3].item<float>();
