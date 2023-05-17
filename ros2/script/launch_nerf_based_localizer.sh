@@ -2,7 +2,7 @@
 
 set -eux
 
-cd $(dirname $0)
+cd $(dirname $0)/../
 
 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 
