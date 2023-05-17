@@ -130,3 +130,11 @@ Tensor LocalizerCore::normalize_position(Tensor pose)
   pose.index_put_({Slc(0, 3), 3}, cam_pos);
   return pose;
 }
+
+Tensor LocalizerCore::inverse_normalize_position(Tensor pose)
+{
+  Tensor cam_pos = pose.index({Slc(0, 3), 3}).clone();
+  cam_pos = cam_pos * dataset_->radius_ + dataset_->center_.unsqueeze(0);
+  pose.index_put_({Slc(0, 3), 3}, cam_pos);
+  return pose;
+}

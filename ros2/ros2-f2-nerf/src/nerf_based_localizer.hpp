@@ -59,7 +59,8 @@ private:
   // Convert mat
   torch::Tensor axis_convert_mat1_;
   torch::Tensor axis_convert_mat2_;
-  torch::Tensor convert_mat_;
+  torch::Tensor convert_mat_A2B_;
+  torch::Tensor convert_mat_B2A_;
 
   std::string map_frame_;
 

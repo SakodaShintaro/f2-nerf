@@ -66,26 +66,48 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   axis_convert_mat2_ = axis_convert_mat2_.to(torch::kCUDA);
 
   /*
+    [[ 1.327284  0.008350  0.118095  1.719275]
+     [-0.011544  1.332029  0.035553  3.282300]
+     [ 0.117825  0.036435 -1.326834  0.158593]
+     [ 0.        0.        0.        1.      ]]
+  */
+  convert_mat_A2B_ = torch::zeros({4, 4});
+  convert_mat_A2B_[0][0] = 1.327284;
+  convert_mat_A2B_[0][1] = 0.008350;
+  convert_mat_A2B_[0][2] = 0.118095;
+  convert_mat_A2B_[0][3] = 1.719275;
+  convert_mat_A2B_[1][0] = -0.011544;
+  convert_mat_A2B_[1][1] = 1.332029;
+  convert_mat_A2B_[1][2] = 0.035553;
+  convert_mat_A2B_[1][3] = 3.282300;
+  convert_mat_A2B_[2][0] = 0.117825;
+  convert_mat_A2B_[2][1] = 0.036435;
+  convert_mat_A2B_[2][2] = -1.326834;
+  convert_mat_A2B_[2][3] = 0.158593;
+  convert_mat_A2B_[3][3] = 1;
+  convert_mat_A2B_ = convert_mat_A2B_.to(torch::kCUDA);
+
+  /*
     [[ 0.750144  0.020519 -0.004703  2.473535]
      [ 0.020022 -0.747218 -0.066506  0.061556]
      [ 0.006501 -0.066354  0.747471 -1.274295]
      [ 0.        0.        0.        1.      ]]
   */
-  convert_mat_ = torch::zeros({4, 4});
-  convert_mat_[0][0] = 0.750144;
-  convert_mat_[0][1] = 0.020519;
-  convert_mat_[0][2] = -0.004703;
-  convert_mat_[0][3] = 2.473535;
-  convert_mat_[1][0] = 0.020022;
-  convert_mat_[1][1] = -0.747218;
-  convert_mat_[1][2] = -0.066506;
-  convert_mat_[1][3] = 0.061556;
-  convert_mat_[2][0] = 0.006501;
-  convert_mat_[2][1] = -0.066354;
-  convert_mat_[2][2] = 0.747471;
-  convert_mat_[2][3] = -1.274295;
-  convert_mat_[3][3] = 1;
-  convert_mat_ = convert_mat_.to(torch::kCUDA);
+  convert_mat_B2A_ = torch::zeros({4, 4});
+  convert_mat_B2A_[0][0] = 0.750144;
+  convert_mat_B2A_[0][1] = 0.020519;
+  convert_mat_B2A_[0][2] = -0.004703;
+  convert_mat_B2A_[0][3] = 2.473535;
+  convert_mat_B2A_[1][0] = 0.020022;
+  convert_mat_B2A_[1][1] = -0.747218;
+  convert_mat_B2A_[1][2] = -0.066506;
+  convert_mat_B2A_[1][3] = 0.061556;
+  convert_mat_B2A_[2][0] = 0.006501;
+  convert_mat_B2A_[2][1] = -0.066354;
+  convert_mat_B2A_[2][2] = 0.747471;
+  convert_mat_B2A_[2][3] = -1.274295;
+  convert_mat_B2A_[3][3] = 1;
+  convert_mat_B2A_ = convert_mat_B2A_.to(torch::kCUDA);
 
   RCLCPP_INFO(this->get_logger(), "nerf_based_localizer is created.");
 }
@@ -165,22 +187,22 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
 
   const geometry_msgs::msg::Pose pose = pose_lidar.pose.pose;
 
-  Eigen::Quaternionf quat(
+  Eigen::Quaternionf quat_in(
     pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
-  Eigen::Matrix3f rot = quat.toRotationMatrix();
+  Eigen::Matrix3f rot_in = quat_in.toRotationMatrix();
 
   torch::Tensor initial_pose = torch::eye(4);
-  initial_pose[0][0] = rot(0, 0);
-  initial_pose[0][1] = rot(0, 1);
-  initial_pose[0][2] = rot(0, 2);
+  initial_pose[0][0] = rot_in(0, 0);
+  initial_pose[0][1] = rot_in(0, 1);
+  initial_pose[0][2] = rot_in(0, 2);
   initial_pose[0][3] = pose.position.x;
-  initial_pose[1][0] = rot(1, 0);
-  initial_pose[1][1] = rot(1, 1);
-  initial_pose[1][2] = rot(1, 2);
+  initial_pose[1][0] = rot_in(1, 0);
+  initial_pose[1][1] = rot_in(1, 1);
+  initial_pose[1][2] = rot_in(1, 2);
   initial_pose[1][3] = pose.position.y;
-  initial_pose[2][0] = rot(2, 0);
-  initial_pose[2][1] = rot(2, 1);
-  initial_pose[2][2] = rot(2, 2);
+  initial_pose[2][0] = rot_in(2, 0);
+  initial_pose[2][1] = rot_in(2, 1);
+  initial_pose[2][2] = rot_in(2, 2);
   initial_pose[2][3] = pose.position.z;
   initial_pose = initial_pose.to(torch::kCUDA);
   initial_pose = initial_pose.to(torch::kFloat32);
@@ -191,7 +213,7 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
 
   initial_pose = initial_pose.matmul(axis_convert_mat1_);
   initial_pose = axis_convert_mat2_.matmul(initial_pose);
-  initial_pose = convert_mat_.matmul(initial_pose);
+  initial_pose = convert_mat_B2A_.matmul(initial_pose);
 
   // output about pose
   ss.str("");
@@ -224,6 +246,48 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
     save_image(image_tensor, "./result_images/trial/gt/", cnt);
     cnt++;
   }
+
+  // Convert pose to base_link
+  // Added 4th row
+  optimized_pose = torch::cat({optimized_pose, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
+  optimized_pose = localizer_core_.inverse_normalize_position(optimized_pose);
+  optimized_pose = optimized_pose.matmul(axis_convert_mat1_.t());
+  optimized_pose = axis_convert_mat2_.t().matmul(optimized_pose);
+  optimized_pose = convert_mat_B2A_.matmul(optimized_pose);
+
+  geometry_msgs::msg::Pose pose_msg;
+  pose_msg.position.x = optimized_pose[0][3].item<float>();
+  pose_msg.position.y = optimized_pose[1][3].item<float>();
+  pose_msg.position.z = optimized_pose[2][3].item<float>();
+  Eigen::Matrix3f rot_out;
+  rot_out << optimized_pose[0][0].item<float>(), optimized_pose[0][1].item<float>(),
+    optimized_pose[0][2].item<float>(), optimized_pose[1][0].item<float>(),
+    optimized_pose[1][1].item<float>(), optimized_pose[1][2].item<float>(),
+    optimized_pose[2][0].item<float>(), optimized_pose[2][1].item<float>(),
+    optimized_pose[2][2].item<float>();
+  Eigen::Quaternionf quat_out(rot_out);
+  pose_msg.orientation.x = quat_out.x();
+  pose_msg.orientation.y = quat_out.y();
+  pose_msg.orientation.z = quat_out.z();
+  pose_msg.orientation.w = quat_out.w();
+
+  // (1) publish nerf_pose
+  geometry_msgs::msg::PoseStamped pose_stamped_msg;
+  pose_stamped_msg.header = header;
+  pose_stamped_msg.pose = pose_msg;
+  nerf_pose_publisher_->publish(pose_stamped_msg);
+
+  // (2) publish nerf_pose_with_covariance
+  geometry_msgs::msg::PoseWithCovarianceStamped pose_with_cov_msg;
+  pose_with_cov_msg.header = header;
+  pose_with_cov_msg.pose.pose = pose_msg;
+  pose_with_cov_msg.pose.covariance[0] = 0.1;
+  pose_with_cov_msg.pose.covariance[7] = 0.1;
+  pose_with_cov_msg.pose.covariance[14] = 0.1;
+  pose_with_cov_msg.pose.covariance[21] = 0.1;
+  pose_with_cov_msg.pose.covariance[28] = 0.1;
+  pose_with_cov_msg.pose.covariance[35] = 0.1;
+  nerf_pose_with_covariance_publisher_->publish(pose_with_cov_msg);
 
   // (3) publish score
   std_msgs::msg::Float32 score_msg;
