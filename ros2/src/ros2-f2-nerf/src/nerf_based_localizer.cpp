@@ -153,17 +153,6 @@ void NerfBasedLocalizer::callback_initial_pose(
 
 void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstSharedPtr image_msg_ptr)
 {
-  // lock mutex for initial pose
-  std::lock_guard<std::mutex> initial_pose_array_lock(initial_pose_array_mtx_);
-  if (initial_pose_msg_ptr_array_.empty()) {
-    RCLCPP_ERROR(this->get_logger(), "initial_pose_with_covariance is not received.");
-    return;
-  }
-
-  const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr pose_base_link =
-    initial_pose_msg_ptr_array_.back();
-  initial_pose_msg_ptr_array_.pop_back();
-
   // lock mutex for image
   std::lock_guard<std::mutex> image_array_lock(image_array_mtx_);
   image_msg_ptr_array_.push_back(image_msg_ptr);
@@ -174,6 +163,17 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   if (!is_activated_) {
     return;
   }
+
+  // lock mutex for initial pose
+  std::lock_guard<std::mutex> initial_pose_array_lock(initial_pose_array_mtx_);
+  if (initial_pose_msg_ptr_array_.empty()) {
+    RCLCPP_ERROR(this->get_logger(), "initial_pose_with_covariance is not received.");
+    return;
+  }
+
+  const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr pose_base_link =
+    initial_pose_msg_ptr_array_.back();
+  initial_pose_msg_ptr_array_.pop_back();
 
   // Process
   const auto [pose_msg, image_msg, score_msg] = localize(pose_base_link->pose.pose, *image_msg_ptr);
@@ -380,7 +380,10 @@ void NerfBasedLocalizer::service_trigger_node(
   const std_srvs::srv::SetBool::Request::SharedPtr req,
   std_srvs::srv::SetBool::Response::SharedPtr res)
 {
-  RCLCPP_INFO(this->get_logger(), "service_trigger is arrived to NerfBasedLocalizer.");
+  RCLCPP_INFO(
+    this->get_logger(),
+    ("service_trigger " + std::to_string(req->data) + " is arrived to NerfBasedLocalizer.")
+      .c_str());
 
   is_activated_ = req->data;
   if (is_activated_) {
