@@ -8,6 +8,7 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tier4_localization_msgs/srv/pose_with_covariance_stamped.hpp>
 
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
@@ -61,6 +62,9 @@ private:
   torch::Tensor axis_convert_mat2_;
   torch::Tensor convert_mat_A2B_;
   torch::Tensor convert_mat_B2A_;
+
+  // Service
+  rclcpp::Service<tier4_localization_msgs::srv::PoseWithCovarianceStamped>::SharedPtr service_;
 
   std::string map_frame_;
 
