@@ -380,6 +380,8 @@ void NerfBasedLocalizer::service_trigger_node(
   const std_srvs::srv::SetBool::Request::SharedPtr req,
   std_srvs::srv::SetBool::Response::SharedPtr res)
 {
+  RCLCPP_INFO(this->get_logger(), "service_trigger is arrived to NerfBasedLocalizer.");
+
   is_activated_ = req->data;
   if (is_activated_) {
     std::lock_guard<std::mutex> initial_pose_array_lock(initial_pose_array_mtx_);
