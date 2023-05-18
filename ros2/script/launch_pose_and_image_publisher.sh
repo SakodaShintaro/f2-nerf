@@ -4,7 +4,7 @@ set -eux
 
 cd $(dirname $0)/../
 
-colcon build
+colcon build --symlink-install --packages-up-to pose_and_image_publisher --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 set +u
 source install/setup.bash

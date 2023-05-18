@@ -4,7 +4,7 @@ set -eux
 
 cd $(dirname $0)/../
 
-colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
+colcon build --symlink-install --packages-up-to ros2-f2-nerf --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 set +u
 source install/setup.bash
