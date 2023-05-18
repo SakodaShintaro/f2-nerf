@@ -45,7 +45,9 @@ sudo apt upgrade -y
 sudo apt install -y ros-humble-ros-base
 sudo apt install -y ros-humble-cv-bridge
 sudo apt install -y ros-humble-geographic-msgs
+sudo apt install -y ros-humble-rmw-cyclonedds-cpp
 echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc
 ```
 
 ## Others
