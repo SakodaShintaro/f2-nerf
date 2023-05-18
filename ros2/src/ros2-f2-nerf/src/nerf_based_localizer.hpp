@@ -33,6 +33,10 @@ private:
   void callback_image(const sensor_msgs::msg::Image::ConstSharedPtr image_msg_ptr);
   void publish_pose();
 
+  void service(
+    const tier4_localization_msgs::srv::PoseWithCovarianceStamped::Request::SharedPtr req,
+    tier4_localization_msgs::srv::PoseWithCovarianceStamped::Response::SharedPtr res);
+
   void save_image(const torch::Tensor image_tensor, const std::string & prefix, int save_id);
 
   // NerfBasedLocalizer subscribes to the following topics:

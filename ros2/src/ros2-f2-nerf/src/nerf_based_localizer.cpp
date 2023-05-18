@@ -109,6 +109,11 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   convert_mat_B2A_[3][3] = 1;
   convert_mat_B2A_ = convert_mat_B2A_.to(torch::kCUDA);
 
+  service_ = this->create_service<tier4_localization_msgs::srv::PoseWithCovarianceStamped>(
+    "nerf_service",
+    std::bind(&NerfBasedLocalizer::service, this, std::placeholders::_1, std::placeholders::_2),
+    rclcpp::ServicesQoS().get_rmw_qos_profile());
+
   RCLCPP_INFO(this->get_logger(), "nerf_based_localizer is created.");
 }
 
@@ -313,4 +318,13 @@ void NerfBasedLocalizer::save_image(
   ss << std::setfill('0') << std::setw(8) << save_id;
   ss << ".png";
   Utils::WriteImageTensor(ss.str(), image_tensor);
+}
+
+void NerfBasedLocalizer::service(
+  const tier4_localization_msgs::srv::PoseWithCovarianceStamped::Request::SharedPtr req,
+  tier4_localization_msgs::srv::PoseWithCovarianceStamped::Response::SharedPtr res)
+{
+  res->pose_with_covariance = req->pose_with_covariance;
+  res->success = true;
+  res->pose_with_covariance.pose.covariance = req->pose_with_covariance.pose.covariance;
 }
