@@ -1,6 +1,7 @@
 #include "nerf_based_localizer.hpp"
 
 #include "../../src/Utils/Utils.h"
+#include "timer.hpp"
 
 #include <Eigen/Eigen>
 #include <experimental/filesystem>
@@ -242,6 +243,8 @@ std::tuple<geometry_msgs::msg::Pose, sensor_msgs::msg::Image, std_msgs::msg::Flo
 NerfBasedLocalizer::localize(
   const geometry_msgs::msg::Pose & pose_msg, const sensor_msgs::msg::Image & image_msg)
 {
+  Timer timer;
+
   // Get data of image_ptr
   // Accessing header information
   const std_msgs::msg::Header header = image_msg.header;
@@ -372,6 +375,8 @@ NerfBasedLocalizer::localize(
 
   std_msgs::msg::Float32 score_msg;
   score_msg.data = score;
+
+  RCLCPP_INFO_STREAM(get_logger(), "localize time: " << timer);
 
   return std::make_tuple(result_pose, nerf_image_msg, score_msg);
 }
