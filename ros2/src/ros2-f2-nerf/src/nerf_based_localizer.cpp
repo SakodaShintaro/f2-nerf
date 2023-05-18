@@ -145,31 +145,6 @@ void NerfBasedLocalizer::callback_initial_pose(
 
 void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstSharedPtr image_msg_ptr)
 {
-  // Get data of image_ptr
-  // Accessing header information
-  std_msgs::msg::Header header = image_msg_ptr->header;
-
-  // Accessing image properties
-  uint32_t width = image_msg_ptr->width;
-  uint32_t height = image_msg_ptr->height;
-  uint32_t step = image_msg_ptr->step;
-  std::string encoding = image_msg_ptr->encoding;
-
-  // output information about image
-  std::stringstream ss;
-  ss << "Image received. ";
-  ss << "width: " << width << ", ";
-  ss << "height: " << height << ", ";
-  ss << "step: " << step;
-  RCLCPP_INFO(this->get_logger(), ss.str().c_str());
-
-  // Accessing image data
-  torch::Tensor image_tensor = torch::tensor(image_msg_ptr->data);
-  image_tensor = image_tensor.view({height, width, 3});
-  image_tensor = image_tensor.to(torch::kCUDA);
-  image_tensor = image_tensor.to(torch::kFloat32);
-  image_tensor /= 255.0;
-
   // lock mutex for initial pose
   std::lock_guard<std::mutex> initial_pose_array_lock(initial_pose_array_mtx_);
 
@@ -181,11 +156,87 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr pose_base_link =
     initial_pose_msg_ptr_array_.back();
   initial_pose_msg_ptr_array_.pop_back();
+
+  const auto [pose_msg, image_msg, score_msg] = localize(pose_base_link->pose.pose, *image_msg_ptr);
+
+  // (1) publish nerf_pose
+  geometry_msgs::msg::PoseStamped pose_stamped_msg;
+  pose_stamped_msg.header = pose_base_link->header;
+  pose_stamped_msg.pose = pose_msg;
+  nerf_pose_publisher_->publish(pose_stamped_msg);
+
+  // (2) publish nerf_pose_with_covariance
+  geometry_msgs::msg::PoseWithCovarianceStamped pose_with_cov_msg;
+  pose_with_cov_msg.header = pose_base_link->header;
+  pose_with_cov_msg.pose.pose = pose_msg;
+  pose_with_cov_msg.pose.covariance[0] = 0.1;
+  pose_with_cov_msg.pose.covariance[7] = 0.1;
+  pose_with_cov_msg.pose.covariance[14] = 0.1;
+  pose_with_cov_msg.pose.covariance[21] = 0.1;
+  pose_with_cov_msg.pose.covariance[28] = 0.1;
+  pose_with_cov_msg.pose.covariance[35] = 0.1;
+  nerf_pose_with_covariance_publisher_->publish(pose_with_cov_msg);
+
+  // (3) publish score
+  nerf_score_publisher_->publish(score_msg);
+
+  // (4) publish image
+  nerf_image_publisher_->publish(image_msg);
+}
+
+void NerfBasedLocalizer::save_image(
+  const torch::Tensor image_tensor, const std::string & prefix, int save_id)
+{
+  std::stringstream ss;
+  ss << prefix;
+  ss << std::setfill('0') << std::setw(8) << save_id;
+  ss << ".png";
+  Utils::WriteImageTensor(ss.str(), image_tensor);
+}
+
+void NerfBasedLocalizer::service(
+  const tier4_localization_msgs::srv::PoseWithCovarianceStamped::Request::SharedPtr req,
+  tier4_localization_msgs::srv::PoseWithCovarianceStamped::Response::SharedPtr res)
+{
+  res->pose_with_covariance = req->pose_with_covariance;
+  res->success = true;
+  res->pose_with_covariance.pose.covariance = req->pose_with_covariance.pose.covariance;
+}
+
+std::tuple<geometry_msgs::msg::Pose, sensor_msgs::msg::Image, std_msgs::msg::Float32>
+NerfBasedLocalizer::localize(
+  const geometry_msgs::msg::Pose & pose_msg, const sensor_msgs::msg::Image & image_msg)
+{
+  // Get data of image_ptr
+  // Accessing header information
+  const std_msgs::msg::Header header = image_msg.header;
+
+  // Accessing image properties
+  const uint32_t width = image_msg.width;
+  const uint32_t height = image_msg.height;
+  const uint32_t step = image_msg.step;
+  const std::string encoding = image_msg.encoding;
+
+  // output information about image
+  std::stringstream ss;
+  ss << "Image received. ";
+  ss << "width: " << width << ", ";
+  ss << "height: " << height << ", ";
+  ss << "step: " << step;
+  RCLCPP_INFO(this->get_logger(), ss.str().c_str());
+
+  // Accessing image data
+  torch::Tensor image_tensor = torch::tensor(image_msg.data);
+  image_tensor = image_tensor.view({height, width, 3});
+  image_tensor = image_tensor.to(torch::kCUDA);
+  image_tensor = image_tensor.to(torch::kFloat32);
+  image_tensor /= 255.0;
+
   geometry_msgs::msg::PoseWithCovarianceStamped pose_lidar;
   try {
     geometry_msgs::msg::TransformStamped transform =
       tf_buffer_.lookupTransform("velodyne_front", "base_link", tf2::TimePointZero);
-    tf2::doTransform(*pose_base_link, pose_lidar, transform);
+    tf2::doTransform(pose_msg, pose_lidar.pose.pose, transform);
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(this->get_logger(), "%s", ex.what());
   }
@@ -253,10 +304,10 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   optimized_pose = axis_convert_mat2_.t().matmul(optimized_pose);
   optimized_pose = convert_mat_A2B_.matmul(optimized_pose);
 
-  geometry_msgs::msg::Pose pose_msg;
-  pose_msg.position.x = optimized_pose[0][3].item<float>();
-  pose_msg.position.y = optimized_pose[1][3].item<float>();
-  pose_msg.position.z = optimized_pose[2][3].item<float>();
+  geometry_msgs::msg::Pose result_pose;
+  result_pose.position.x = optimized_pose[0][3].item<float>();
+  result_pose.position.y = optimized_pose[1][3].item<float>();
+  result_pose.position.z = optimized_pose[2][3].item<float>();
   Eigen::Matrix3f rot_out;
   rot_out << optimized_pose[0][0].item<float>(), optimized_pose[0][1].item<float>(),
     optimized_pose[0][2].item<float>(), optimized_pose[1][0].item<float>(),
@@ -264,35 +315,11 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
     optimized_pose[2][0].item<float>(), optimized_pose[2][1].item<float>(),
     optimized_pose[2][2].item<float>();
   Eigen::Quaternionf quat_out(rot_out);
-  pose_msg.orientation.x = quat_out.x();
-  pose_msg.orientation.y = quat_out.y();
-  pose_msg.orientation.z = quat_out.z();
-  pose_msg.orientation.w = quat_out.w();
+  result_pose.orientation.x = quat_out.x();
+  result_pose.orientation.y = quat_out.y();
+  result_pose.orientation.z = quat_out.z();
+  result_pose.orientation.w = quat_out.w();
 
-  // (1) publish nerf_pose
-  geometry_msgs::msg::PoseStamped pose_stamped_msg;
-  pose_stamped_msg.header = header;
-  pose_stamped_msg.pose = pose_msg;
-  nerf_pose_publisher_->publish(pose_stamped_msg);
-
-  // (2) publish nerf_pose_with_covariance
-  geometry_msgs::msg::PoseWithCovarianceStamped pose_with_cov_msg;
-  pose_with_cov_msg.header = header;
-  pose_with_cov_msg.pose.pose = pose_msg;
-  pose_with_cov_msg.pose.covariance[0] = 0.1;
-  pose_with_cov_msg.pose.covariance[7] = 0.1;
-  pose_with_cov_msg.pose.covariance[14] = 0.1;
-  pose_with_cov_msg.pose.covariance[21] = 0.1;
-  pose_with_cov_msg.pose.covariance[28] = 0.1;
-  pose_with_cov_msg.pose.covariance[35] = 0.1;
-  nerf_pose_with_covariance_publisher_->publish(pose_with_cov_msg);
-
-  // (3) publish score
-  std_msgs::msg::Float32 score_msg;
-  score_msg.data = score;
-  nerf_score_publisher_->publish(score_msg);
-
-  // (4) publish image
   nerf_image = nerf_image * 255;
   nerf_image = nerf_image.to(torch::kUInt8);
   nerf_image = nerf_image.to(torch::kCPU);
@@ -307,24 +334,23 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   std::copy(
     nerf_image.data_ptr<uint8_t>(), nerf_image.data_ptr<uint8_t>() + nerf_image.numel(),
     nerf_image_msg.data.begin());
-  nerf_image_publisher_->publish(nerf_image_msg);
+
+  std_msgs::msg::Float32 score_msg;
+  score_msg.data = score;
+
+  return std::make_tuple(result_pose, nerf_image_msg, score_msg);
 }
 
-void NerfBasedLocalizer::save_image(
-  const torch::Tensor image_tensor, const std::string & prefix, int save_id)
+void NerfBasedLocalizer::service_trigger_node(
+  const std_srvs::srv::SetBool::Request::SharedPtr req,
+  std_srvs::srv::SetBool::Response::SharedPtr res)
 {
-  std::stringstream ss;
-  ss << prefix;
-  ss << std::setfill('0') << std::setw(8) << save_id;
-  ss << ".png";
-  Utils::WriteImageTensor(ss.str(), image_tensor);
-}
-
-void NerfBasedLocalizer::service(
-  const tier4_localization_msgs::srv::PoseWithCovarianceStamped::Request::SharedPtr req,
-  tier4_localization_msgs::srv::PoseWithCovarianceStamped::Response::SharedPtr res)
-{
-  res->pose_with_covariance = req->pose_with_covariance;
+  is_activated_ = req->data;
+  if (is_activated_) {
+    std::lock_guard<std::mutex> initial_pose_array_lock(initial_pose_array_mtx_);
+    initial_pose_msg_ptr_array_.clear();
+    std::lock_guard<std::mutex> image_array_lock(image_array_mtx_);
+    image_msg_ptr_array_.clear();
+  }
   res->success = true;
-  res->pose_with_covariance.pose.covariance = req->pose_with_covariance.pose.covariance;
 }

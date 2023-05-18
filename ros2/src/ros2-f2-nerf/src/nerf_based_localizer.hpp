@@ -7,6 +7,7 @@
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <std_msgs/msg/float32.hpp>
+#include <std_srvs/srv/set_bool.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tier4_localization_msgs/srv/pose_with_covariance_stamped.hpp>
 
@@ -31,11 +32,15 @@ private:
   void callback_initial_pose(
     const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr pose_conv_msg_ptr);
   void callback_image(const sensor_msgs::msg::Image::ConstSharedPtr image_msg_ptr);
-  void publish_pose();
-
   void service(
     const tier4_localization_msgs::srv::PoseWithCovarianceStamped::Request::SharedPtr req,
     tier4_localization_msgs::srv::PoseWithCovarianceStamped::Response::SharedPtr res);
+  void service_trigger_node(
+    const std_srvs::srv::SetBool::Request::SharedPtr req,
+    std_srvs::srv::SetBool::Response::SharedPtr res);
+
+  std::tuple<geometry_msgs::msg::Pose, sensor_msgs::msg::Image, std_msgs::msg::Float32> localize(
+    const geometry_msgs::msg::Pose & pose_msg, const sensor_msgs::msg::Image & image_msg);
 
   void save_image(const torch::Tensor image_tensor, const std::string & prefix, int save_id);
 
@@ -69,12 +74,18 @@ private:
 
   // Service
   rclcpp::Service<tier4_localization_msgs::srv::PoseWithCovarianceStamped>::SharedPtr service_;
+  rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr service_trigger_node_;
 
   std::string map_frame_;
 
+  // data deque
   std::deque<geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr>
     initial_pose_msg_ptr_array_;
   std::mutex initial_pose_array_mtx_;
+  std::deque<sensor_msgs::msg::Image::ConstSharedPtr> image_msg_ptr_array_;
+  std::mutex image_array_mtx_;
+
+  bool is_activated_;
 
   LocalizerCore localizer_core_;
 };
