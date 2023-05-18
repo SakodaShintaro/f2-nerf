@@ -16,6 +16,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   tf_buffer_(this->get_clock()),
   tf_listener_(tf_buffer_),
   map_frame_("map"),
+  is_activated_(false),
   localizer_core_("./runtime_config.yaml")
 {
   this->declare_parameter("save_image", false);
@@ -114,6 +115,13 @@ NerfBasedLocalizer::NerfBasedLocalizer(
     std::bind(&NerfBasedLocalizer::service, this, std::placeholders::_1, std::placeholders::_2),
     rclcpp::ServicesQoS().get_rmw_qos_profile());
 
+  service_trigger_node_ = this->create_service<std_srvs::srv::SetBool>(
+    "trigger_node_srv",
+    std::bind(
+      &NerfBasedLocalizer::service_trigger_node, this, std::placeholders::_1,
+      std::placeholders::_2),
+    rclcpp::ServicesQoS().get_rmw_qos_profile());
+
   RCLCPP_INFO(this->get_logger(), "nerf_based_localizer is created.");
 }
 
@@ -147,7 +155,6 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
 {
   // lock mutex for initial pose
   std::lock_guard<std::mutex> initial_pose_array_lock(initial_pose_array_mtx_);
-
   if (initial_pose_msg_ptr_array_.empty()) {
     RCLCPP_ERROR(this->get_logger(), "initial_pose_with_covariance is not received.");
     return;
@@ -157,6 +164,18 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
     initial_pose_msg_ptr_array_.back();
   initial_pose_msg_ptr_array_.pop_back();
 
+  // lock mutex for image
+  std::lock_guard<std::mutex> image_array_lock(image_array_mtx_);
+  image_msg_ptr_array_.push_back(image_msg_ptr);
+  if (image_msg_ptr_array_.size() > 1) {
+    image_msg_ptr_array_.pop_front();
+  }
+
+  if (!is_activated_) {
+    return;
+  }
+
+  // Process
   const auto [pose_msg, image_msg, score_msg] = localize(pose_base_link->pose.pose, *image_msg_ptr);
 
   // (1) publish nerf_pose
@@ -198,8 +217,24 @@ void NerfBasedLocalizer::service(
   const tier4_localization_msgs::srv::PoseWithCovarianceStamped::Request::SharedPtr req,
   tier4_localization_msgs::srv::PoseWithCovarianceStamped::Response::SharedPtr res)
 {
-  res->pose_with_covariance = req->pose_with_covariance;
+  // lock mutex for image
+  std::lock_guard<std::mutex> image_array_lock(image_array_mtx_);
+  if (image_msg_ptr_array_.empty()) {
+    RCLCPP_ERROR(this->get_logger(), "image is not received.");
+    res->success = false;
+    return;
+  }
+
+  // Get the oldest image
+  const sensor_msgs::msg::Image::ConstSharedPtr image_msg_ptr = image_msg_ptr_array_.back();
+
+  // Process
+  const auto [pose_msg, image_msg, score_msg] =
+    localize(req->pose_with_covariance.pose.pose, *image_msg_ptr);
+
   res->success = true;
+  res->pose_with_covariance.header = req->pose_with_covariance.header;
+  res->pose_with_covariance.pose.pose = pose_msg;
   res->pose_with_covariance.pose.covariance = req->pose_with_covariance.pose.covariance;
 }
 
