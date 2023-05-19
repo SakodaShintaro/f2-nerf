@@ -54,6 +54,33 @@ std::tuple<float, Tensor, Tensor> LocalizerCore::monte_carlo_localize(
   return {best_score, best_pose, best_image};
 }
 
+std::vector<Particle> LocalizerCore::mc(Tensor initial_pose, Tensor image_tensor)
+{
+  torch::NoGradGuard no_grad_guard;
+
+  constexpr float noise_std = 0.2f;
+  constexpr int NUM_SEARCH = 1;
+
+  std::vector<Tensor> poses;
+  for (int x = -NUM_SEARCH; x <= NUM_SEARCH; x++) {
+    for (int y = -NUM_SEARCH; y <= NUM_SEARCH; y++) {
+      Tensor curr_pose = initial_pose.clone();
+      curr_pose[0][3] += x * noise_std;
+      curr_pose[1][3] += y * noise_std;
+      poses.push_back(curr_pose);
+    }
+  }
+
+  const std::vector<float> scores = evaluate_poses(poses, image_tensor);
+  const int pose_num = poses.size();
+
+  std::vector<Particle> result;
+  for (int i = 0; i < pose_num; i++) {
+    result.push_back({poses[i], scores[i]});
+  }
+  return result;
+}
+
 void LocalizerCore::load_checkpoint(const std::string & checkpoint_path)
 {
   {

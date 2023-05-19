@@ -7,6 +7,12 @@
 
 #include <torch/torch.h>
 
+struct Particle
+{
+  torch::Tensor pose;  // (4, 4)
+  float score;
+};
+
 class LocalizerCore
 {
   using Tensor = torch::Tensor;
@@ -15,6 +21,7 @@ public:
   LocalizerCore(const std::string & conf_path);
 
   std::tuple<float, Tensor, Tensor> monte_carlo_localize(Tensor initial_pose, Tensor image_tensor);
+  std::vector<Particle> mc(Tensor initial_pose, Tensor image_tensor);
 
   Tensor normalize_position(Tensor pose);
   Tensor inverse_normalize_position(Tensor pose);
