@@ -20,7 +20,7 @@ class LocalizerCore
 public:
   LocalizerCore(const std::string & conf_path);
 
-  std::tuple<float, Tensor, Tensor> monte_carlo_localize(Tensor initial_pose, Tensor image_tensor);
+  std::tuple<float, Tensor> calc_score(const Tensor & pose, const Tensor & image);
   std::vector<Particle> mc(Tensor initial_pose, Tensor image_tensor);
 
   Tensor normalize_position(Tensor pose);
@@ -32,7 +32,6 @@ private:
   void load_checkpoint(const std::string & checkpoint_path);
   std::tuple<Tensor, Tensor, Tensor> render_all_rays(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
-  std::tuple<float, Tensor> calc_score(const Tensor & pose, const Tensor & image);
   std::vector<float> evaluate_poses(const std::vector<Tensor> & poses, const Tensor & image);
 
   int H;
