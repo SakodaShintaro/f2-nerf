@@ -68,7 +68,7 @@ void LocalizerCore::load_checkpoint(const std::string & checkpoint_path)
   }
 }
 
-std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_whole_image(
+std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays(
   const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds)
 {
   torch::NoGradGuard no_grad_guard;
@@ -112,8 +112,8 @@ std::tuple<float, Tensor> LocalizerCore::calc_score(const Tensor & pose, const T
   auto [rays_o, rays_d, bounds] = dataset_->RaysFromPose(pose);
   std::cout << "RaysFromPose(): " << timer << std::endl;
   timer.reset();
-  auto [pred_colors, first_oct_dis, pred_disps] = render_whole_image(rays_o, rays_d, bounds);
-  std::cout << "render_whole_image(): " << timer << std::endl;
+  auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
+  std::cout << "render_all_rays(): " << timer << std::endl;
 
   Tensor pred_img = pred_colors.view({H, W, 3});
   pred_img = pred_img.clip(0.f, 1.f);

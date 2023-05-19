@@ -23,7 +23,7 @@ public:
 
 private:
   void load_checkpoint(const std::string & checkpoint_path);
-  std::tuple<Tensor, Tensor, Tensor> render_whole_image(
+  std::tuple<Tensor, Tensor, Tensor> render_all_rays(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
   std::tuple<float, Tensor> calc_score(const Tensor & pose, const Tensor & image);
 
