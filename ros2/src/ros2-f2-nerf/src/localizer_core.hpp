@@ -26,7 +26,7 @@ private:
   std::tuple<Tensor, Tensor, Tensor> render_all_rays(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
   std::tuple<float, Tensor> calc_score(const Tensor & pose, const Tensor & image);
-  std::vector<float> evaluate_poses(const std::vector<Tensor>& poses, const Tensor& image);
+  std::vector<float> evaluate_poses(const std::vector<Tensor> & poses, const Tensor & image);
 
   int H;
   int W;
