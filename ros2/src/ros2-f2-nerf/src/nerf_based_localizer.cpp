@@ -316,9 +316,9 @@ NerfBasedLocalizer::localize(
 
   RCLCPP_INFO_STREAM(this->get_logger(), "score = " << score);
 
-  RCLCPP_INFO(this->get_logger(), "start grid search");
+  Timer timer2;
   std::vector<Particle> particles = localizer_core_.grid_search(initial_pose, image_tensor);
-  RCLCPP_INFO(this->get_logger(), "finish grid search");
+  RCLCPP_INFO_STREAM(this->get_logger(), "finish grid search: " << timer2);
   if (this->get_parameter("save_particles").as_bool()) {
     static int cnt = 0;
     namespace fs = std::experimental::filesystem::v1;

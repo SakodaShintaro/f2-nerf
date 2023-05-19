@@ -3,6 +3,8 @@
 #include "../../src/Dataset/Dataset.h"
 #include "timer.hpp"
 
+#include <random>
+
 using Tensor = torch::Tensor;
 
 LocalizerCore::LocalizerCore(const std::string & conf_path)
@@ -164,8 +166,26 @@ std::vector<float> LocalizerCore::evaluate_poses(
   // const Tensor i = torch::tensor(i_vec, CUDALong);
   // const Tensor j = torch::tensor(j_vec, CUDALong);
 
-  const Tensor i = torch::randint(0, H, batch_size, CUDALong);
-  const Tensor j = torch::randint(0, W, batch_size, CUDALong);
+  // Pick rays by random sampling without replacement
+  std::vector<int> indices(H * W);
+  std::iota(indices.begin(), indices.end(), 0);
+  std::mt19937 engine(std::random_device{}());
+  std::shuffle(indices.begin(), indices.end(), engine);
+  std::vector<int64_t> i_vec, j_vec;
+  for (int k = 0; k < batch_size; k++) {
+    const int v = indices[k];
+    const int64_t i = v / W;
+    const int64_t j = v % W;
+    i_vec.push_back(i);
+    j_vec.push_back(j);
+  }
+  const Tensor i = torch::tensor(i_vec, CUDALong);
+  const Tensor j = torch::tensor(j_vec, CUDALong);
+
+  // Pick rays by random sampling with replacement
+  // const Tensor i = torch::randint(0, H, batch_size, CUDALong);
+  // const Tensor j = torch::randint(0, W, batch_size, CUDALong);
+
   const Tensor ij = torch::stack({i, j}, -1).to(torch::kFloat32);
   std::vector<Tensor> rays_o_vec;
   std::vector<Tensor> rays_d_vec;
