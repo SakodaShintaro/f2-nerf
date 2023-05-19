@@ -167,12 +167,11 @@ std::vector<float> LocalizerCore::evaluate_poses(
   const int64_t pose_num = poses.size();
   const int64_t numel = batch_size * pose_num;
 
-  Tensor rays_o = torch::stack(rays_o_vec);
-  Tensor rays_d = torch::stack(rays_d_vec);
+  Tensor rays_o = torch::cat(rays_o_vec);  // (numel, 3)
+  Tensor rays_d = torch::cat(rays_d_vec);  // (numel, 3)
   Tensor bounds =
-    torch::stack(
-      {torch::full({numel}, near, CUDAFloat), torch::full({batch_size}, far, CUDAFloat)}, -1)
-      .contiguous();
+    torch::stack({torch::full({numel}, near, CUDAFloat), torch::full({numel}, far, CUDAFloat)}, -1)
+      .contiguous();  // (numel, 2)
 
   std::cout << "RaysFromPose(): " << timer << std::endl;
   timer.reset();
@@ -181,11 +180,11 @@ std::vector<float> LocalizerCore::evaluate_poses(
 
   Tensor pred_pixels = pred_colors.view({pose_num, batch_size, 3});
   pred_pixels = pred_pixels.clip(0.f, 1.f);
-  pred_pixels = pred_pixels.to(image.device());
+  pred_pixels = pred_pixels.to(image.device());  // (pose_num, batch_size, 3)
 
-  Tensor gt_pixels = image.index({i, j});  // shape = (batch_size, 3)
-  Tensor diff = pred_pixels - gt_pixels;
-  Tensor loss = (diff * diff).sum(-1).sum(-1).cpu();
+  Tensor gt_pixels = image.index({i, j});              // (batch_size, 3)
+  Tensor diff = pred_pixels - gt_pixels;               // (pose_num, batch_size, 3)
+  Tensor loss = (diff * diff).mean(-1).sum(-1).cpu();  // (pose_num,)
 
   std::vector<float> result(loss.data_ptr<float>(), loss.data_ptr<float>() + loss.numel());
   return result;
