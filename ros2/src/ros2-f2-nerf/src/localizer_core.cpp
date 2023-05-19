@@ -30,8 +30,8 @@ std::vector<Particle> LocalizerCore::grid_search(Tensor initial_pose, Tensor ima
 {
   torch::NoGradGuard no_grad_guard;
 
-  constexpr float noise_std = 0.2f;
-  constexpr int NUM_SEARCH = 1;
+  constexpr float noise_std = 0.025f;
+  constexpr int NUM_SEARCH = 4;
 
   std::vector<Tensor> poses;
   for (int z = -NUM_SEARCH; z <= NUM_SEARCH; z++) {
@@ -149,7 +149,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
 
   const int H = dataset_->height_;
   const int W = dataset_->width_;
-  const int batch_size = 32;
+  const int batch_size = 512;
   const Tensor i = torch::randint(0, H, batch_size, CUDALong);
   const Tensor j = torch::randint(0, W, batch_size, CUDALong);
   const Tensor ij = torch::stack({i, j}, -1).to(torch::kFloat32);
