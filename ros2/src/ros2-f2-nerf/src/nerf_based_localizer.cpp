@@ -256,12 +256,9 @@ NerfBasedLocalizer::localize(
   const std::string encoding = image_msg.encoding;
 
   // output information about image
-  std::stringstream ss;
-  ss << "Image received. ";
-  ss << "width: " << width << ", ";
-  ss << "height: " << height << ", ";
-  ss << "step: " << step;
-  RCLCPP_INFO(this->get_logger(), ss.str().c_str());
+  RCLCPP_INFO_STREAM(
+    this->get_logger(),
+    "Image received. width: " << width << ", height: " << height << ", step: " << step);
 
   // Accessing image data
   torch::Tensor image_tensor = torch::tensor(image_msg.data);
@@ -301,9 +298,7 @@ NerfBasedLocalizer::localize(
   initial_pose = initial_pose.to(torch::kCUDA);
   initial_pose = initial_pose.to(torch::kFloat32);
 
-  ss.str("");
-  ss << "initial_pose_fist: " << initial_pose;
-  RCLCPP_INFO(this->get_logger(), ss.str().c_str());
+  RCLCPP_INFO_STREAM(this->get_logger(), "initial_pose_fist: " << initial_pose);
 
   initial_pose = initial_pose.matmul(axis_convert_mat1_);
   initial_pose = axis_convert_mat2_.matmul(initial_pose);
@@ -311,17 +306,14 @@ NerfBasedLocalizer::localize(
   initial_pose = localizer_core_.normalize_position(initial_pose);
   initial_pose = initial_pose.index({Slc(0, 3), Slc(0, 4)});
 
-  // output about pose
-  ss.str("");
-  ss << "initial_pose_converted: " << initial_pose;
-  RCLCPP_INFO(this->get_logger(), ss.str().c_str());
+  RCLCPP_INFO_STREAM(this->get_logger(), "initial_pose_converted: " << initial_pose);
 
   // run NeRF
   RCLCPP_INFO(this->get_logger(), "start localize");
   auto [score, nerf_image] = localizer_core_.pred_image_and_calc_score(initial_pose, image_tensor);
   torch::Tensor optimized_pose = initial_pose;
 
-  RCLCPP_INFO(this->get_logger(), ("score = " + std::to_string(score)).c_str());
+  RCLCPP_INFO_STREAM(this->get_logger(), "score = " << score);
 
   // save image
   if (this->get_parameter("save_image").as_bool()) {
@@ -385,10 +377,8 @@ void NerfBasedLocalizer::service_trigger_node(
   const std_srvs::srv::SetBool::Request::SharedPtr req,
   std_srvs::srv::SetBool::Response::SharedPtr res)
 {
-  RCLCPP_INFO(
-    this->get_logger(),
-    ("service_trigger " + std::to_string(req->data) + " is arrived to NerfBasedLocalizer.")
-      .c_str());
+  RCLCPP_INFO_STREAM(
+    this->get_logger(), "service_trigger " << req->data << " is arrived to NerfBasedLocalizer.");
 
   is_activated_ = req->data;
   if (is_activated_) {
