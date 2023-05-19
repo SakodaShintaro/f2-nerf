@@ -26,7 +26,7 @@ LocalizerCore::LocalizerCore(const std::string & conf_path)
   dataset_->intri_ /= factor;
 }
 
-std::vector<Particle> LocalizerCore::mc(Tensor initial_pose, Tensor image_tensor)
+std::vector<Particle> LocalizerCore::grid_search(Tensor initial_pose, Tensor image_tensor)
 {
   torch::NoGradGuard no_grad_guard;
 
