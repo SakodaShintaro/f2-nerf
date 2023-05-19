@@ -21,6 +21,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   localizer_core_("./runtime_config.yaml")
 {
   this->declare_parameter("save_image", false);
+  this->declare_parameter("save_particles", false);
 
   initial_pose_with_covariance_subscriber_ =
     this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -314,6 +315,29 @@ NerfBasedLocalizer::localize(
   torch::Tensor optimized_pose = initial_pose;
 
   RCLCPP_INFO_STREAM(this->get_logger(), "score = " << score);
+
+  RCLCPP_INFO(this->get_logger(), "start grid search");
+  std::vector<Particle> particles = localizer_core_.grid_search(initial_pose, image_tensor);
+  RCLCPP_INFO(this->get_logger(), "finish grid search");
+  if (this->get_parameter("save_particles").as_bool()) {
+    static int cnt = 0;
+    namespace fs = std::experimental::filesystem::v1;
+    fs::create_directories("./result_images/trial/particles/");
+    std::stringstream ss;
+    ss << std::setw(8) << std::setfill('0') << cnt;
+    std::ofstream ofs("./result_images/trial/particles/" + ss.str() + ".txt");
+    ofs << "m00\tm01\tm02\tm03\tm10\tm11\tm12\tm13\tm20\tm21\tm22\tm23\tscore" << std::endl;
+    ofs << std::fixed;
+    for (int p = 0; p < particles.size(); p++) {
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 4; j++) {
+          ofs << particles[p].pose[i][j].item<float>() << "\t";
+        }
+      }
+      ofs << particles[p].score << std::endl;
+    }
+    cnt++;
+  }
 
   // save image
   if (this->get_parameter("save_image").as_bool()) {
