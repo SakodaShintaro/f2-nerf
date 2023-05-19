@@ -140,3 +140,53 @@ Tensor LocalizerCore::inverse_normalize_position(Tensor pose)
   pose.index_put_({Slc(0, 3), 3}, cam_pos);
   return pose;
 }
+
+std::vector<float> LocalizerCore::evaluate_poses(
+  const std::vector<Tensor> & poses, const Tensor & image)
+{
+  torch::NoGradGuard no_grad_guard;
+  Timer timer;
+
+  const int H = dataset_->height_;
+  const int W = dataset_->width_;
+  const int batch_size = 32;
+  const Tensor i = torch::randint(0, H, batch_size, CUDALong);
+  const Tensor j = torch::randint(0, W, batch_size, CUDALong);
+  const Tensor ij = torch::stack({i, j}, -1).to(torch::kFloat32);
+  std::vector<Tensor> rays_o_vec;
+  std::vector<Tensor> rays_d_vec;
+  for (const Tensor & pose : poses) {
+    auto [rays_o, rays_d] =
+      Dataset::Img2WorldRay(pose, dataset_->intri_[0], dataset_->dist_params_[0], ij);
+    rays_o_vec.push_back(rays_o);
+    rays_d_vec.push_back(rays_d);
+  }
+  const float near = dataset_->bounds_.index({Slc(), 0}).min().item<float>();
+  const float far = dataset_->bounds_.index({Slc(), 1}).max().item<float>();
+
+  const int64_t pose_num = poses.size();
+  const int64_t numel = batch_size * pose_num;
+
+  Tensor rays_o = torch::stack(rays_o_vec);
+  Tensor rays_d = torch::stack(rays_d_vec);
+  Tensor bounds =
+    torch::stack(
+      {torch::full({numel}, near, CUDAFloat), torch::full({batch_size}, far, CUDAFloat)}, -1)
+      .contiguous();
+
+  std::cout << "RaysFromPose(): " << timer << std::endl;
+  timer.reset();
+  auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
+  std::cout << "render_all_rays(): " << timer << std::endl;
+
+  Tensor pred_pixels = pred_colors.view({pose_num, batch_size, 3});
+  pred_pixels = pred_pixels.clip(0.f, 1.f);
+  pred_pixels = pred_pixels.to(image.device());
+
+  Tensor gt_pixels = image.index({i, j});  // shape = (batch_size, 3)
+  Tensor diff = pred_pixels - gt_pixels;
+  Tensor loss = (diff * diff).sum(-1).sum(-1).cpu();
+
+  std::vector<float> result(loss.data_ptr<float>(), loss.data_ptr<float>() + loss.numel());
+  return result;
+}
