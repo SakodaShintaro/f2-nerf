@@ -1,6 +1,7 @@
 #include "localizer_core.hpp"
 
 #include "../../src/Dataset/Dataset.h"
+#include "timer.hpp"
 
 using Tensor = torch::Tensor;
 
@@ -71,9 +72,6 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_whole_image(
   const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds)
 {
   torch::NoGradGuard no_grad_guard;
-  // rays_o = rays_o.to(torch::kCPU);
-  // rays_d = rays_d.to(torch::kCPU);
-  // bounds = bounds.to(torch::kCPU);
   const int n_rays = rays_d.sizes()[0];
 
   Tensor pred_colors = torch::zeros({n_rays, 3}, CPUFloat);
@@ -110,8 +108,12 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_whole_image(
 std::tuple<float, Tensor> LocalizerCore::calc_score(const Tensor & pose, const Tensor & image)
 {
   torch::NoGradGuard no_grad_guard;
+  Timer timer;
   auto [rays_o, rays_d, bounds] = dataset_->RaysFromPose(pose);
+  std::cout << "RaysFromPose(): " << timer << std::endl;
+  timer.reset();
   auto [pred_colors, first_oct_dis, pred_disps] = render_whole_image(rays_o, rays_d, bounds);
+  std::cout << "render_whole_image(): " << timer << std::endl;
 
   Tensor pred_img = pred_colors.view({H, W, 3});
   pred_img = pred_img.clip(0.f, 1.f);
@@ -120,7 +122,7 @@ std::tuple<float, Tensor> LocalizerCore::calc_score(const Tensor & pose, const T
   Tensor diff = pred_img - image.view({H, W, 3});
   Tensor mse = (diff * diff).mean(-1);
   Tensor psnr = 10.f * torch::log10(1.f / mse);
-  return { psnr.mean().item<float>(), pred_img  };
+  return {psnr.mean().item<float>(), pred_img};
 }
 
 Tensor LocalizerCore::normalize_position(Tensor pose)
