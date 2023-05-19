@@ -34,11 +34,11 @@ std::vector<Particle> LocalizerCore::grid_search(Tensor initial_pose, Tensor ima
   constexpr int NUM_SEARCH = 1;
 
   std::vector<Tensor> poses;
-  for (int x = -NUM_SEARCH; x <= NUM_SEARCH; x++) {
-    for (int y = -NUM_SEARCH; y <= NUM_SEARCH; y++) {
+  for (int z = -NUM_SEARCH; z <= NUM_SEARCH; z++) {
+    for (int x = -NUM_SEARCH; x <= NUM_SEARCH; x++) {
       Tensor curr_pose = initial_pose.clone();
+      curr_pose[2][3] += z * noise_std;
       curr_pose[0][3] += x * noise_std;
-      curr_pose[1][3] += y * noise_std;
       poses.push_back(curr_pose);
     }
   }
