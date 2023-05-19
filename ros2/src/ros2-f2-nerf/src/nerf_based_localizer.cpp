@@ -325,7 +325,7 @@ NerfBasedLocalizer::localize(
     fs::create_directories("./result_images/trial/particles/");
     std::stringstream ss;
     ss << std::setw(8) << std::setfill('0') << cnt;
-    std::ofstream ofs("./result_images/trial/particles/" + ss.str() + ".txt");
+    std::ofstream ofs("./result_images/trial/particles/" + ss.str() + ".tsv");
     ofs << "m00\tm01\tm02\tm03\tm10\tm11\tm12\tm13\tm20\tm21\tm22\tm23\tscore" << std::endl;
     ofs << std::fixed;
     for (int p = 0; p < particles.size(); p++) {
