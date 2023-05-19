@@ -150,6 +150,20 @@ std::vector<float> LocalizerCore::evaluate_poses(
   const int H = dataset_->height_;
   const int W = dataset_->width_;
   const int batch_size = 512;
+
+  // Pick rays by constant interval
+  // const int step = H * W / batch_size;
+  // std::vector<int64_t> i_vec, j_vec;
+  // for (int k = 0; k < batch_size; k++) {
+  //   const int v = k * step;
+  //   const int64_t i = v / W;
+  //   const int64_t j = v % W;
+  //   i_vec.push_back(i);
+  //   j_vec.push_back(j);
+  // }
+  // const Tensor i = torch::tensor(i_vec, CUDALong);
+  // const Tensor j = torch::tensor(j_vec, CUDALong);
+
   const Tensor i = torch::randint(0, H, batch_size, CUDALong);
   const Tensor j = torch::randint(0, W, batch_size, CUDALong);
   const Tensor ij = torch::stack({i, j}, -1).to(torch::kFloat32);
