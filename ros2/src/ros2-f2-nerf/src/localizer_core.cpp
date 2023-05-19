@@ -104,7 +104,8 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays(
   return {pred_colors, first_oct_disp, pred_disp};
 }
 
-std::tuple<float, Tensor> LocalizerCore::calc_score(const Tensor & pose, const Tensor & image)
+std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
+  const Tensor & pose, const Tensor & image)
 {
   torch::NoGradGuard no_grad_guard;
   Timer timer;

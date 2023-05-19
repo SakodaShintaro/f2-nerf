@@ -20,7 +20,7 @@ class LocalizerCore
 public:
   LocalizerCore(const std::string & conf_path);
 
-  std::tuple<float, Tensor> calc_score(const Tensor & pose, const Tensor & image);
+  std::tuple<float, Tensor> pred_image_and_calc_score(const Tensor & pose, const Tensor & image);
   std::vector<Particle> mc(Tensor initial_pose, Tensor image_tensor);
 
   Tensor normalize_position(Tensor pose);

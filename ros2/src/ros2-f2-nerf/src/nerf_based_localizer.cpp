@@ -318,7 +318,7 @@ NerfBasedLocalizer::localize(
 
   // run NeRF
   RCLCPP_INFO(this->get_logger(), "start localize");
-  auto [score, nerf_image] = localizer_core_.calc_score(initial_pose, image_tensor);
+  auto [score, nerf_image] = localizer_core_.pred_image_and_calc_score(initial_pose, image_tensor);
   torch::Tensor optimized_pose = initial_pose;
 
   RCLCPP_INFO(this->get_logger(), ("score = " + std::to_string(score)).c_str());
