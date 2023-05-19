@@ -48,6 +48,7 @@ if __name__ == "__main__":
         plt.axis('equal')
         plt.xlabel("z")
         plt.ylabel("x")
+        plt.gca().invert_yaxis()
         save_path = f"{save_dir}/{log_file.split('/')[-1].split('.')[0]}.png"
         plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05)
         plt.close()
