@@ -219,6 +219,9 @@ std::vector<float> LocalizerCore::evaluate_poses(
   Tensor gt_pixels = image.index({i, j});              // (batch_size, 3)
   Tensor diff = pred_pixels - gt_pixels;               // (pose_num, batch_size, 3)
   Tensor loss = (diff * diff).mean(-1).sum(-1).cpu();  // (pose_num,)
+  loss = batch_size / (loss + 1e-6f);
+  loss = torch::pow(loss, 4);
+  loss /= loss.sum();
 
   std::vector<float> result(loss.data_ptr<float>(), loss.data_ptr<float>() + loss.numel());
   return result;

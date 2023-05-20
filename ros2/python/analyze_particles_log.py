@@ -53,7 +53,7 @@ if __name__ == "__main__":
         plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05)
         plt.close()
 
-        best_index = score.argmin()
+        best_index = score.argmax()
         trajectory_x.append(vec[best_index, 2])
         trajectory_y.append(vec[best_index, 0])
 
