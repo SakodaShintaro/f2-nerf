@@ -56,6 +56,8 @@ class ImagePosePublisher(Node):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
+        self.shutdown_requested = False
+
         # Publish at 10 Hz
         self.timer = self.create_timer(0.1, self.timer_callback)
         self.idx = 0
@@ -63,9 +65,9 @@ class ImagePosePublisher(Node):
     def timer_callback(self):
         if self.idx >= len(self.image_files) or self.idx >= len(self.poses):
             self.get_logger().info('Finished publishing images and poses.')
-            rclpy.shutdown()
+            self.shutdown_requested = True
             return
-        self.get_logger().info(f'Publishing images and poses {self.idx}.')
+        self.get_logger().info(f'Publishing images and poses {self.idx:04d}.')
 
         # Publish pose
         pose_msg = PoseWithCovarianceStamped()
@@ -125,10 +127,12 @@ def main(args=None):
     args = parser.parse_args()
 
     node = ImagePosePublisher(args.data_dir)
-    rclpy.spin(node)
-
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        while rclpy.ok() and not node.shutdown_requested:
+            rclpy.spin_once(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':
