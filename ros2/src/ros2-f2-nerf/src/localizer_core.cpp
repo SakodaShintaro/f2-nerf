@@ -143,9 +143,9 @@ std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
   pred_img = pred_img.to(image.device());
 
   Tensor diff = pred_img - image.view({H, W, 3});
-  Tensor mse = (diff * diff).mean(-1);
-  Tensor psnr = 10.f * torch::log10(1.f / mse);
-  return {psnr.mean().item<float>(), pred_img};
+  Tensor loss = (diff * diff).mean(-1).sum();
+  Tensor score = (H * W) / (loss + 1e-6f);
+  return {score.mean().item<float>(), pred_img};
 }
 
 Tensor LocalizerCore::normalize_position(Tensor pose)
