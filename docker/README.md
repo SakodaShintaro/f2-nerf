@@ -58,6 +58,10 @@ sudo apt install -y python3-colcon-common-extensions
 sudo apt install -y ccache vim
 sudo apt install -y gdb
 
+sudo add-apt-repository ppa:borglab/gtsam-release-4.1
+sudo apt update
+sudo apt install -y libgtsam-dev libgtsam-unstable-dev
+
 # add .bashrc
 export CC="/usr/lib/ccache/gcc"
 export CXX="/usr/lib/ccache/g++"

@@ -5,6 +5,8 @@
 
 #include <Eigen/Geometry>
 
+#include <gtsam/geometry/Rot3.h>
+
 #include <random>
 
 using Tensor = torch::Tensor;
@@ -246,4 +248,38 @@ std::vector<float> LocalizerCore::evaluate_poses(
 
   std::vector<float> result(loss.data_ptr<float>(), loss.data_ptr<float>() + loss.numel());
   return result;
+}
+
+Eigen::Matrix3d compute_rotation_average(
+  const std::vector<Eigen::Matrix3d> & rotations, const std::vector<double> & weights)
+{
+  const double epsilon = 0.000001;
+  const int max_iters = 300;
+  Eigen::Matrix3d R = rotations[0];
+  for (int iter = 0; iter < max_iters; ++iter) {
+    Eigen::Vector3d rot_sum = Eigen::Vector3d::Zero();
+    for (int i = 0; i < rotations.size(); ++i) {
+      const Eigen::Matrix3d & rot = rotations[i];
+      gtsam::Rot3 g_rot = gtsam::Rot3(rot.transpose() * R);
+      rot_sum += weights[i] * gtsam::Rot3::Logmap(g_rot);
+    }
+
+    if (rot_sum.norm() < epsilon) {
+      return R;
+    } else {
+      Eigen::Matrix3d r = gtsam::Rot3::Expmap(rot_sum).matrix();
+      Eigen::Matrix3d s = R * r;
+      R = gtsam::Rot3(s).matrix();
+    }
+  }
+  return R;
+}
+
+Tensor LocalizerCore::calc_average_pose(const std::vector<Particle> & particles)
+{
+  Tensor pose = torch::zeros_like(particles[0].pose);
+  for (const Particle & particle : particles) {
+    pose += particle.pose * particle.weight;
+  }
+  return pose;
 }

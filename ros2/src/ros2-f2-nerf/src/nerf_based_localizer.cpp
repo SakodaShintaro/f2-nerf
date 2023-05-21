@@ -311,14 +311,14 @@ NerfBasedLocalizer::localize(
 
   // run NeRF
   RCLCPP_INFO(this->get_logger(), "start localize");
-  auto [score, nerf_image] = localizer_core_.pred_image_and_calc_score(initial_pose, image_tensor);
-  torch::Tensor optimized_pose = initial_pose;
-
-  RCLCPP_INFO_STREAM(this->get_logger(), "score = " << score);
-
   Timer timer2;
   std::vector<Particle> particles = localizer_core_.grid_search(initial_pose, image_tensor);
   RCLCPP_INFO_STREAM(this->get_logger(), "finish grid search: " << timer2);
+
+  torch::Tensor optimized_pose = LocalizerCore::calc_average_pose(particles);
+  auto [score, nerf_image] =
+    localizer_core_.pred_image_and_calc_score(optimized_pose, image_tensor);
+  RCLCPP_INFO_STREAM(this->get_logger(), "score = " << score);
   if (this->get_parameter("save_particles").as_bool()) {
     static int cnt = 0;
     namespace fs = std::experimental::filesystem::v1;

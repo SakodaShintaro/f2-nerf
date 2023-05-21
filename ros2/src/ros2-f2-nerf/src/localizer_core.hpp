@@ -26,6 +26,8 @@ public:
   Tensor normalize_position(Tensor pose);
   Tensor inverse_normalize_position(Tensor pose);
 
+  static Tensor calc_average_pose(const std::vector<Particle> & particles);
+
   std::unique_ptr<Dataset> dataset_;
 
 private:
