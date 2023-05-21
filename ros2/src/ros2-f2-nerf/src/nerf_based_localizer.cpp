@@ -315,9 +315,16 @@ NerfBasedLocalizer::localize(
   std::vector<Particle> particles = localizer_core_.grid_search(initial_pose, image_tensor);
   RCLCPP_INFO_STREAM(this->get_logger(), "finish grid search: " << timer2);
 
+  timer2.reset();
   torch::Tensor optimized_pose = LocalizerCore::calc_average_pose(particles);
+  RCLCPP_INFO_STREAM(this->get_logger(), "finish calc average: " << timer2);
+  RCLCPP_INFO_STREAM(this->get_logger(), "optimized_pose: " << optimized_pose);
+
+  timer2.reset();
   auto [score, nerf_image] =
     localizer_core_.pred_image_and_calc_score(optimized_pose, image_tensor);
+  RCLCPP_INFO_STREAM(this->get_logger(), "finish infer image: " << timer2);
+
   RCLCPP_INFO_STREAM(this->get_logger(), "score = " << score);
   if (this->get_parameter("save_particles").as_bool()) {
     static int cnt = 0;

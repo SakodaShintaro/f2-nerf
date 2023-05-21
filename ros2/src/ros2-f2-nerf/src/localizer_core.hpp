@@ -9,7 +9,7 @@
 
 struct Particle
 {
-  torch::Tensor pose;  // (4, 4)
+  torch::Tensor pose;  // (3, 4)
   float weight;
 };
 

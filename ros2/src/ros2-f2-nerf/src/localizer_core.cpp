@@ -260,7 +260,7 @@ Eigen::Matrix3d compute_rotation_average(
     Eigen::Vector3d rot_sum = Eigen::Vector3d::Zero();
     for (int i = 0; i < rotations.size(); ++i) {
       const Eigen::Matrix3d & rot = rotations[i];
-      gtsam::Rot3 g_rot = gtsam::Rot3(rot.transpose() * R);
+      gtsam::Rot3 g_rot = gtsam::Rot3(R.transpose() * rot);
       rot_sum += weights[i] * gtsam::Rot3::Logmap(g_rot);
     }
 
@@ -277,9 +277,35 @@ Eigen::Matrix3d compute_rotation_average(
 
 Tensor LocalizerCore::calc_average_pose(const std::vector<Particle> & particles)
 {
-  Tensor pose = torch::zeros_like(particles[0].pose);
+  torch::Device device = particles.front().pose.device();
+  torch::Tensor avg_position_tensor = torch::zeros({3, 1}, device).to(torch::kFloat32);
+  std::vector<Eigen::Matrix3d> rotations;
+  std::vector<double> weights;
+
   for (const Particle & particle : particles) {
-    pose += particle.pose * particle.weight;
+    torch::Tensor pose = particle.pose;
+    torch::Tensor position = pose.index({Slc(0, 3), Slc(3, 4)});
+    avg_position_tensor += position * particle.weight;
+
+    // slice to get 3x3 rotation matrix, convert it to Eigen::Matrix3f
+    torch::Tensor rotation_tensor = pose.index({Slc(0, 3), Slc(0, 3)}).to(torch::kDouble).cpu();
+    Eigen::Matrix3d rotation;
+    std::memcpy(
+      rotation.data(), rotation_tensor.data_ptr(), sizeof(double) * rotation_tensor.numel());
+    rotations.push_back(rotation);
+    weights.push_back(particle.weight);
   }
-  return pose;
+
+  Eigen::Matrix3d avg_rotation_matrix = compute_rotation_average(rotations, weights);
+  torch::Tensor avg_rotation_tensor = torch::from_blob(
+    avg_rotation_matrix.data(), {3, 3}, torch::TensorOptions().dtype(torch::kDouble));
+  avg_rotation_tensor = avg_rotation_tensor.to(torch::kFloat32);
+  avg_rotation_tensor = avg_rotation_tensor.to(device);
+
+  // combine average position and rotation to form average pose
+  torch::Tensor avg_pose = torch::zeros_like(particles.front().pose);
+  avg_pose.index_put_({Slc(0, 3), Slc(3, 4)}, avg_position_tensor);
+  avg_pose.index_put_({Slc(0, 3), Slc(0, 3)}, avg_rotation_tensor);
+
+  return avg_pose;
 }
