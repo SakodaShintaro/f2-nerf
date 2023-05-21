@@ -41,9 +41,9 @@ if __name__ == "__main__":
     for log_file in log_file_list:
         # plot current search result
         df = pd.read_csv(log_file, sep="\t")
-        weight = df["weight"].values
-        weight_min = min(weight_min, weight.min())
-        weight_max = max(weight_max, weight.max())
+        weights = df["weight"].values
+        weight_min = min(weight_min, weights.min())
+        weight_max = max(weight_max, weights.max())
 
     for log_file in tqdm(log_file_list):
         # plot the trajectory
@@ -57,7 +57,7 @@ if __name__ == "__main__":
             weight = row.values[12]
             plot_arrow(pose, weight)
         vec = df[["m03", "m13", "m23"]].values
-        weight = df["weight"].values
+        weights = df["weight"].values
         # sc = plt.scatter(vec[:, 2], vec[:, 0], vmin=score_min, vmax=score_max, c=score, cmap=cm.seismic)
         # plt.colorbar(sc)
         plt.axis('equal')
@@ -68,9 +68,10 @@ if __name__ == "__main__":
         plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05)
         plt.close()
 
-        best_index = weight.argmax()
-        trajectory_x.append(vec[best_index, 2])
-        trajectory_y.append(vec[best_index, 0])
+        best_index = weights.argmax()
+        curr_pos = np.average(vec, weights=weights, axis=0)
+        trajectory_x.append(curr_pos[2])
+        trajectory_y.append(curr_pos[0])
 
     subprocess.run(
         "ffmpeg -y -r 10 -f image2 -i %08d.png -vcodec libx264 -crf 25 -pix_fmt yuv420p -vf \"scale=trunc(iw/2)*2: trunc(ih/2)*2\" ../output.mp4",
