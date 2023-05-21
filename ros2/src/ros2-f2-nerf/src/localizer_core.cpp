@@ -3,6 +3,8 @@
 #include "../../src/Dataset/Dataset.h"
 #include "timer.hpp"
 
+#include <Eigen/Geometry>
+
 #include <random>
 
 using Tensor = torch::Tensor;
@@ -38,10 +40,29 @@ std::vector<Particle> LocalizerCore::grid_search(Tensor initial_pose, Tensor ima
   std::vector<Tensor> poses;
   for (int z = -NUM_SEARCH; z <= NUM_SEARCH; z++) {
     for (int x = -NUM_SEARCH; x <= NUM_SEARCH; x++) {
-      Tensor curr_pose = initial_pose.clone();
-      curr_pose[2][3] += z * noise_std;
-      curr_pose[0][3] += x * noise_std;
-      poses.push_back(curr_pose);
+      for (float theta : {-5.0, 5.0}) {
+        // Convert degrees to radians
+        theta = theta * M_PI / 180.0;
+
+        // Create a rotation matrix around the y-axis
+        Eigen::Matrix3f rotation_matrix(Eigen::AngleAxisf(theta, Eigen::Vector3f::UnitY()));
+
+        // Convert Eigen Matrix to torch Tensor
+        Tensor rotation_tensor = torch::from_blob(rotation_matrix.data(), {3, 3});
+        rotation_tensor = rotation_tensor.to(torch::kFloat32);
+        rotation_tensor = rotation_tensor.to(initial_pose.device());
+
+        // Apply translation
+        Tensor curr_pose = initial_pose.clone();
+        curr_pose[2][3] += z * noise_std;
+        curr_pose[0][3] += x * noise_std;
+
+        // Apply rotation
+        Tensor rotated = rotation_tensor.mm(curr_pose.index({Slc(0, 3), Slc(0, 3)}));
+        curr_pose.index_put_({Slc(0, 3), Slc(0, 3)}, rotated);
+
+        poses.push_back(curr_pose);
+      }
     }
   }
 
