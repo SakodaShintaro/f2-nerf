@@ -10,6 +10,7 @@ import os
 from tqdm import tqdm
 import subprocess
 import numpy as np
+import gtsam
 
 
 def parse_args():
@@ -25,6 +26,28 @@ def plot_arrow(pose_mat, weight):
     color = (weight, 1 - weight, 0)
     plt.arrow(position[2], position[0],
               vec[2], vec[0], color=color, width=0.1 * weight)
+
+
+def compute_rotation_average(rotations, weights):
+    # Simple averaging does not use weighted average or k means.
+    # https://users.cecs.anu.edu.au/~hartley/Papers/PDF/Hartley-Trumpf:Rotation-averaging:IJCV.pdf
+    # section 5.3 Algorithm 1
+
+    epsilon = 0.000001
+    max_iters = 300
+    R = rotations[0]
+    for _ in range(max_iters):
+        rot_sum = np.zeros((3))
+        for i, rot in enumerate(rotations):
+            rot_sum = rot_sum + weights[i] * gtsam.Rot3.Logmap(gtsam.Rot3(R.transpose() @ rot))
+
+        if np.linalg.norm(rot_sum) < epsilon:
+            return R
+        else:
+            r = gtsam.Rot3.Expmap(rot_sum).matrix()
+            s = R @ r
+            R = gtsam.Rot3(s).matrix()
+    return R
 
 
 if __name__ == "__main__":
@@ -52,12 +75,22 @@ if __name__ == "__main__":
         # plot current search result
         df = pd.read_csv(log_file, sep="\t")
 
+        rotations = df[["m00", "m01", "m02", "m10", "m11", "m12", "m20", "m21", "m22"]].values.reshape(-1, 3, 3)
+        positions = df[["m03", "m13", "m23"]].values
+        weights = df["weight"].values
+
+        curr_rotation = compute_rotation_average(rotations, weights)
+        curr_position = np.average(positions, weights=weights, axis=0)
+
+        vec = curr_rotation @ np.array([0, 0, -0.5])
+        color = (0, 0, 1)
+        plt.arrow(curr_position[2], curr_position[0],
+                  vec[2], vec[0], color=color, width=0.1)
+
         for i, row in df.iterrows():
             pose = row.values[0:12].reshape(3, 4)
             weight = row.values[12]
             plot_arrow(pose, weight)
-        vec = df[["m03", "m13", "m23"]].values
-        weights = df["weight"].values
         # sc = plt.scatter(vec[:, 2], vec[:, 0], vmin=score_min, vmax=score_max, c=score, cmap=cm.seismic)
         # plt.colorbar(sc)
         plt.axis('equal')
@@ -68,10 +101,8 @@ if __name__ == "__main__":
         plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05)
         plt.close()
 
-        best_index = weights.argmax()
-        curr_pos = np.average(vec, weights=weights, axis=0)
-        trajectory_x.append(curr_pos[2])
-        trajectory_y.append(curr_pos[0])
+        trajectory_x.append(curr_position[2])
+        trajectory_y.append(curr_position[0])
 
     subprocess.run(
         "ffmpeg -y -r 10 -f image2 -i %08d.png -vcodec libx264 -crf 25 -pix_fmt yuv420p -vf \"scale=trunc(iw/2)*2: trunc(ih/2)*2\" ../output.mp4",
