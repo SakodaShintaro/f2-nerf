@@ -10,7 +10,7 @@
 struct Particle
 {
   torch::Tensor pose;  // (4, 4)
-  float score;
+  float weight;
 };
 
 class LocalizerCore

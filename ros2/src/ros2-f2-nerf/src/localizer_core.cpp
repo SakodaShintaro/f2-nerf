@@ -66,12 +66,12 @@ std::vector<Particle> LocalizerCore::grid_search(Tensor initial_pose, Tensor ima
     }
   }
 
-  const std::vector<float> scores = evaluate_poses(poses, image_tensor);
+  const std::vector<float> weights = evaluate_poses(poses, image_tensor);
   const int pose_num = poses.size();
 
   std::vector<Particle> result;
   for (int i = 0; i < pose_num; i++) {
-    result.push_back({poses[i], scores[i]});
+    result.push_back({poses[i], weights[i]});
   }
   return result;
 }

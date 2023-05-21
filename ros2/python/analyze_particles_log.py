@@ -36,14 +36,14 @@ if __name__ == "__main__":
     trajectory_x = list()
     trajectory_y = list()
 
-    score_min = float("inf")
-    score_max = -float("inf")
+    weight_min = float("inf")
+    weight_max = -float("inf")
     for log_file in log_file_list:
         # plot current search result
         df = pd.read_csv(log_file, sep="\t")
-        score = df["score"].values
-        score_min = min(score_min, score.min())
-        score_max = max(score_max, score.max())
+        weight = df["weight"].values
+        weight_min = min(weight_min, weight.min())
+        weight_max = max(weight_max, weight.max())
 
     for log_file in tqdm(log_file_list):
         # plot the trajectory
@@ -54,10 +54,10 @@ if __name__ == "__main__":
 
         for i, row in df.iterrows():
             pose = row.values[0:12].reshape(3, 4)
-            score = row.values[12]
-            plot_arrow(pose, score)
+            weight = row.values[12]
+            plot_arrow(pose, weight)
         vec = df[["m03", "m13", "m23"]].values
-        score = df["score"].values
+        weight = df["weight"].values
         # sc = plt.scatter(vec[:, 2], vec[:, 0], vmin=score_min, vmax=score_max, c=score, cmap=cm.seismic)
         # plt.colorbar(sc)
         plt.axis('equal')
@@ -68,7 +68,7 @@ if __name__ == "__main__":
         plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05)
         plt.close()
 
-        best_index = score.argmax()
+        best_index = weight.argmax()
         trajectory_x.append(vec[best_index, 2])
         trajectory_y.append(vec[best_index, 0])
 

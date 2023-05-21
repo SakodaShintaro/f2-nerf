@@ -326,7 +326,7 @@ NerfBasedLocalizer::localize(
     std::stringstream ss;
     ss << std::setw(8) << std::setfill('0') << cnt;
     std::ofstream ofs("./result_images/trial/particles/" + ss.str() + ".tsv");
-    ofs << "m00\tm01\tm02\tm03\tm10\tm11\tm12\tm13\tm20\tm21\tm22\tm23\tscore" << std::endl;
+    ofs << "m00\tm01\tm02\tm03\tm10\tm11\tm12\tm13\tm20\tm21\tm22\tm23\tweight" << std::endl;
     ofs << std::fixed;
     for (int p = 0; p < particles.size(); p++) {
       for (int i = 0; i < 3; i++) {
@@ -334,7 +334,7 @@ NerfBasedLocalizer::localize(
           ofs << particles[p].pose[i][j].item<float>() << "\t";
         }
       }
-      ofs << particles[p].score << std::endl;
+      ofs << particles[p].weight << std::endl;
     }
     cnt++;
   }
