@@ -190,12 +190,13 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   geometry_msgs::msg::PoseWithCovarianceStamped pose_with_cov_msg;
   pose_with_cov_msg.header = pose_base_link->header;
   pose_with_cov_msg.pose.pose = pose_msg;
-  pose_with_cov_msg.pose.covariance[0] = 0.1;
-  pose_with_cov_msg.pose.covariance[7] = 0.1;
-  pose_with_cov_msg.pose.covariance[14] = 0.1;
-  pose_with_cov_msg.pose.covariance[21] = 0.1;
-  pose_with_cov_msg.pose.covariance[28] = 0.1;
-  pose_with_cov_msg.pose.covariance[35] = 0.1;
+  const double cov = 0.1;
+  pose_with_cov_msg.pose.covariance[0] = cov;
+  pose_with_cov_msg.pose.covariance[7] = cov;
+  pose_with_cov_msg.pose.covariance[14] = cov;
+  pose_with_cov_msg.pose.covariance[21] = cov;
+  pose_with_cov_msg.pose.covariance[28] = cov;
+  pose_with_cov_msg.pose.covariance[35] = cov;
   nerf_pose_with_covariance_publisher_->publish(pose_with_cov_msg);
 
   // (3) publish score
