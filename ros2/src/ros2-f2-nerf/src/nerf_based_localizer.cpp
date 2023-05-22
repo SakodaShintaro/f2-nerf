@@ -274,6 +274,13 @@ NerfBasedLocalizer::localize(
     geometry_msgs::msg::TransformStamped transform =
       tf_buffer_.lookupTransform("velodyne_front", "base_link", tf2::TimePointZero);
     tf2::doTransform(pose_msg, pose_lidar.pose.pose, transform);
+    RCLCPP_INFO(
+      this->get_logger(), "Transform Translation: [%f, %f, %f]", transform.transform.translation.x,
+      transform.transform.translation.y, transform.transform.translation.z);
+    RCLCPP_INFO(
+      this->get_logger(), "Transform Rotation (Quaternion): [%f, %f, %f, %f]",
+      transform.transform.rotation.x, transform.transform.rotation.y,
+      transform.transform.rotation.z, transform.transform.rotation.w);
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(this->get_logger(), "%s", ex.what());
   }
