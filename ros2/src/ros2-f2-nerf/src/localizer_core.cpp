@@ -142,7 +142,7 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays(
   Tensor first_oct_disp = torch::full({n_rays, 1}, 1.f, CPUFloat);
   Tensor pred_disp = torch::zeros({n_rays, 1}, CPUFloat);
 
-  const int ray_batch_size = H * W;
+  const int ray_batch_size = (1 << 16);
   for (int i = 0; i < n_rays; i += ray_batch_size) {
     int i_high = std::min(i + ray_batch_size, n_rays);
     Tensor cur_rays_o = rays_o.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
@@ -214,7 +214,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
 
   const int H = dataset_->height_;
   const int W = dataset_->width_;
-  const int batch_size = 512;
+  const int batch_size = 256;
 
   // Pick rays by constant interval
   // const int step = H * W / batch_size;
