@@ -268,6 +268,7 @@ NerfBasedLocalizer::localize(
   image_tensor = image_tensor.to(torch::kCUDA);
   image_tensor = image_tensor.to(torch::kFloat32);
   image_tensor /= 255.0;
+  image_tensor = image_tensor.flip(2);  // BGR to RGB
 
   geometry_msgs::msg::PoseWithCovarianceStamped pose_lidar;
   try {
