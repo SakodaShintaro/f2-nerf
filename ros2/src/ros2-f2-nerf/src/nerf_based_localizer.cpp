@@ -317,6 +317,22 @@ NerfBasedLocalizer::localize(
   std::vector<Particle> particles = localizer_core_.random_search(initial_pose, image_tensor, 100);
   RCLCPP_INFO_STREAM(this->get_logger(), "finish search: " << timer2);
 
+  // if (true) {
+  //   static int cnt = 0;
+  //   namespace fs = std::experimental::filesystem::v1;
+  //   fs::create_directories("./result_images/trial/particles_images/");
+
+  //   for (int32_t i = 0; i < particles.size(); i++) {
+  //     auto [score, nerf_image] =
+  //       localizer_core_.pred_image_and_calc_score(particles[i].pose, image_tensor);
+  //     std::stringstream ss;
+  //     ss << "./result_images/trial/particles_images/";
+  //     save_image(nerf_image, ss.str(), i);
+  //     std::cout << "score[" << i << "] = " << score << std::endl;
+  //   }
+  //   cnt++;
+  // }
+
   timer2.reset();
   torch::Tensor optimized_pose = LocalizerCore::calc_average_pose(particles);
   RCLCPP_INFO_STREAM(this->get_logger(), "finish calc average: " << timer2);
