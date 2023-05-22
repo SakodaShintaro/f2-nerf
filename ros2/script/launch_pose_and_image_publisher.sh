@@ -11,7 +11,6 @@ source install/setup.bash
 set -u
 
 rm -rf ./result_images/trial
-rm -rf ~/.ros/log/*
 
 ros2 service call /trigger_node_srv std_srvs/srv/SetBool "{data: true}"
 
