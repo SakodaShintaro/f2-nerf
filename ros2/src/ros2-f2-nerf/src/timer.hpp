@@ -33,7 +33,7 @@ public:
   }
 
   friend std::ostream &operator<<(std::ostream &os, Timer &t) {
-    os << t.micro_seconds() / 1000.f << "[ms] ";
+    os << t.micro_seconds() / 1000.f << "[ms]";
     return os;
   }
 
