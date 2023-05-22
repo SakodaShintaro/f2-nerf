@@ -95,6 +95,7 @@ std::vector<Particle> LocalizerCore::random_search(
     // Sample a random translation
     Tensor curr_pose = initial_pose.clone();
     curr_pose[2][3] += dist_position(engine);
+    curr_pose[1][3] += dist_position(engine);
     curr_pose[0][3] += dist_position(engine);
 
     // orientation
@@ -283,7 +284,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
   Tensor diff = pred_pixels - gt_pixels;               // (pose_num, batch_size, 3)
   Tensor loss = (diff * diff).mean(-1).sum(-1).cpu();  // (pose_num,)
   loss = batch_size / (loss + 1e-6f);
-  loss = torch::pow(loss, 4);
+  loss = torch::pow(loss, 5);
   loss /= loss.sum();
 
   std::vector<float> result(loss.data_ptr<float>(), loss.data_ptr<float>() + loss.numel());
