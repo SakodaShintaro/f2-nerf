@@ -81,11 +81,7 @@ if __name__ == "__main__":
 
         curr_rotation = compute_rotation_average(rotations, weights)
         curr_position = np.average(positions, weights=weights, axis=0)
-
-        vec = curr_rotation @ np.array([0, 0, -0.5])
-        color = (0, 0, 1)
-        plt.arrow(curr_position[2], curr_position[0],
-                  vec[2], vec[0], color=color, width=0.1)
+        weights /= weight_max
 
         for i, row in df.iterrows():
             pose = row.values[0:12].reshape(3, 4)

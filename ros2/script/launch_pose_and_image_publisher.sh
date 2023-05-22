@@ -17,3 +17,6 @@ ros2 service call /trigger_node_srv std_srvs/srv/SetBool "{data: true}"
 ros2 run pose_and_image_publisher pose_and_image_publisher ~/data/converted/20230501_try1/
 
 python3 python/analyze_particles_log.py ./result_images/trial/particles/
+
+mkdir -p ./result_images/trial/log
+mv ~/.ros/log/* ./result_images/trial/log/
