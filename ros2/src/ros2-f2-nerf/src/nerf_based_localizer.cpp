@@ -272,7 +272,7 @@ NerfBasedLocalizer::localize(
   geometry_msgs::msg::PoseWithCovarianceStamped pose_lidar;
   try {
     geometry_msgs::msg::TransformStamped transform =
-      tf_buffer_.lookupTransform("velodyne_front", "base_link", tf2::TimePointZero);
+      tf_buffer_.lookupTransform("base_link", "velodyne_front", tf2::TimePointZero);
     tf2::doTransform(pose_msg, pose_lidar.pose.pose, transform);
     RCLCPP_INFO(
       this->get_logger(), "Transform Translation: [%f, %f, %f]", transform.transform.translation.x,
