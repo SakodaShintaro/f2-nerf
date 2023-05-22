@@ -36,7 +36,7 @@ std::vector<Particle> LocalizerCore::grid_search(Tensor initial_pose, Tensor ima
 {
   torch::NoGradGuard no_grad_guard;
 
-  constexpr float noise_std = 0.025f;
+  constexpr float GRID_WIDTH = 0.025f;
   constexpr int NUM_SEARCH = 4;
 
   std::vector<Tensor> poses;
@@ -56,8 +56,8 @@ std::vector<Particle> LocalizerCore::grid_search(Tensor initial_pose, Tensor ima
 
         // Apply translation
         Tensor curr_pose = initial_pose.clone();
-        curr_pose[2][3] += z * noise_std;
-        curr_pose[0][3] += x * noise_std;
+        curr_pose[2][3] += z * GRID_WIDTH;
+        curr_pose[0][3] += x * GRID_WIDTH;
 
         // Apply rotation
         Tensor rotated = rotation_tensor.mm(curr_pose.index({Slc(0, 3), Slc(0, 3)}));
@@ -66,6 +66,46 @@ std::vector<Particle> LocalizerCore::grid_search(Tensor initial_pose, Tensor ima
         poses.push_back(curr_pose);
       }
     }
+  }
+
+  const std::vector<float> weights = evaluate_poses(poses, image_tensor);
+  const int pose_num = poses.size();
+
+  std::vector<Particle> result;
+  for (int i = 0; i < pose_num; i++) {
+    result.push_back({poses[i], weights[i]});
+  }
+  return result;
+}
+
+std::vector<Particle> LocalizerCore::random_search(
+  Tensor initial_pose, Tensor image_tensor, int64_t particle_num)
+{
+  torch::NoGradGuard no_grad_guard;
+
+  constexpr float NOISE_POSITION = 0.025f;
+  constexpr float NOISE_ROTATION = 5.0f;
+
+  std::mt19937_64 engine(std::random_device{}());
+  std::normal_distribution<float> dist_position(0.0f, NOISE_POSITION);
+  std::normal_distribution<float> dist_rotation(0.0f, NOISE_ROTATION);
+
+  std::vector<Tensor> poses;
+  for (int64_t i = 0; i < particle_num; i++) {
+    // Sample a random translation
+    Tensor curr_pose = initial_pose.clone();
+    curr_pose[2][3] += dist_position(engine);
+    curr_pose[0][3] += dist_position(engine);
+
+    // orientation
+    const float theta = dist_rotation(engine) * M_PI / 180.0;
+    Eigen::Matrix3f rotation_matrix(Eigen::AngleAxisf(theta, Eigen::Vector3f::UnitY()));
+    Tensor rotation_tensor = torch::from_blob(rotation_matrix.data(), {3, 3});
+    rotation_tensor = rotation_tensor.to(torch::kFloat32);
+    rotation_tensor = rotation_tensor.to(initial_pose.device());
+    Tensor rotated = rotation_tensor.mm(curr_pose.index({Slc(0, 3), Slc(0, 3)}));
+    curr_pose.index_put_({Slc(0, 3), Slc(0, 3)}, rotated);
+    poses.push_back(curr_pose);
   }
 
   const std::vector<float> weights = evaluate_poses(poses, image_tensor);
