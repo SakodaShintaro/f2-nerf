@@ -32,52 +32,6 @@ LocalizerCore::LocalizerCore(const std::string & conf_path)
   dataset_->intri_ /= factor;
 }
 
-std::vector<Particle> LocalizerCore::grid_search(Tensor initial_pose, Tensor image_tensor)
-{
-  torch::NoGradGuard no_grad_guard;
-
-  constexpr float GRID_WIDTH = 0.025f;
-  constexpr int NUM_SEARCH = 4;
-
-  std::vector<Tensor> poses;
-  for (int z = -NUM_SEARCH; z <= NUM_SEARCH; z++) {
-    for (int x = -NUM_SEARCH; x <= NUM_SEARCH; x++) {
-      for (float theta : {-5.0, 5.0}) {
-        // Convert degrees to radians
-        theta = theta * M_PI / 180.0;
-
-        // Create a rotation matrix around the y-axis
-        Eigen::Matrix3f rotation_matrix(Eigen::AngleAxisf(theta, Eigen::Vector3f::UnitY()));
-
-        // Convert Eigen Matrix to torch Tensor
-        Tensor rotation_tensor = torch::from_blob(rotation_matrix.data(), {3, 3});
-        rotation_tensor = rotation_tensor.to(torch::kFloat32);
-        rotation_tensor = rotation_tensor.to(initial_pose.device());
-
-        // Apply translation
-        Tensor curr_pose = initial_pose.clone();
-        curr_pose[2][3] += z * GRID_WIDTH;
-        curr_pose[0][3] += x * GRID_WIDTH;
-
-        // Apply rotation
-        Tensor rotated = rotation_tensor.mm(curr_pose.index({Slc(0, 3), Slc(0, 3)}));
-        curr_pose.index_put_({Slc(0, 3), Slc(0, 3)}, rotated);
-
-        poses.push_back(curr_pose);
-      }
-    }
-  }
-
-  const std::vector<float> weights = evaluate_poses(poses, image_tensor);
-  const int pose_num = poses.size();
-
-  std::vector<Particle> result;
-  for (int i = 0; i < pose_num; i++) {
-    result.push_back({poses[i], weights[i]});
-  }
-  return result;
-}
-
 std::vector<Particle> LocalizerCore::random_search(
   Tensor initial_pose, Tensor image_tensor, int64_t particle_num)
 {

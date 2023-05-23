@@ -21,7 +21,6 @@ public:
   LocalizerCore(const std::string & conf_path);
 
   std::tuple<float, Tensor> pred_image_and_calc_score(const Tensor & pose, const Tensor & image);
-  std::vector<Particle> grid_search(Tensor initial_pose, Tensor image_tensor);
   std::vector<Particle> random_search(
     Tensor initial_pose, Tensor image_tensor, int64_t particle_num);
 
