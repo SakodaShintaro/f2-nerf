@@ -14,6 +14,7 @@ rm -rf ~/.ros/log/*
 
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/root/f2-nerf/External/libtorch/lib/
 ros2 run ros2-f2-nerf nerf_based_localizer \
+    --ros-args --params-file ./src/ros2-f2-nerf/config/parameters.yaml \
     --ros-args --param save_image:=true \
     --ros-args --param save_particles:=true
 

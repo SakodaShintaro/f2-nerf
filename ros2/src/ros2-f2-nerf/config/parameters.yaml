@@ -1,0 +1,3 @@
+nerf_based_localizer:
+  ros__parameters:
+    particle_num: 100

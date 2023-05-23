@@ -23,6 +23,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   this->declare_parameter("save_image", false);
   this->declare_parameter("save_particles", false);
   this->declare_parameter("save_particles_images", false);
+  this->declare_parameter("particle_num", 100);
 
   initial_pose_with_covariance_subscriber_ =
     this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -315,8 +316,8 @@ NerfBasedLocalizer::localize(
   // run NeRF
   RCLCPP_INFO(this->get_logger(), "start localize");
   Timer timer2;
-  // std::vector<Particle> particles = localizer_core_.grid_search(initial_pose, image_tensor);
-  std::vector<Particle> particles = localizer_core_.random_search(initial_pose, image_tensor, 100);
+  std::vector<Particle> particles = localizer_core_.random_search(
+    initial_pose, image_tensor, this->get_parameter("particle_num").as_int());
   RCLCPP_INFO_STREAM(this->get_logger(), "finish search: " << timer2);
 
   if (this->get_parameter("save_particles_images").as_bool()) {
