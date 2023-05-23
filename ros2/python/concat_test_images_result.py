@@ -6,6 +6,7 @@ import argparse
 from glob import glob
 import cv2
 import subprocess
+from tqdm import tqdm
 
 
 def parse_args():
@@ -29,8 +30,7 @@ if __name__ == "__main__":
         exit(1)
     save_dir = f"{target_dir}/pred_images_concat/"
     os.makedirs(save_dir, exist_ok=True)
-    for i, pred_image_path in enumerate(pred_image_path_list):
-        print(pred_image_path)
+    for i, pred_image_path in enumerate(tqdm(pred_image_path_list)):
         test_image_name = os.path.basename(pred_image_path)
         frame_no = int(test_image_name.replace(".png", ""))
         gt_image_path = f"{target_dir}/gt/{frame_no:08d}.png"
