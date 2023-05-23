@@ -11,6 +11,7 @@ from tqdm import tqdm
 import subprocess
 import numpy as np
 import gtsam
+from concurrent.futures import ProcessPoolExecutor
 
 
 def parse_args():
@@ -50,6 +51,44 @@ def compute_rotation_average(rotations, weights):
     return R
 
 
+def plot_function(
+        log_file: str,
+        trajectory_x: list,
+        trajectory_y: list,
+        weight_max: float,
+        xlim: tuple,
+        ylim: tuple,
+        save_dir: str):
+    # plot the trajectory
+    plt.plot(trajectory_x, trajectory_y, 'b')
+
+    # plot current search result
+    df = pd.read_csv(log_file, sep="\t")
+
+    rotations = df[["m00", "m01", "m02", "m10", "m11", "m12", "m20", "m21", "m22"]].values.reshape(-1, 3, 3)
+    positions = df[["m03", "m13", "m23"]].values
+    weights = df["weight"].values
+
+    curr_rotation = compute_rotation_average(rotations, weights)
+    curr_position = np.average(positions, weights=weights, axis=0)
+    weights /= weight_max
+
+    for i, row in df.iterrows():
+        pose = row.values[0:12].reshape(3, 4)
+        weight = row.values[12]
+        plot_arrow(pose, weight)
+    # sc = plt.scatter(vec[:, 2], vec[:, 0], vmin=score_min, vmax=score_max, c=score, cmap=cm.seismic)
+    # plt.colorbar(sc)
+    plt.xlabel("z")
+    plt.ylabel("x")
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+    plt.gca().invert_yaxis()
+    save_path = f"{save_dir}/{log_file.split('/')[-1].split('.')[0]}.png"
+    plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+
 if __name__ == "__main__":
     args = parse_args()
     log_dir = args.log_dir
@@ -81,35 +120,13 @@ if __name__ == "__main__":
     ylim = plt.ylim()
     plt.close()
 
-    for i, log_file in enumerate(tqdm(log_file_list)):
-        # plot the trajectory
-        plt.plot(trajectory_x[:i], trajectory_y[:i], 'b')
-
-        # plot current search result
-        df = pd.read_csv(log_file, sep="\t")
-
-        rotations = df[["m00", "m01", "m02", "m10", "m11", "m12", "m20", "m21", "m22"]].values.reshape(-1, 3, 3)
-        positions = df[["m03", "m13", "m23"]].values
-        weights = df["weight"].values
-
-        curr_rotation = compute_rotation_average(rotations, weights)
-        curr_position = np.average(positions, weights=weights, axis=0)
-        weights /= weight_max
-
-        for i, row in df.iterrows():
-            pose = row.values[0:12].reshape(3, 4)
-            weight = row.values[12]
-            plot_arrow(pose, weight)
-        # sc = plt.scatter(vec[:, 2], vec[:, 0], vmin=score_min, vmax=score_max, c=score, cmap=cm.seismic)
-        # plt.colorbar(sc)
-        plt.xlabel("z")
-        plt.ylabel("x")
-        plt.xlim(xlim)
-        plt.ylim(ylim)
-        plt.gca().invert_yaxis()
-        save_path = f"{save_dir}/{log_file.split('/')[-1].split('.')[0]}.png"
-        plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05)
-        plt.close()
+    N = len(log_file_list)
+    progress = tqdm(total=N)
+    with ProcessPoolExecutor(max_workers=os.cpu_count() // 2) as executor:
+        for i in range(N):
+            future = executor.submit(plot_function,
+                                     log_file, trajectory_x[:i], trajectory_y[:i], weight_max, xlim, ylim, save_dir)
+            future.add_done_callback(lambda _: progress.update())
 
     subprocess.run(
         "ffmpeg -y -r 10 -f image2 -i %08d.png -vcodec libx264 -crf 25 -pix_fmt yuv420p -vf \"scale=trunc(iw/2)*2: trunc(ih/2)*2\" ../output.mp4",
