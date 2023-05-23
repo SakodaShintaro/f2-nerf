@@ -308,16 +308,9 @@ NerfBasedLocalizer::localize(
   initial_pose[2][3] = pose.position.z;
   initial_pose = initial_pose.to(torch::kCUDA);
   initial_pose = initial_pose.to(torch::kFloat32);
+  RCLCPP_INFO_STREAM(this->get_logger(), "world_before: " << initial_pose);
 
-  RCLCPP_INFO_STREAM(this->get_logger(), "initial_pose_fist: " << initial_pose);
-
-  initial_pose = initial_pose.matmul(axis_convert_mat1_);
-  initial_pose = axis_convert_mat2_.matmul(initial_pose);
-  initial_pose = convert_mat_B2A_.matmul(initial_pose);
-  initial_pose = localizer_core_.normalize_position(initial_pose);
-  initial_pose = initial_pose.index({Slc(0, 3), Slc(0, 4)});
-
-  RCLCPP_INFO_STREAM(this->get_logger(), "initial_pose_converted: " << initial_pose);
+  initial_pose = world2camera(initial_pose);
 
   // run NeRF
   RCLCPP_INFO(this->get_logger(), "start localize");
@@ -345,7 +338,6 @@ NerfBasedLocalizer::localize(
   timer2.reset();
   torch::Tensor optimized_pose = LocalizerCore::calc_average_pose(particles);
   RCLCPP_INFO_STREAM(this->get_logger(), "finish calc average: " << timer2);
-  RCLCPP_INFO_STREAM(this->get_logger(), "optimized_pose: " << optimized_pose);
 
   timer2.reset();
   auto [score, nerf_image] =
@@ -385,17 +377,14 @@ NerfBasedLocalizer::localize(
   }
 
   // Convert pose to base_link
-  optimized_pose =
-    torch::cat({optimized_pose, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
-  optimized_pose = localizer_core_.inverse_normalize_position(optimized_pose);
-  optimized_pose = optimized_pose.matmul(axis_convert_mat1_.t());
-  optimized_pose = axis_convert_mat2_.t().matmul(optimized_pose);
-  optimized_pose = convert_mat_A2B_.matmul(optimized_pose);
+  optimized_pose = camera2world(optimized_pose);
 
-  geometry_msgs::msg::Pose result_pose;
-  result_pose.position.x = optimized_pose[0][3].item<float>();
-  result_pose.position.y = optimized_pose[1][3].item<float>();
-  result_pose.position.z = optimized_pose[2][3].item<float>();
+  RCLCPP_INFO_STREAM(this->get_logger(), "world_after: " << optimized_pose);
+
+  geometry_msgs::msg::Pose result_pose_lidar;
+  result_pose_lidar.position.x = optimized_pose[0][3].item<float>();
+  result_pose_lidar.position.y = optimized_pose[1][3].item<float>();
+  result_pose_lidar.position.z = optimized_pose[2][3].item<float>();
   Eigen::Matrix3f rot_out;
   rot_out << optimized_pose[0][0].item<float>(), optimized_pose[0][1].item<float>(),
     optimized_pose[0][2].item<float>(), optimized_pose[1][0].item<float>(),
@@ -403,10 +392,26 @@ NerfBasedLocalizer::localize(
     optimized_pose[2][0].item<float>(), optimized_pose[2][1].item<float>(),
     optimized_pose[2][2].item<float>();
   Eigen::Quaternionf quat_out(rot_out);
-  result_pose.orientation.x = quat_out.x();
-  result_pose.orientation.y = quat_out.y();
-  result_pose.orientation.z = quat_out.z();
-  result_pose.orientation.w = quat_out.w();
+  result_pose_lidar.orientation.x = quat_out.x();
+  result_pose_lidar.orientation.y = quat_out.y();
+  result_pose_lidar.orientation.z = quat_out.z();
+  result_pose_lidar.orientation.w = quat_out.w();
+
+  geometry_msgs::msg::Pose result_pose_base_link;
+  try {
+    geometry_msgs::msg::TransformStamped transform =
+      tf_buffer_.lookupTransform("velodyne_front", "base_link", tf2::TimePointZero);
+    tf2::doTransform(result_pose_lidar, result_pose_base_link, transform);
+    RCLCPP_INFO(
+      this->get_logger(), "Transform Translation: [%f, %f, %f]", transform.transform.translation.x,
+      transform.transform.translation.y, transform.transform.translation.z);
+    RCLCPP_INFO(
+      this->get_logger(), "Transform Rotation (Quaternion): [%f, %f, %f, %f]",
+      transform.transform.rotation.x, transform.transform.rotation.y,
+      transform.transform.rotation.z, transform.transform.rotation.w);
+  } catch (tf2::TransformException & ex) {
+    RCLCPP_WARN(this->get_logger(), "%s", ex.what());
+  }
 
   nerf_image = nerf_image * 255;
   nerf_image = nerf_image.to(torch::kUInt8);
@@ -428,7 +433,7 @@ NerfBasedLocalizer::localize(
 
   RCLCPP_INFO_STREAM(get_logger(), "localize time: " << timer);
 
-  return std::make_tuple(result_pose, nerf_image_msg, score_msg);
+  return std::make_tuple(result_pose_base_link, nerf_image_msg, score_msg);
 }
 
 void NerfBasedLocalizer::service_trigger_node(
