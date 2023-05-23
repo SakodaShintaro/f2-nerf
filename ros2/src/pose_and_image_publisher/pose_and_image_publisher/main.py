@@ -4,7 +4,7 @@ import cv2
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped, Pose
 from cv_bridge import CvBridge
 import argparse
 import time
@@ -32,12 +32,38 @@ class ImagePosePublisher(Node):
 
         self.image_files = sorted(glob.glob(f"{data_dir}/images/*.png"))
         self.from_cams_meta = False
+        self.pose_msg_list = list()
         if self.from_cams_meta:
             self.poses = np.load(f"{data_dir}/cams_meta.npy")
+            for i in range(len(self.poses)):
+                curr_pose = self.poses[i][0:12].reshape(3, 4)
+                pose_msg = Pose()
+                pose_msg.position.x = curr_pose[0, 3]
+                pose_msg.position.y = curr_pose[1, 3]
+                pose_msg.position.z = curr_pose[2, 3]
+                rotation_mat = curr_pose[0:3, 0:3]
+                r = Rotation.from_matrix(rotation_mat)
+                q = r.as_quat()
+                pose_msg.orientation.x = q[0]
+                pose_msg.orientation.y = q[1]
+                pose_msg.orientation.z = q[2]
+                pose_msg.orientation.w = q[3]
+                self.pose_msg_list.append(pose_msg)
         else:
             self.poses = pd.read_csv(
                 f"{data_dir}/pose.tsv", sep="\t", index_col=0)
             self.image_files = self.image_files[0:len(self.poses)]
+            for i in range(len(self.poses)):
+                curr_pose = self.poses.iloc[i]
+                pose_msg = Pose()
+                pose_msg.position.x = curr_pose["x"]
+                pose_msg.position.y = curr_pose["y"]
+                pose_msg.position.z = curr_pose["z"]
+                pose_msg.orientation.x = curr_pose["qx"]
+                pose_msg.orientation.y = curr_pose["qy"]
+                pose_msg.orientation.z = curr_pose["qz"]
+                pose_msg.orientation.w = curr_pose["qw"]
+                self.pose_msg_list.append(pose_msg)
 
         assert len(self.image_files) == len(self.poses), \
             f"Number of images ({len(self.image_files)}) and poses ({len(self.poses)}) do not match."
@@ -83,27 +109,7 @@ class ImagePosePublisher(Node):
         pose_msg = PoseWithCovarianceStamped()
         pose_msg.header.stamp = self.get_clock().now().to_msg()
         pose_msg.header.frame_id = 'map'
-        if self.from_cams_meta:
-            curr_pose = self.poses[self.idx][0:12].reshape(3, 4)
-            pose_msg.pose.pose.position.x = curr_pose[0, 3]
-            pose_msg.pose.pose.position.y = curr_pose[1, 3]
-            pose_msg.pose.pose.position.z = curr_pose[2, 3]
-            rotation_mat = curr_pose[0:3, 0:3]
-            r = Rotation.from_matrix(rotation_mat)
-            q = r.as_quat()
-            pose_msg.pose.pose.orientation.x = q[0]
-            pose_msg.pose.pose.orientation.y = q[1]
-            pose_msg.pose.pose.orientation.z = q[2]
-            pose_msg.pose.pose.orientation.w = q[3]
-        else:
-            curr_pose = self.poses.iloc[self.idx]
-            pose_msg.pose.pose.position.x = curr_pose["x"]
-            pose_msg.pose.pose.position.y = curr_pose["y"]
-            pose_msg.pose.pose.position.z = curr_pose["z"]
-            pose_msg.pose.pose.orientation.x = curr_pose["qx"]
-            pose_msg.pose.pose.orientation.y = curr_pose["qy"]
-            pose_msg.pose.pose.orientation.z = curr_pose["qz"]
-            pose_msg.pose.pose.orientation.w = curr_pose["qw"]
+        pose_msg.pose.pose = self.pose_msg_list[self.idx]
 
         # Transform the pose_msg from the frame "velodyne_front" to the frame "base_link"
         try:
@@ -117,7 +123,6 @@ class ImagePosePublisher(Node):
 
         self.pose_pub.publish(pose_msg)
 
-        # wait for 0.05 sec
         # In the NeRF node, poses are held in a queue and processed when an image is subscribed.
         # If poses and images are published simultaneously, the pose might not be held in the queue and processed before the image is subscribed.
         # Therefore, a delay is introduced between publishing poses and images to ensure the proper processing order.
@@ -131,7 +136,9 @@ class ImagePosePublisher(Node):
         self.idx += 1
 
     def nerf_pose_with_covariance_callback(self, msg):
-        pose = msg.pose.pose
+        # pose = msg.pose.pose
+        # if self.idx < len(self.pose_msg_list):
+        #     self.pose_msg_list[self.idx] = pose
         self.publish_data()
 
 
