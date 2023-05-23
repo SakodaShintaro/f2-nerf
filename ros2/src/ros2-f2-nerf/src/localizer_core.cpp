@@ -176,10 +176,8 @@ std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
   torch::NoGradGuard no_grad_guard;
   Timer timer;
   auto [rays_o, rays_d, bounds] = dataset_->RaysFromPose(pose);
-  std::cout << "RaysFromPose(): " << timer << std::endl;
   timer.reset();
   auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
-  std::cout << "render_all_rays(): " << timer << std::endl;
 
   Tensor pred_img = pred_colors.view({H, W, 3});
   pred_img = pred_img.clip(0.f, 1.f);
@@ -271,10 +269,8 @@ std::vector<float> LocalizerCore::evaluate_poses(
     torch::stack({torch::full({numel}, near, CUDAFloat), torch::full({numel}, far, CUDAFloat)}, -1)
       .contiguous();  // (numel, 2)
 
-  std::cout << "RaysFromPose(): " << timer << std::endl;
   timer.reset();
   auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
-  std::cout << "render_all_rays(): " << timer << std::endl;
 
   Tensor pred_pixels = pred_colors.view({pose_num, batch_size, 3});
   pred_pixels = pred_pixels.clip(0.f, 1.f);
