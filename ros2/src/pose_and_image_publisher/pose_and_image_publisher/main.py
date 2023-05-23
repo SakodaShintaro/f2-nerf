@@ -24,6 +24,12 @@ class ImagePosePublisher(Node):
             PoseWithCovarianceStamped, 'initial_pose_with_covariance', 10)
         self.bridge = CvBridge()
 
+        self.subscription = self.create_subscription(
+            PoseWithCovarianceStamped,
+            '/nerf_pose_with_covariance',
+            self.nerf_pose_with_covariance_callback,
+            10)
+
         self.image_files = sorted(glob.glob(f"{data_dir}/images/*.png"))
         self.from_cams_meta = False
         if self.from_cams_meta:
@@ -63,6 +69,10 @@ class ImagePosePublisher(Node):
         self.idx = 0
 
     def timer_callback(self):
+        if self.idx == 0:
+            self.publish_data()
+
+    def publish_data(self):
         if self.idx >= len(self.image_files) or self.idx >= len(self.poses):
             self.get_logger().info('Finished publishing images and poses.')
             self.shutdown_requested = True
@@ -111,7 +121,7 @@ class ImagePosePublisher(Node):
         # In the NeRF node, poses are held in a queue and processed when an image is subscribed.
         # If poses and images are published simultaneously, the pose might not be held in the queue and processed before the image is subscribed.
         # Therefore, a delay is introduced between publishing poses and images to ensure the proper processing order.
-        time.sleep(0.05)
+        time.sleep(0.025)
 
         # Publish image
         image = cv2.imread(self.image_files[self.idx])
@@ -119,6 +129,10 @@ class ImagePosePublisher(Node):
         self.image_pub.publish(msg_image)
 
         self.idx += 1
+
+    def nerf_pose_with_covariance_callback(self, msg):
+        pose = msg.pose.pose
+        self.publish_data()
 
 
 def main(args=None):
