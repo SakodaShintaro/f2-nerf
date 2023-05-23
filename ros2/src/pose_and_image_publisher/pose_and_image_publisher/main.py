@@ -136,7 +136,16 @@ class ImagePosePublisher(Node):
         self.idx += 1
 
     def nerf_pose_with_covariance_callback(self, msg):
+        # Transform the pose_msg from the frame "velodyne_front" to the frame "base_link"
+        # try:
+        #     transform = self.tf_buffer.lookup_transform(
+        #         "base_link", "velodyne_front", rclpy.time.Time())
+        #     msg.pose.pose = tf2_geometry_msgs.do_transform_pose(msg.pose.pose, transform)
+        # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+        #     self.get_logger().error('Failed to get transform from velodyne_front to base_link')
+        #     exit(1)
         # pose = msg.pose.pose
+
         # if self.idx < len(self.pose_msg_list):
         #     self.pose_msg_list[self.idx] = pose
         self.publish_data()
