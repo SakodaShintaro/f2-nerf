@@ -43,6 +43,8 @@ private:
     const geometry_msgs::msg::Pose & pose_msg, const sensor_msgs::msg::Image & image_msg);
 
   void save_image(const torch::Tensor image_tensor, const std::string & prefix, int save_id);
+  torch::Tensor world2camera(const torch::Tensor & pose_in_world);
+  torch::Tensor camera2world(const torch::Tensor & pose_in_camera);
 
   // NerfBasedLocalizer subscribes to the following topics:
   // (1) initial_pose_with_covariance [geometry_msgs::msg::PoseWithCovarianceStamped]
