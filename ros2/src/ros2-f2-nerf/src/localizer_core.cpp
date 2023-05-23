@@ -38,7 +38,7 @@ std::vector<Particle> LocalizerCore::random_search(
   torch::NoGradGuard no_grad_guard;
 
   constexpr float NOISE_POSITION = 0.025f;
-  constexpr float NOISE_ROTATION = 5.0f;
+  constexpr float NOISE_ROTATION = 2.5f;
 
   std::mt19937_64 engine(std::random_device{}());
   std::normal_distribution<float> dist_position(0.0f, NOISE_POSITION);
@@ -53,12 +53,21 @@ std::vector<Particle> LocalizerCore::random_search(
     curr_pose[0][3] += dist_position(engine);
 
     // orientation
-    const float theta = dist_rotation(engine) * M_PI / 180.0;
-    Eigen::Matrix3f rotation_matrix(Eigen::AngleAxisf(theta, Eigen::Vector3f::UnitY()));
-    Tensor rotation_tensor = torch::from_blob(rotation_matrix.data(), {3, 3});
-    rotation_tensor = rotation_tensor.to(torch::kFloat32);
-    rotation_tensor = rotation_tensor.to(initial_pose.device());
-    Tensor rotated = rotation_tensor.mm(curr_pose.index({Slc(0, 3), Slc(0, 3)}));
+    const float theta_x = dist_rotation(engine) * M_PI / 180.0;
+    const float theta_y = dist_rotation(engine) * M_PI / 180.0;
+    const float theta_z = dist_rotation(engine) * M_PI / 180.0;
+    Eigen::Matrix3f rotation_matrix_x(Eigen::AngleAxisf(theta_x, Eigen::Vector3f::UnitX()));
+    Eigen::Matrix3f rotation_matrix_y(Eigen::AngleAxisf(theta_y, Eigen::Vector3f::UnitY()));
+    Eigen::Matrix3f rotation_matrix_z(Eigen::AngleAxisf(theta_z, Eigen::Vector3f::UnitZ()));
+    const torch::Device dev = initial_pose.device();
+    Tensor rotation_tensor_x =
+      torch::from_blob(rotation_matrix_x.data(), {3, 3}).to(torch::kFloat32).to(dev);
+    Tensor rotation_tensor_y =
+      torch::from_blob(rotation_matrix_y.data(), {3, 3}).to(torch::kFloat32).to(dev);
+    Tensor rotation_tensor_z =
+      torch::from_blob(rotation_matrix_z.data(), {3, 3}).to(torch::kFloat32).to(dev);
+    Tensor rotated = rotation_tensor_z.mm(
+      rotation_tensor_y.mm(rotation_tensor_x.mm(curr_pose.index({Slc(0, 3), Slc(0, 3)}))));
     curr_pose.index_put_({Slc(0, 3), Slc(0, 3)}, rotated);
     poses.push_back(curr_pose);
   }
