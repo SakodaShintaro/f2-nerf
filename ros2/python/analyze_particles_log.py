@@ -125,7 +125,7 @@ if __name__ == "__main__":
     with ProcessPoolExecutor(max_workers=os.cpu_count() // 2) as executor:
         for i in range(N):
             future = executor.submit(plot_function,
-                                     log_file, trajectory_x[:i], trajectory_y[:i], weight_max, xlim, ylim, save_dir)
+                                     log_file_list[i], trajectory_x[:i], trajectory_y[:i], weight_max, xlim, ylim, save_dir)
             future.add_done_callback(lambda _: progress.update())
 
     subprocess.run(
