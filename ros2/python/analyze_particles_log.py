@@ -62,15 +62,28 @@ if __name__ == "__main__":
     weight_min = float("inf")
     weight_max = -float("inf")
     for log_file in log_file_list:
-        # plot current search result
+        # get weight range
         df = pd.read_csv(log_file, sep="\t")
         weights = df["weight"].values
         weight_min = min(weight_min, weights.min())
         weight_max = max(weight_max, weights.max())
 
-    for log_file in tqdm(log_file_list):
+        # get trajectory
+        positions = df[["m03", "m13", "m23"]].values
+        curr_position = np.average(positions, weights=weights, axis=0)
+        trajectory_x.append(curr_position[2])
+        trajectory_y.append(curr_position[0])
+
+    # check plot range
+    plt.plot(trajectory_x, trajectory_y, 'b')
+    plt.axis('equal')
+    xlim = plt.xlim()
+    ylim = plt.ylim()
+    plt.close()
+
+    for i, log_file in enumerate(tqdm(log_file_list)):
         # plot the trajectory
-        plt.plot(trajectory_x, trajectory_y, 'b')
+        plt.plot(trajectory_x[:i], trajectory_y[:i], 'b')
 
         # plot current search result
         df = pd.read_csv(log_file, sep="\t")
@@ -89,16 +102,14 @@ if __name__ == "__main__":
             plot_arrow(pose, weight)
         # sc = plt.scatter(vec[:, 2], vec[:, 0], vmin=score_min, vmax=score_max, c=score, cmap=cm.seismic)
         # plt.colorbar(sc)
-        plt.axis('equal')
         plt.xlabel("z")
         plt.ylabel("x")
+        plt.xlim(xlim)
+        plt.ylim(ylim)
         plt.gca().invert_yaxis()
         save_path = f"{save_dir}/{log_file.split('/')[-1].split('.')[0]}.png"
         plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05)
         plt.close()
-
-        trajectory_x.append(curr_position[2])
-        trajectory_y.append(curr_position[0])
 
     subprocess.run(
         "ffmpeg -y -r 10 -f image2 -i %08d.png -vcodec libx264 -crf 25 -pix_fmt yuv420p -vf \"scale=trunc(iw/2)*2: trunc(ih/2)*2\" ../output.mp4",
