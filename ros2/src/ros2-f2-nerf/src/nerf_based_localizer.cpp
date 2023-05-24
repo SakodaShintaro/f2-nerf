@@ -17,13 +17,16 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   tf_buffer_(this->get_clock()),
   tf_listener_(tf_buffer_),
   map_frame_("map"),
-  is_activated_(false),
-  localizer_core_("./runtime_config.yaml")
+  is_activated_(false)
 {
   this->declare_parameter("save_image", false);
   this->declare_parameter("save_particles", false);
   this->declare_parameter("save_particles_images", false);
   this->declare_parameter("particle_num", 100);
+
+  LocalizerCoreParam param;
+  param.render_pixel_num = this->declare_parameter<int>("render_pixel_num", 256);
+  localizer_core_ = LocalizerCore("./runtime_config.yaml", param);
 
   initial_pose_with_covariance_subscriber_ =
     this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(

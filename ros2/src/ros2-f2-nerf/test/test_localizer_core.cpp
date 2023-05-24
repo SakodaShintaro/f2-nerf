@@ -3,7 +3,9 @@
 
 TEST(LocalizerCoreTest, TestMonteCarloLocalize)
 {
-  LocalizerCore localizer_core("./runtime_config.yaml");
+  LocalizerCoreParam param;
+  param.render_pixel_num = 256;
+  LocalizerCore localizer_core("./runtime_config.yaml", param);
   EXPECT_EQ(1, 1);
 }
 

@@ -11,7 +11,8 @@
 
 using Tensor = torch::Tensor;
 
-LocalizerCore::LocalizerCore(const std::string & conf_path)
+LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreParam & param)
+: param_(param)
 {
   global_data_pool_ = std::make_unique<GlobalDataPool>(conf_path);
   global_data_pool_->mode_ = RunningMode::VALIDATE;
@@ -176,12 +177,12 @@ std::vector<float> LocalizerCore::evaluate_poses(
 
   const int H = dataset_->height_;
   const int W = dataset_->width_;
-  const int batch_size = 256;
+  const int pixel_num = param_.render_pixel_num;
 
   // Pick rays by constant interval
-  // const int step = H * W / batch_size;
+  // const int step = H * W / pixel_num;
   // std::vector<int64_t> i_vec, j_vec;
-  // for (int k = 0; k < batch_size; k++) {
+  // for (int k = 0; k < pixel_num; k++) {
   //   const int v = k * step;
   //   const int64_t i = v / W;
   //   const int64_t j = v % W;
@@ -197,7 +198,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
   std::mt19937 engine(std::random_device{}());
   std::shuffle(indices.begin(), indices.end(), engine);
   std::vector<int64_t> i_vec, j_vec;
-  for (int k = 0; k < batch_size; k++) {
+  for (int k = 0; k < pixel_num; k++) {
     const int v = indices[k];
     const int64_t i = v / W;
     const int64_t j = v % W;
@@ -208,8 +209,8 @@ std::vector<float> LocalizerCore::evaluate_poses(
   const Tensor j = torch::tensor(j_vec, CUDALong);
 
   // Pick rays by random sampling with replacement
-  // const Tensor i = torch::randint(0, H, batch_size, CUDALong);
-  // const Tensor j = torch::randint(0, W, batch_size, CUDALong);
+  // const Tensor i = torch::randint(0, H, pixel_num, CUDALong);
+  // const Tensor j = torch::randint(0, W, pixel_num, CUDALong);
 
   const Tensor ij = torch::stack({i, j}, -1).to(torch::kFloat32);
   std::vector<Tensor> rays_o_vec;
@@ -224,7 +225,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
   const float far = dataset_->bounds_.index({Slc(), 1}).max().item<float>();
 
   const int64_t pose_num = poses.size();
-  const int64_t numel = batch_size * pose_num;
+  const int64_t numel = pixel_num * pose_num;
 
   Tensor rays_o = torch::cat(rays_o_vec);  // (numel, 3)
   Tensor rays_d = torch::cat(rays_d_vec);  // (numel, 3)
@@ -235,14 +236,14 @@ std::vector<float> LocalizerCore::evaluate_poses(
   timer.reset();
   auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
 
-  Tensor pred_pixels = pred_colors.view({pose_num, batch_size, 3});
+  Tensor pred_pixels = pred_colors.view({pose_num, pixel_num, 3});
   pred_pixels = pred_pixels.clip(0.f, 1.f);
-  pred_pixels = pred_pixels.to(image.device());  // (pose_num, batch_size, 3)
+  pred_pixels = pred_pixels.to(image.device());  // (pose_num, pixel_num, 3)
 
-  Tensor gt_pixels = image.index({i, j});              // (batch_size, 3)
-  Tensor diff = pred_pixels - gt_pixels;               // (pose_num, batch_size, 3)
+  Tensor gt_pixels = image.index({i, j});              // (pixel_num, 3)
+  Tensor diff = pred_pixels - gt_pixels;               // (pose_num, pixel_num, 3)
   Tensor loss = (diff * diff).mean(-1).sum(-1).cpu();  // (pose_num,)
-  loss = batch_size / (loss + 1e-6f);
+  loss = pixel_num / (loss + 1e-6f);
   loss = torch::pow(loss, 5);
   loss /= loss.sum();
 

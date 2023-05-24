@@ -13,12 +13,18 @@ struct Particle
   float weight;
 };
 
+struct LocalizerCoreParam
+{
+  int32_t render_pixel_num;
+};
+
 class LocalizerCore
 {
   using Tensor = torch::Tensor;
 
 public:
-  LocalizerCore(const std::string & conf_path);
+  LocalizerCore() = default;
+  LocalizerCore(const std::string & conf_path, const LocalizerCoreParam & param);
 
   std::tuple<float, Tensor> pred_image_and_calc_score(const Tensor & pose, const Tensor & image);
   std::vector<Particle> random_search(
@@ -39,6 +45,8 @@ private:
 
   int H;
   int W;
+
+  LocalizerCoreParam param_;
 
   std::unique_ptr<GlobalDataPool> global_data_pool_;
   std::unique_ptr<Renderer> renderer_;
