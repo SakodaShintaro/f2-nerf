@@ -15,7 +15,9 @@ struct Particle
 
 struct LocalizerCoreParam
 {
-  int32_t render_pixel_num;
+  int32_t render_pixel_num = 256;
+  float noise_position = 0.025f;
+  float noise_rotation = 2.5f;
 };
 
 class LocalizerCore

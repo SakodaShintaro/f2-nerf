@@ -38,12 +38,9 @@ std::vector<Particle> LocalizerCore::random_search(
 {
   torch::NoGradGuard no_grad_guard;
 
-  constexpr float NOISE_POSITION = 0.025f;
-  constexpr float NOISE_ROTATION = 2.5f;
-
   std::mt19937_64 engine(std::random_device{}());
-  std::normal_distribution<float> dist_position(0.0f, NOISE_POSITION);
-  std::normal_distribution<float> dist_rotation(0.0f, NOISE_ROTATION);
+  std::normal_distribution<float> dist_position(0.0f, param_.noise_position);
+  std::normal_distribution<float> dist_rotation(0.0f, param_.noise_rotation);
 
   std::vector<Tensor> poses;
   for (int64_t i = 0; i < particle_num; i++) {
