@@ -39,6 +39,12 @@ public:
 
   static Tensor calc_average_pose(const std::vector<Particle> & particles);
 
+  // For Particle Filter
+  void init_particles(const Tensor & initial_pose, int64_t particle_num);
+  void update_by_odometry(const Tensor & odometry);
+  void update_by_measurement(const Tensor & image_tensor);
+  void resample_particles();
+
   std::unique_ptr<Dataset> dataset_;
 
 private:
@@ -54,6 +60,8 @@ private:
 
   std::unique_ptr<GlobalDataPool> global_data_pool_;
   std::unique_ptr<Renderer> renderer_;
+
+  std::vector<Particle> particles_;
 };
 
 #endif  // LOCALIZER_CORE_HPP_

@@ -309,3 +309,150 @@ Tensor LocalizerCore::calc_average_pose(const std::vector<Particle> & particles)
 
   return avg_pose;
 }
+
+void LocalizerCore::init_particles(const Tensor & initial_pose, int64_t particle_num)
+{
+  torch::NoGradGuard no_grad_guard;
+
+  std::mt19937_64 engine(std::random_device{}());
+  std::normal_distribution<float> dist_position_x(0.0f, param_.noise_position_x);
+  std::normal_distribution<float> dist_position_y(0.0f, param_.noise_position_y);
+  std::normal_distribution<float> dist_position_z(0.0f, param_.noise_position_z);
+  std::normal_distribution<float> dist_rotation(0.0f, param_.noise_rotation);
+
+  particles_.resize(particle_num);
+  for (int64_t i = 0; i < particle_num; i++) {
+    // Sample a random translation
+    Tensor curr_pose = initial_pose.clone();
+    curr_pose[0][3] += dist_position_x(engine);
+    curr_pose[1][3] += dist_position_y(engine);
+    curr_pose[2][3] += dist_position_z(engine);
+
+    // orientation
+    const float theta_x = dist_rotation(engine) * M_PI / 180.0;
+    const float theta_y = dist_rotation(engine) * M_PI / 180.0;
+    const float theta_z = dist_rotation(engine) * M_PI / 180.0;
+    Eigen::Matrix3f rotation_matrix_x(Eigen::AngleAxisf(theta_x, Eigen::Vector3f::UnitX()));
+    Eigen::Matrix3f rotation_matrix_y(Eigen::AngleAxisf(theta_y, Eigen::Vector3f::UnitY()));
+    Eigen::Matrix3f rotation_matrix_z(Eigen::AngleAxisf(theta_z, Eigen::Vector3f::UnitZ()));
+    const torch::Device dev = initial_pose.device();
+    Tensor rotation_tensor_x =
+      torch::from_blob(rotation_matrix_x.data(), {3, 3}).to(torch::kFloat32).to(dev);
+    Tensor rotation_tensor_y =
+      torch::from_blob(rotation_matrix_y.data(), {3, 3}).to(torch::kFloat32).to(dev);
+    Tensor rotation_tensor_z =
+      torch::from_blob(rotation_matrix_z.data(), {3, 3}).to(torch::kFloat32).to(dev);
+    Tensor rotated = rotation_tensor_z.mm(
+      rotation_tensor_y.mm(rotation_tensor_x.mm(curr_pose.index({Slc(0, 3), Slc(0, 3)}))));
+    curr_pose.index_put_({Slc(0, 3), Slc(0, 3)}, rotated);
+    particles_[i].pose = curr_pose;
+    particles_[i].weight = 1.0 / particle_num;
+  }
+}
+
+void LocalizerCore::update_by_odometry(const Tensor & odometry)
+{
+  const int64_t particle_num = particles_.size();
+  for (int64_t i = 0; i < particle_num; i++) {
+    particles_[i].pose = odometry.mm(particles_[i].pose);
+    particles_[i].weight = 1.0 / particle_num;
+  }
+}
+
+void LocalizerCore::update_by_measurement(const Tensor & image_tensor)
+{
+  torch::NoGradGuard no_grad_guard;
+  Timer timer;
+
+  const int H = dataset_->height_;
+  const int W = dataset_->width_;
+  const int pixel_num = param_.render_pixel_num;
+
+  // Pick rays by constant interval
+  // const int step = H * W / pixel_num;
+  // std::vector<int64_t> i_vec, j_vec;
+  // for (int k = 0; k < pixel_num; k++) {
+  //   const int v = k * step;
+  //   const int64_t i = v / W;
+  //   const int64_t j = v % W;
+  //   i_vec.push_back(i);
+  //   j_vec.push_back(j);
+  // }
+  // const Tensor i = torch::tensor(i_vec, CUDALong);
+  // const Tensor j = torch::tensor(j_vec, CUDALong);
+
+  // Pick rays by random sampling without replacement
+  std::vector<int> indices(H * W);
+  std::iota(indices.begin(), indices.end(), 0);
+  std::mt19937 engine(std::random_device{}());
+  std::shuffle(indices.begin(), indices.end(), engine);
+  std::vector<int64_t> i_vec, j_vec;
+  for (int k = 0; k < pixel_num; k++) {
+    const int v = indices[k];
+    const int64_t i = v / W;
+    const int64_t j = v % W;
+    i_vec.push_back(i);
+    j_vec.push_back(j);
+  }
+  const Tensor i = torch::tensor(i_vec, CUDALong);
+  const Tensor j = torch::tensor(j_vec, CUDALong);
+
+  // Pick rays by random sampling with replacement
+  // const Tensor i = torch::randint(0, H, pixel_num, CUDALong);
+  // const Tensor j = torch::randint(0, W, pixel_num, CUDALong);
+
+  const Tensor ij = torch::stack({i, j}, -1).to(torch::kFloat32);
+  std::vector<Tensor> rays_o_vec;
+  std::vector<Tensor> rays_d_vec;
+  const int64_t particle_num = particles_.size();
+  for (int64_t i = 0; i < particle_num; i++) {
+    auto [rays_o, rays_d] =
+      Dataset::Img2WorldRay(particles_[i].pose, dataset_->intri_[0], dataset_->dist_params_[0], ij);
+    rays_o_vec.push_back(rays_o);
+    rays_d_vec.push_back(rays_d);
+  }
+  const float near = dataset_->bounds_.index({Slc(), 0}).min().item<float>();
+  const float far = dataset_->bounds_.index({Slc(), 1}).max().item<float>();
+
+  const int64_t numel = pixel_num * particle_num;
+
+  Tensor rays_o = torch::cat(rays_o_vec);  // (numel, 3)
+  Tensor rays_d = torch::cat(rays_d_vec);  // (numel, 3)
+  Tensor bounds =
+    torch::stack({torch::full({numel}, near, CUDAFloat), torch::full({numel}, far, CUDAFloat)}, -1)
+      .contiguous();  // (numel, 2)
+
+  timer.reset();
+  auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
+
+  Tensor pred_pixels = pred_colors.view({particle_num, pixel_num, 3});
+  pred_pixels = pred_pixels.clip(0.f, 1.f);
+  pred_pixels = pred_pixels.to(image_tensor.device());  // (pose_num, pixel_num, 3)
+
+  Tensor gt_pixels = image_tensor.index({i, j});       // (pixel_num, 3)
+  Tensor diff = pred_pixels - gt_pixels;               // (pose_num, pixel_num, 3)
+  Tensor loss = (diff * diff).mean(-1).sum(-1).cpu();  // (pose_num,)
+  loss = pixel_num / (loss + 1e-6f);
+  loss = torch::pow(loss, 5);
+  loss /= loss.sum();
+
+  for (int64_t i = 0; i < particle_num; i++) {
+    particles_[i].weight = loss[i].item<float>();
+  }
+}
+
+void LocalizerCore::resample_particles()
+{
+  const int64_t particle_num = particles_.size();
+  std::vector<float> weights(particle_num);
+  for (int64_t i = 0; i < particle_num; i++) {
+    weights[i] = particles_[i].weight;
+  }
+  std::discrete_distribution<int> dist(weights.begin(), weights.end());
+  std::vector<Particle> new_particles(particle_num);
+  std::mt19937 engine(std::random_device{}());
+  for (int64_t i = 0; i < particle_num; i++) {
+    new_particles[i] = particles_[dist(engine)];
+  }
+  particles_ = new_particles;
+}
