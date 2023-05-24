@@ -39,16 +39,18 @@ std::vector<Particle> LocalizerCore::random_search(
   torch::NoGradGuard no_grad_guard;
 
   std::mt19937_64 engine(std::random_device{}());
-  std::normal_distribution<float> dist_position(0.0f, param_.noise_position);
+  std::normal_distribution<float> dist_position_x(0.0f, param_.noise_position_x);
+  std::normal_distribution<float> dist_position_y(0.0f, param_.noise_position_y);
+  std::normal_distribution<float> dist_position_z(0.0f, param_.noise_position_z);
   std::normal_distribution<float> dist_rotation(0.0f, param_.noise_rotation);
 
   std::vector<Tensor> poses;
   for (int64_t i = 0; i < particle_num; i++) {
     // Sample a random translation
     Tensor curr_pose = initial_pose.clone();
-    curr_pose[2][3] += dist_position(engine);
-    curr_pose[1][3] += dist_position(engine);
-    curr_pose[0][3] += dist_position(engine);
+    curr_pose[0][3] += dist_position_x(engine);
+    curr_pose[1][3] += dist_position_y(engine);
+    curr_pose[2][3] += dist_position_z(engine);
 
     // orientation
     const float theta_x = dist_rotation(engine) * M_PI / 180.0;
