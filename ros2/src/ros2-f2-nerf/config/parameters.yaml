@@ -4,3 +4,4 @@ nerf_based_localizer:
     render_pixel_num: 256
     noise_position: 0.05
     noise_rotation: 1.0
+    output_covariance: 0.1

@@ -23,6 +23,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   this->declare_parameter("save_particles", false);
   this->declare_parameter("save_particles_images", false);
   this->declare_parameter("particle_num", 100);
+  this->declare_parameter("output_covariance", 0.1);
 
   LocalizerCoreParam param;
   param.render_pixel_num = this->declare_parameter<int>("render_pixel_num");
@@ -197,7 +198,7 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   geometry_msgs::msg::PoseWithCovarianceStamped pose_with_cov_msg;
   pose_with_cov_msg.header = pose_base_link->header;
   pose_with_cov_msg.pose.pose = pose_msg;
-  const double cov = 0.1;
+  const double cov = this->get_parameter("output_covariance").as_double();
   pose_with_cov_msg.pose.covariance[0] = cov;
   pose_with_cov_msg.pose.covariance[7] = cov;
   pose_with_cov_msg.pose.covariance[14] = cov;
