@@ -15,6 +15,8 @@ class PoseReflectorService(Node):
     def reflect_pose_callback(self, request, response):
         # Just reflect the pose back in the response
         response.pose = request.pose
+        response.success = True
+        response.pose_with_covariance = request.pose_with_covariance
         return response
 
 
