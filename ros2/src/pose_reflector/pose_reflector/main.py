@@ -14,7 +14,7 @@ class PoseReflectorService(Node):
             PoseWithCovarianceStamped, '/localization/pose_estimator/ndt_align_srv', self.reflect_pose_callback)
 
         self.srv_trigger = self.create_service(
-            SetBool, "trigger_node_srv", self.srv_trigger_callback
+            SetBool, "/localization/pose_estimator/trigger_node", self.srv_trigger_callback
         )
 
     def reflect_pose_callback(self, request, response):
