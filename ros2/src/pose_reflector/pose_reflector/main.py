@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 
 from tier4_localization_msgs.srv import PoseWithCovarianceStamped
+from std_srvs.srv import SetBool
 
 
 class PoseReflectorService(Node):
@@ -12,11 +13,19 @@ class PoseReflectorService(Node):
         self.srv = self.create_service(
             PoseWithCovarianceStamped, '/localization/pose_estimator/ndt_align_srv', self.reflect_pose_callback)
 
+        self.srv_trigger = self.create_service(
+            SetBool, "trigger_node_srv", self.srv_trigger_callback
+        )
+
     def reflect_pose_callback(self, request, response):
         # Just reflect the pose back in the response
         response.pose = request.pose
         response.success = True
         response.pose_with_covariance = request.pose_with_covariance
+        return response
+
+    def srv_trigger_callback(self, request, response):
+        response.success = True
         return response
 
 
