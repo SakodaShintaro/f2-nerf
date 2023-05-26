@@ -33,54 +33,54 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   dataset_->intri_ /= factor;
 }
 
-std::vector<Particle> LocalizerCore::random_search(
-  Tensor initial_pose, Tensor image_tensor, int64_t particle_num)
-{
-  torch::NoGradGuard no_grad_guard;
+// std::vector<Particle> LocalizerCore::random_search(
+//   Tensor initial_pose, Tensor image_tensor, int64_t particle_num)
+// {
+//   torch::NoGradGuard no_grad_guard;
 
-  std::mt19937_64 engine(std::random_device{}());
-  std::normal_distribution<float> dist_position_x(0.0f, param_.noise_position_x);
-  std::normal_distribution<float> dist_position_y(0.0f, param_.noise_position_y);
-  std::normal_distribution<float> dist_position_z(0.0f, param_.noise_position_z);
-  std::normal_distribution<float> dist_rotation(0.0f, param_.noise_rotation);
+//   std::mt19937_64 engine(std::random_device{}());
+//   std::normal_distribution<float> dist_position_x(0.0f, param_.noise_position_x);
+//   std::normal_distribution<float> dist_position_y(0.0f, param_.noise_position_y);
+//   std::normal_distribution<float> dist_position_z(0.0f, param_.noise_position_z);
+//   std::normal_distribution<float> dist_rotation(0.0f, param_.noise_rotation);
 
-  std::vector<Tensor> poses;
-  for (int64_t i = 0; i < particle_num; i++) {
-    // Sample a random translation
-    Tensor curr_pose = initial_pose.clone();
-    curr_pose[0][3] += dist_position_x(engine);
-    curr_pose[1][3] += dist_position_y(engine);
-    curr_pose[2][3] += dist_position_z(engine);
+//   std::vector<Tensor> poses;
+//   for (int64_t i = 0; i < particle_num; i++) {
+//     // Sample a random translation
+//     Tensor curr_pose = initial_pose.clone();
+//     curr_pose[0][3] += dist_position_x(engine);
+//     curr_pose[1][3] += dist_position_y(engine);
+//     curr_pose[2][3] += dist_position_z(engine);
 
-    // orientation
-    const float theta_x = dist_rotation(engine) * M_PI / 180.0;
-    const float theta_y = dist_rotation(engine) * M_PI / 180.0;
-    const float theta_z = dist_rotation(engine) * M_PI / 180.0;
-    Eigen::Matrix3f rotation_matrix_x(Eigen::AngleAxisf(theta_x, Eigen::Vector3f::UnitX()));
-    Eigen::Matrix3f rotation_matrix_y(Eigen::AngleAxisf(theta_y, Eigen::Vector3f::UnitY()));
-    Eigen::Matrix3f rotation_matrix_z(Eigen::AngleAxisf(theta_z, Eigen::Vector3f::UnitZ()));
-    const torch::Device dev = initial_pose.device();
-    Tensor rotation_tensor_x =
-      torch::from_blob(rotation_matrix_x.data(), {3, 3}).to(torch::kFloat32).to(dev);
-    Tensor rotation_tensor_y =
-      torch::from_blob(rotation_matrix_y.data(), {3, 3}).to(torch::kFloat32).to(dev);
-    Tensor rotation_tensor_z =
-      torch::from_blob(rotation_matrix_z.data(), {3, 3}).to(torch::kFloat32).to(dev);
-    Tensor rotated = rotation_tensor_z.mm(
-      rotation_tensor_y.mm(rotation_tensor_x.mm(curr_pose.index({Slc(0, 3), Slc(0, 3)}))));
-    curr_pose.index_put_({Slc(0, 3), Slc(0, 3)}, rotated);
-    poses.push_back(curr_pose);
-  }
+//     // orientation
+//     const float theta_x = dist_rotation(engine) * M_PI / 180.0;
+//     const float theta_y = dist_rotation(engine) * M_PI / 180.0;
+//     const float theta_z = dist_rotation(engine) * M_PI / 180.0;
+//     Eigen::Matrix3f rotation_matrix_x(Eigen::AngleAxisf(theta_x, Eigen::Vector3f::UnitX()));
+//     Eigen::Matrix3f rotation_matrix_y(Eigen::AngleAxisf(theta_y, Eigen::Vector3f::UnitY()));
+//     Eigen::Matrix3f rotation_matrix_z(Eigen::AngleAxisf(theta_z, Eigen::Vector3f::UnitZ()));
+//     const torch::Device dev = initial_pose.device();
+//     Tensor rotation_tensor_x =
+//       torch::from_blob(rotation_matrix_x.data(), {3, 3}).to(torch::kFloat32).to(dev);
+//     Tensor rotation_tensor_y =
+//       torch::from_blob(rotation_matrix_y.data(), {3, 3}).to(torch::kFloat32).to(dev);
+//     Tensor rotation_tensor_z =
+//       torch::from_blob(rotation_matrix_z.data(), {3, 3}).to(torch::kFloat32).to(dev);
+//     Tensor rotated = rotation_tensor_z.mm(
+//       rotation_tensor_y.mm(rotation_tensor_x.mm(curr_pose.index({Slc(0, 3), Slc(0, 3)}))));
+//     curr_pose.index_put_({Slc(0, 3), Slc(0, 3)}, rotated);
+//     poses.push_back(curr_pose);
+//   }
 
-  const std::vector<float> weights = evaluate_poses(poses, image_tensor);
-  const int pose_num = poses.size();
+//   const std::vector<float> weights = evaluate_poses(poses, image_tensor);
+//   const int pose_num = poses.size();
 
-  std::vector<Particle> result;
-  for (int i = 0; i < pose_num; i++) {
-    result.push_back({poses[i], weights[i]});
-  }
-  return result;
-}
+//   std::vector<Particle> result;
+//   for (int i = 0; i < pose_num; i++) {
+//     result.push_back({poses[i], weights[i]});
+//   }
+//   return result;
+// }
 
 void LocalizerCore::load_checkpoint(const std::string & checkpoint_path)
 {
@@ -354,8 +354,45 @@ void LocalizerCore::update_by_odometry(const Tensor & odometry)
 {
   const int64_t particle_num = particles_.size();
   for (int64_t i = 0; i < particle_num; i++) {
-    particles_[i].pose = odometry.mm(particles_[i].pose);
-    particles_[i].weight = 1.0 / particle_num;
+    Tensor curr_odometry = odometry.clone();
+
+    // add noise to curr_odometry
+    std::mt19937_64 engine(std::random_device{}());
+    std::normal_distribution<float> dist_position_x(0.0f, param_.noise_position_x);
+    std::normal_distribution<float> dist_position_y(0.0f, param_.noise_position_y);
+    std::normal_distribution<float> dist_position_z(0.0f, param_.noise_position_z);
+    std::normal_distribution<float> dist_rotation(0.0f, param_.noise_rotation);
+    curr_odometry[0][3] += dist_position_x(engine);
+    curr_odometry[1][3] += dist_position_y(engine);
+    curr_odometry[2][3] += dist_position_z(engine);
+    const float theta_x = dist_rotation(engine) * M_PI / 180.0;
+    const float theta_y = dist_rotation(engine) * M_PI / 180.0;
+    const float theta_z = dist_rotation(engine) * M_PI / 180.0;
+    Eigen::Matrix3f rotation_matrix_x(Eigen::AngleAxisf(theta_x, Eigen::Vector3f::UnitX()));
+    Eigen::Matrix3f rotation_matrix_y(Eigen::AngleAxisf(theta_y, Eigen::Vector3f::UnitY()));
+    Eigen::Matrix3f rotation_matrix_z(Eigen::AngleAxisf(theta_z, Eigen::Vector3f::UnitZ()));
+    const torch::Device dev = odometry.device();
+    Tensor rotation_tensor_x =
+      torch::from_blob(rotation_matrix_x.data(), {3, 3}).to(torch::kFloat32).to(dev);
+    Tensor rotation_tensor_y =
+      torch::from_blob(rotation_matrix_y.data(), {3, 3}).to(torch::kFloat32).to(dev);
+    Tensor rotation_tensor_z =
+      torch::from_blob(rotation_matrix_z.data(), {3, 3}).to(torch::kFloat32).to(dev);
+    Tensor rotated = rotation_tensor_z.mm(
+      rotation_tensor_y.mm(rotation_tensor_x.mm(curr_odometry.index({Slc(0, 3), Slc(0, 3)}))));
+    curr_odometry.index_put_({Slc(0, 3), Slc(0, 3)}, rotated);
+
+    // base diff
+    Tensor orientation = particles_[i].pose.index({Slc(0, 3), Slc(0, 3)});
+    Tensor translation = orientation.mm(curr_odometry.index({Slc(0, 3), Slc(3, 4)}));
+
+    // apply diff
+    Tensor new_position = particles_[i].pose.index({Slc(0, 3), Slc(3, 4)}) + translation;
+    Tensor new_rotation = orientation.mm(curr_odometry.index({Slc(0, 3), Slc(0, 3)}));
+
+    // update particle
+    particles_[i].pose.index_put_({Slc(0, 3), Slc(3, 4)}, new_position);
+    particles_[i].pose.index_put_({Slc(0, 3), Slc(0, 3)}, new_rotation);
   }
 }
 

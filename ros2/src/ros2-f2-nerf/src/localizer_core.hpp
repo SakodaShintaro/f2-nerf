@@ -31,8 +31,6 @@ public:
   LocalizerCore(const std::string & conf_path, const LocalizerCoreParam & param);
 
   std::tuple<float, Tensor> pred_image_and_calc_score(const Tensor & pose, const Tensor & image);
-  std::vector<Particle> random_search(
-    Tensor initial_pose, Tensor image_tensor, int64_t particle_num);
 
   Tensor normalize_position(Tensor pose);
   Tensor inverse_normalize_position(Tensor pose);
@@ -44,6 +42,7 @@ public:
   void update_by_odometry(const Tensor & odometry);
   void update_by_measurement(const Tensor & image_tensor);
   void resample_particles();
+  const std::vector<Particle> & particles() const { return particles_; }
 
   std::unique_ptr<Dataset> dataset_;
 

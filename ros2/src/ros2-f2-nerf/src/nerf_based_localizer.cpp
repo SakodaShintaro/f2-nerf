@@ -324,8 +324,13 @@ NerfBasedLocalizer::localize(
   // run NeRF
   RCLCPP_INFO(this->get_logger(), "start localize");
   Timer timer2;
-  std::vector<Particle> particles = localizer_core_.random_search(
-    initial_pose, image_tensor, this->get_parameter("particle_num").as_int());
+  if (localizer_core_.particles().empty()) {
+    localizer_core_.init_particles(initial_pose, this->get_parameter("particle_num").as_int());
+  }
+  localizer_core_.resample_particles();
+  localizer_core_.update_by_odometry(torch::eye(4).to(torch::kCUDA).to(torch::kFloat32));
+  localizer_core_.update_by_measurement(image_tensor);
+  const std::vector<Particle> particles = localizer_core_.particles();
   RCLCPP_INFO_STREAM(this->get_logger(), "finish search: " << timer2);
 
   if (this->get_parameter("save_particles_images").as_bool()) {
