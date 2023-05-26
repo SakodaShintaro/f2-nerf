@@ -21,3 +21,4 @@ mv ~/.ros/log/* ./result_images/trial/log/
 
 python3 python/analyze_particles_log.py ./result_images/trial/particles/
 python3 python/concat_test_images_result.py ./result_images/trial/
+python3 python/analyze_ros2_log.py ./result_images/trial/log/nerf_based_localizer*
