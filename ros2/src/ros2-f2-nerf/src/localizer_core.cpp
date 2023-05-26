@@ -489,7 +489,9 @@ void LocalizerCore::resample_particles()
   std::vector<Particle> new_particles(particle_num);
   std::mt19937 engine(std::random_device{}());
   for (int64_t i = 0; i < particle_num; i++) {
-    new_particles[i] = particles_[dist(engine)];
+    const int64_t idx = dist(engine);
+    new_particles[i].weight = particles_[idx].weight;
+    new_particles[i].pose = particles_[idx].pose.clone();
   }
   particles_ = new_particles;
 }
