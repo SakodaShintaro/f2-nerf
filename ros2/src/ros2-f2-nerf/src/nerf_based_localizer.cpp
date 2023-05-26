@@ -285,13 +285,6 @@ NerfBasedLocalizer::localize(
     geometry_msgs::msg::TransformStamped transform =
       tf_buffer_.lookupTransform("base_link", "velodyne_front", tf2::TimePointZero);
     tf2::doTransform(pose_msg, pose_lidar.pose.pose, transform);
-    RCLCPP_INFO(
-      this->get_logger(), "Transform Translation: [%f, %f, %f]", transform.transform.translation.x,
-      transform.transform.translation.y, transform.transform.translation.z);
-    RCLCPP_INFO(
-      this->get_logger(), "Transform Rotation (Quaternion): [%f, %f, %f, %f]",
-      transform.transform.rotation.x, transform.transform.rotation.y,
-      transform.transform.rotation.z, transform.transform.rotation.w);
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(this->get_logger(), "%s", ex.what());
   }
@@ -322,11 +315,9 @@ NerfBasedLocalizer::localize(
   initial_pose = world2camera(initial_pose);
 
   // run NeRF
-  RCLCPP_INFO(this->get_logger(), "start localize");
   Timer timer2;
   std::vector<Particle> particles = localizer_core_.random_search(
     initial_pose, image_tensor, this->get_parameter("particle_num").as_int());
-  RCLCPP_INFO_STREAM(this->get_logger(), "finish search: " << timer2);
 
   if (this->get_parameter("save_particles_images").as_bool()) {
     static int cnt = 0;
@@ -346,12 +337,10 @@ NerfBasedLocalizer::localize(
 
   timer2.reset();
   torch::Tensor optimized_pose = LocalizerCore::calc_average_pose(particles);
-  RCLCPP_INFO_STREAM(this->get_logger(), "finish calc average: " << timer2);
 
   timer2.reset();
   auto [score, nerf_image] =
     localizer_core_.pred_image_and_calc_score(optimized_pose, image_tensor);
-  RCLCPP_INFO_STREAM(this->get_logger(), "finish infer image: " << timer2);
 
   RCLCPP_INFO_STREAM(this->get_logger(), "score = " << score);
   if (this->get_parameter("save_particles").as_bool()) {
@@ -411,13 +400,6 @@ NerfBasedLocalizer::localize(
     geometry_msgs::msg::TransformStamped transform =
       tf_buffer_.lookupTransform("velodyne_front", "base_link", tf2::TimePointZero);
     tf2::doTransform(result_pose_lidar, result_pose_base_link, transform);
-    RCLCPP_INFO(
-      this->get_logger(), "Transform Translation: [%f, %f, %f]", transform.transform.translation.x,
-      transform.transform.translation.y, transform.transform.translation.z);
-    RCLCPP_INFO(
-      this->get_logger(), "Transform Rotation (Quaternion): [%f, %f, %f, %f]",
-      transform.transform.rotation.x, transform.transform.rotation.y,
-      transform.transform.rotation.z, transform.transform.rotation.w);
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(this->get_logger(), "%s", ex.what());
   }
