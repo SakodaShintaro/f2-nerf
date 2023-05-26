@@ -474,8 +474,9 @@ void LocalizerCore::update_by_measurement(const Tensor & image_tensor)
   loss /= loss.sum();
 
   for (int64_t i = 0; i < particle_num; i++) {
-    particles_[i].weight = loss[i].item<float>();
+    particles_[i].weight *= loss[i].item<float>();
   }
+  normalize_particle_weights();
 }
 
 void LocalizerCore::resample_particles()
@@ -494,4 +495,17 @@ void LocalizerCore::resample_particles()
     new_particles[i].pose = particles_[idx].pose.clone();
   }
   particles_ = new_particles;
+  normalize_particle_weights();
+}
+
+void LocalizerCore::normalize_particle_weights()
+{
+  const int64_t particle_num = particles_.size();
+  float sum = 0.0f;
+  for (int64_t i = 0; i < particle_num; i++) {
+    sum += particles_[i].weight;
+  }
+  for (int64_t i = 0; i < particle_num; i++) {
+    particles_[i].weight /= sum;
+  }
 }

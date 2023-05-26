@@ -42,6 +42,7 @@ public:
   void update_by_odometry(const Tensor & odometry);
   void update_by_measurement(const Tensor & image_tensor);
   void resample_particles();
+  void normalize_particle_weights();
   const std::vector<Particle> & particles() const { return particles_; }
 
   std::unique_ptr<Dataset> dataset_;
