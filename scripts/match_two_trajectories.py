@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from scipy.linalg import orthogonal_procrustes
 from scipy.spatial.transform import Rotation
 from convert_pose_tsv_to_f2_format import AXIS_CONVERT_MAT_A2B
+import os
 
 
 def parse_args():
@@ -77,6 +78,11 @@ if __name__ == "__main__":
     path_to_trajectory_A = args.path_to_trajectory_A
     path_to_trajectory_B = args.path_to_trajectory_B
 
+    save_dir = "./match_result"
+    os.makedirs(save_dir, exist_ok=True)
+    with open(f"{save_dir}/.gitignore", "w") as f:
+        f.write("*\n")
+
     npy_A = np.load(path_to_trajectory_A)
     pose_A = npy_A[:, 0:12]
     pose_A = pose_A.reshape(-1, 3, 4)
@@ -111,12 +117,12 @@ if __name__ == "__main__":
     print("mat_B2A")
     print(mat_B2A)
 
-    with open("mat_A2B.txt", "w") as f:
+    with open(f"{save_dir}/mat_A2B.txt", "w") as f:
         for i in range(4):
             f.write(" ".join([f"{mat_A2B[i][j]:.6f}," for j in range(4)]))
             f.write(f" // row{i}")
             f.write("\n")
-    with open("mat_B2A.txt", "w") as f:
+    with open(f"{save_dir}/mat_B2A.txt", "w") as f:
         for i in range(4):
             f.write(" ".join([f"{mat_B2A[i][j]:.6f}," for j in range(4)]))
             f.write(f" // row{i}")
@@ -200,6 +206,6 @@ if __name__ == "__main__":
     plt.axis('equal')
     plt.xlabel('x')
     plt.ylabel('y')
-    save_path = 'compare_trajectory.png'
+    save_path = f"{save_dir}/compare_trajectory.png"
     plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05)
     print(f'save to {save_path}')
