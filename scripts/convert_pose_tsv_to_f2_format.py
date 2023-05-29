@@ -28,12 +28,6 @@ AXIS_CONVERT_MAT1 = np.array(
     [0,  -1,  0,  0],
     [0,  0,  0,  1]], dtype=np.float64
 )
-AXIS_CONVERT_MAT2 = np.array(
-    [[0, -1,  0,  0],
-    [0,  0, -1,  0],
-    [1,  0,  0,  0],
-    [0,  0,  0,  1]], dtype=np.float64
-)
 
 if __name__ == "__main__":
     args = parse_args()
@@ -51,7 +45,7 @@ if __name__ == "__main__":
     mat[:, 0:3, 3:4] = pose_xyz.reshape((n, 3, 1))
 
     # convert axis
-    mat = AXIS_CONVERT_MAT2 @ mat @ AXIS_CONVERT_MAT1
+    mat = AXIS_CONVERT_MAT1.T @ mat @ AXIS_CONVERT_MAT1
     mat = mat[:, 0:3, :]
     mat = mat.reshape((n, 12))
 

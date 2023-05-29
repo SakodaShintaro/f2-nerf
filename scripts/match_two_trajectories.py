@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.linalg import orthogonal_procrustes
 from scipy.spatial.transform import Rotation
-from convert_pose_tsv_to_f2_format import AXIS_CONVERT_MAT1, AXIS_CONVERT_MAT2
+from convert_pose_tsv_to_f2_format import AXIS_CONVERT_MAT1
 
 
 def parse_args():
@@ -67,7 +67,7 @@ def apply_mat_B2A(mat, vec):
     result = np.hstack((vec, np.ones((vec.shape[0], 1))))
     # result = result @ AXIS_CONVERT_MAT1
     result = result.T
-    result = AXIS_CONVERT_MAT2 @ result
+    result = AXIS_CONVERT_MAT1.T @ result
     result = mat @ result
     result = result.T
     result = result[:, 0:3]
@@ -78,7 +78,7 @@ def apply_mat_A2B(mat, vec):
     result = np.hstack((vec, np.ones((vec.shape[0], 1))))
     # result = result @ AXIS_CONVERT_MAT1
     result = result.T
-    result = AXIS_CONVERT_MAT2.T @ result
+    result = AXIS_CONVERT_MAT1 @ result
     result = mat @ result
     result = result.T
     result = result[:, 0:3]
@@ -126,11 +126,11 @@ if __name__ == "__main__":
 
     # apply
     pose_B_from_A = mat_A2B @ \
-        AXIS_CONVERT_MAT2.T @ \
+        AXIS_CONVERT_MAT1 @ \
         pose_A @ \
         AXIS_CONVERT_MAT1.T
     pose_A_from_B = mat_B2A @ \
-        AXIS_CONVERT_MAT2 @ \
+        AXIS_CONVERT_MAT1.T @ \
         pose_B @ \
         AXIS_CONVERT_MAT1
 

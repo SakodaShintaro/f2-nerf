@@ -55,45 +55,32 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   /*
     [[0, 0, -1, 0],
     [-1, 0, 0, 0],
-    [0, -1, 0, 0],
+    [0, +1, 0, 0],
     [0, 0, 0, 1]]
   */
   axis_convert_mat1_ = torch::zeros({4, 4});
   axis_convert_mat1_[0][2] = -1;
   axis_convert_mat1_[1][0] = -1;
-  axis_convert_mat1_[2][1] = -1;
+  axis_convert_mat1_[2][1] = +1;
   axis_convert_mat1_[3][3] = 1;
   axis_convert_mat1_ = axis_convert_mat1_.to(torch::kCUDA);
 
   /*
-    [[0, -1, 0, 0],
-    [0, 0, -1, 0],
-    [1, 0, 0, 0],
-    [0, 0, 0, 1]]
-  */
-  axis_convert_mat2_ = torch::zeros({4, 4});
-  axis_convert_mat2_[0][1] = -1;
-  axis_convert_mat2_[1][2] = -1;
-  axis_convert_mat2_[2][0] = 1;
-  axis_convert_mat2_[3][3] = 1;
-  axis_convert_mat2_ = axis_convert_mat2_.to(torch::kCUDA);
-
-  /*
-    [[ 1.327284  0.008350  0.118095  1.719275]
-     [-0.011544  1.332029  0.035553  3.282300]
-     [ 0.117825  0.036435 -1.326834  0.158593]
+    [[-1.327284  0.008350  0.118095  1.719275]
+     [ 0.011544  1.332029  0.035553  3.282300]
+     [-0.117825  0.036435 -1.326834  0.158593]
      [ 0.        0.        0.        1.      ]]
   */
   convert_mat_A2B_ = torch::zeros({4, 4});
-  convert_mat_A2B_[0][0] = 1.327284;
+  convert_mat_A2B_[0][0] = -1.327284;
   convert_mat_A2B_[0][1] = 0.008350;
   convert_mat_A2B_[0][2] = 0.118095;
   convert_mat_A2B_[0][3] = 1.719275;
-  convert_mat_A2B_[1][0] = -0.011544;
+  convert_mat_A2B_[1][0] = 0.011544;
   convert_mat_A2B_[1][1] = 1.332029;
   convert_mat_A2B_[1][2] = 0.035553;
   convert_mat_A2B_[1][3] = 3.282300;
-  convert_mat_A2B_[2][0] = 0.117825;
+  convert_mat_A2B_[2][0] = -0.117825;
   convert_mat_A2B_[2][1] = 0.036435;
   convert_mat_A2B_[2][2] = -1.326834;
   convert_mat_A2B_[2][3] = 0.158593;
@@ -101,23 +88,23 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   convert_mat_A2B_ = convert_mat_A2B_.to(torch::kCUDA);
 
   /*
-    [[ 0.750144  0.020519 -0.004703  2.473535]
-     [ 0.020022 -0.747218 -0.066506  0.061556]
-     [ 0.006501 -0.066354  0.747471 -1.274295]
+    [[ 0.750144  0.020519  0.004703  2.473535]
+     [ 0.020022 -0.747218  0.066506  0.061556]
+     [ 0.006501 -0.066354 -0.747471 -1.274295]
      [ 0.        0.        0.        1.      ]]
   */
   convert_mat_B2A_ = torch::zeros({4, 4});
   convert_mat_B2A_[0][0] = 0.750144;
   convert_mat_B2A_[0][1] = 0.020519;
-  convert_mat_B2A_[0][2] = -0.004703;
+  convert_mat_B2A_[0][2] = 0.004703;
   convert_mat_B2A_[0][3] = 2.473535;
   convert_mat_B2A_[1][0] = 0.020022;
   convert_mat_B2A_[1][1] = -0.747218;
-  convert_mat_B2A_[1][2] = -0.066506;
+  convert_mat_B2A_[1][2] = 0.066506;
   convert_mat_B2A_[1][3] = 0.061556;
   convert_mat_B2A_[2][0] = 0.006501;
   convert_mat_B2A_[2][1] = -0.066354;
-  convert_mat_B2A_[2][2] = 0.747471;
+  convert_mat_B2A_[2][2] = -0.747471;
   convert_mat_B2A_[2][3] = -1.274295;
   convert_mat_B2A_[3][3] = 1;
   convert_mat_B2A_ = convert_mat_B2A_.to(torch::kCUDA);
@@ -204,9 +191,9 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   pose_with_cov_msg.pose.covariance[0] = cov;
   pose_with_cov_msg.pose.covariance[7] = cov;
   pose_with_cov_msg.pose.covariance[14] = cov;
-  pose_with_cov_msg.pose.covariance[21] = cov;
-  pose_with_cov_msg.pose.covariance[28] = cov;
-  pose_with_cov_msg.pose.covariance[35] = cov;
+  pose_with_cov_msg.pose.covariance[21] = cov * 10;
+  pose_with_cov_msg.pose.covariance[28] = cov * 10;
+  pose_with_cov_msg.pose.covariance[35] = cov * 10;
   nerf_pose_with_covariance_publisher_->publish(pose_with_cov_msg);
 
   // (3) publish score
@@ -448,7 +435,7 @@ torch::Tensor NerfBasedLocalizer::world2camera(const torch::Tensor & pose_in_wor
 {
   torch::Tensor x = pose_in_world;
   x = x.matmul(axis_convert_mat1_);
-  x = axis_convert_mat2_.matmul(x);
+  x = axis_convert_mat1_.t().matmul(x);
   x = convert_mat_B2A_.matmul(x);
   x = localizer_core_.normalize_position(x);
   x = x.index({Slc(0, 3), Slc(0, 4)});
@@ -461,7 +448,7 @@ torch::Tensor NerfBasedLocalizer::camera2world(const torch::Tensor & pose_in_cam
   x = torch::cat({x, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
   x = localizer_core_.inverse_normalize_position(x);
   x = x.matmul(axis_convert_mat1_.t());
-  x = axis_convert_mat2_.t().matmul(x);
+  x = axis_convert_mat1_.matmul(x);
   x = convert_mat_A2B_.matmul(x);
   return x;
 }
