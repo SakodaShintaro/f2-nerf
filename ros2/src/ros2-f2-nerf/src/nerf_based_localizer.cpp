@@ -78,48 +78,24 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   axis_convert_mat2_[3][3] = 1;
   axis_convert_mat2_ = axis_convert_mat2_.to(torch::kCUDA);
 
-  /*
-    [[ 1.327284  0.008350  0.118095  1.719275]
-     [-0.011544  1.332029  0.035553  3.282300]
-     [ 0.117825  0.036435 -1.326834  0.158593]
-     [ 0.        0.        0.        1.      ]]
-  */
-  convert_mat_A2B_ = torch::zeros({4, 4});
-  convert_mat_A2B_[0][0] = 1.327284;
-  convert_mat_A2B_[0][1] = 0.008350;
-  convert_mat_A2B_[0][2] = 0.118095;
-  convert_mat_A2B_[0][3] = 1.719275;
-  convert_mat_A2B_[1][0] = -0.011544;
-  convert_mat_A2B_[1][1] = 1.332029;
-  convert_mat_A2B_[1][2] = 0.035553;
-  convert_mat_A2B_[1][3] = 3.282300;
-  convert_mat_A2B_[2][0] = 0.117825;
-  convert_mat_A2B_[2][1] = 0.036435;
-  convert_mat_A2B_[2][2] = -1.326834;
-  convert_mat_A2B_[2][3] = 0.158593;
-  convert_mat_A2B_[3][3] = 1;
+  std::vector<float> mat_A2B{
+    1.327284,  0.008350, 0.118095,  1.719275,  // row0
+    -0.011544, 1.332029, 0.035553,  3.282300,  // row1
+    0.117825,  0.036435, -1.326834, 0.158593,  // row2
+    0.000000,  0.000000, 0.000000,  1.000000,  // row3
+  };
+  convert_mat_A2B_ = torch::tensor(mat_A2B);
+  convert_mat_A2B_ = convert_mat_A2B_.view({4, 4});
   convert_mat_A2B_ = convert_mat_A2B_.to(torch::kCUDA);
 
-  /*
-    [[ 0.750144  0.020519 -0.004703  2.473535]
-     [ 0.020022 -0.747218 -0.066506  0.061556]
-     [ 0.006501 -0.066354  0.747471 -1.274295]
-     [ 0.        0.        0.        1.      ]]
-  */
-  convert_mat_B2A_ = torch::zeros({4, 4});
-  convert_mat_B2A_[0][0] = 0.750144;
-  convert_mat_B2A_[0][1] = 0.020519;
-  convert_mat_B2A_[0][2] = -0.004703;
-  convert_mat_B2A_[0][3] = 2.473535;
-  convert_mat_B2A_[1][0] = 0.020022;
-  convert_mat_B2A_[1][1] = -0.747218;
-  convert_mat_B2A_[1][2] = -0.066506;
-  convert_mat_B2A_[1][3] = 0.061556;
-  convert_mat_B2A_[2][0] = 0.006501;
-  convert_mat_B2A_[2][1] = -0.066354;
-  convert_mat_B2A_[2][2] = 0.747471;
-  convert_mat_B2A_[2][3] = -1.274295;
-  convert_mat_B2A_[3][3] = 1;
+  std::vector<float> mat_B2A{
+    0.750144, 0.020519,  -0.004703, 2.473535,   // row0
+    0.020022, -0.747218, -0.066506, 0.061556,   // row1
+    0.006501, -0.066354, 0.747471,  -1.274295,  // row2
+    0.000000, 0.000000,  0.000000,  1.000000,   // row3
+  };
+  convert_mat_B2A_ = torch::tensor(mat_B2A);
+  convert_mat_B2A_ = convert_mat_B2A_.view({4, 4});
   convert_mat_B2A_ = convert_mat_B2A_.to(torch::kCUDA);
 
   service_ = this->create_service<tier4_localization_msgs::srv::PoseWithCovarianceStamped>(
