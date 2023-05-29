@@ -79,7 +79,7 @@ class ImagePosePublisher(Node):
                 pose_msg.orientation.w = curr_pose["qw"]
                 self.pose_msg_list.append(pose_msg)
 
-        self.test_mode = True
+        self.test_mode = False
         if self.test_mode:
             n = 7
             self.image_files = [deepcopy(self.image_files[0]) for _ in range(n)]

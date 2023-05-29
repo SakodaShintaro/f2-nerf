@@ -124,6 +124,17 @@ if __name__ == "__main__":
     print("mat_B2A")
     print(mat_B2A)
 
+    with open("mat_A2B.txt", "w") as f:
+        for i in range(4):
+            f.write(" ".join([f"{mat_A2B[i][j]:.6f}," for j in range(4)]))
+            f.write(f" // row{i}")
+            f.write("\n")
+    with open("mat_B2A.txt", "w") as f:
+        for i in range(4):
+            f.write(" ".join([f"{mat_B2A[i][j]:.6f}," for j in range(4)]))
+            f.write(f" // row{i}")
+            f.write("\n")
+
     # apply
     pose_B_from_A = mat_A2B @ \
         AXIS_CONVERT_MAT1 @ \
