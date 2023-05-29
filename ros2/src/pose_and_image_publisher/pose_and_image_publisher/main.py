@@ -4,7 +4,7 @@ import cv2
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import PoseWithCovarianceStamped, Pose
+from geometry_msgs.msg import PoseWithCovarianceStamped, Pose, Quaternion
 from cv_bridge import CvBridge
 import argparse
 import time
@@ -13,6 +13,20 @@ import pandas as pd
 import tf2_ros
 import geometry_msgs.msg
 import tf2_geometry_msgs
+from copy import deepcopy
+
+
+def rotate_quat(quat, axis, angle):
+    r = Rotation.from_quat([quat.x, quat.y, quat.z, quat.w])
+    rot = Rotation.from_rotvec(angle * axis)
+    r = rot * r
+    new_quat = r.as_quat()
+    result = Quaternion()
+    result.x = new_quat[0]
+    result.y = new_quat[1]
+    result.z = new_quat[2]
+    result.w = new_quat[3]
+    return result
 
 
 class ImagePosePublisher(Node):
@@ -64,6 +78,22 @@ class ImagePosePublisher(Node):
                 pose_msg.orientation.z = curr_pose["qz"]
                 pose_msg.orientation.w = curr_pose["qw"]
                 self.pose_msg_list.append(pose_msg)
+
+        self.test_mode = True
+        if self.test_mode:
+            n = 7
+            self.image_files = [deepcopy(self.image_files[0]) for _ in range(n)]
+            self.pose_msg_list = [deepcopy(self.pose_msg_list[0]) for _ in range(n)]
+            self.poses = self.poses[0:n]
+            self.pose_msg_list[1].position.x += 1
+            self.pose_msg_list[2].position.y += 2
+            self.pose_msg_list[3].position.z += 0.6
+            self.pose_msg_list[4].orientation = rotate_quat(
+                self.pose_msg_list[4].orientation, np.array([1, 0, 0]), np.pi / 4)
+            self.pose_msg_list[5].orientation = rotate_quat(
+                self.pose_msg_list[5].orientation, np.array([0, 1, 0]), np.pi / 4)
+            self.pose_msg_list[6].orientation = rotate_quat(
+                self.pose_msg_list[6].orientation, np.array([0, 0, 1]), np.pi / 4)
 
         assert len(self.image_files) == len(self.poses), \
             f"Number of images ({len(self.image_files)}) and poses ({len(self.poses)}) do not match."
@@ -137,17 +167,18 @@ class ImagePosePublisher(Node):
 
     def nerf_pose_with_covariance_callback(self, msg):
         # Transform the pose_msg from the frame "velodyne_front" to the frame "base_link"
-        try:
-            transform = self.tf_buffer.lookup_transform(
-                "base_link", "velodyne_front", rclpy.time.Time())
-            msg.pose.pose = tf2_geometry_msgs.do_transform_pose(msg.pose.pose, transform)
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            self.get_logger().error('Failed to get transform from velodyne_front to base_link')
-            exit(1)
-        pose = msg.pose.pose
+        if not self.test_mode:
+            try:
+                transform = self.tf_buffer.lookup_transform(
+                    "base_link", "velodyne_front", rclpy.time.Time())
+                msg.pose.pose = tf2_geometry_msgs.do_transform_pose(msg.pose.pose, transform)
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                self.get_logger().error('Failed to get transform from velodyne_front to base_link')
+                exit(1)
+            pose = msg.pose.pose
 
-        if self.idx < len(self.pose_msg_list):
-            self.pose_msg_list[self.idx].position = pose.position
+            if self.idx < len(self.pose_msg_list):
+                self.pose_msg_list[self.idx].position = pose.position
         self.publish_data()
 
 
