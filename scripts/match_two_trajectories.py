@@ -63,22 +63,9 @@ def calc_mat_B2A(traj_A: np.array, traj_B: np.array):
     return mat
 
 
-def apply_mat_B2A(mat, vec):
+def convert_traj(mat, vec):
     result = np.hstack((vec, np.ones((vec.shape[0], 1))))
-    # result = result @ AXIS_CONVERT_MAT1
     result = result.T
-    result = AXIS_CONVERT_MAT_A2B.T @ result
-    result = mat @ result
-    result = result.T
-    result = result[:, 0:3]
-    return result
-
-
-def apply_mat_A2B(mat, vec):
-    result = np.hstack((vec, np.ones((vec.shape[0], 1))))
-    # result = result @ AXIS_CONVERT_MAT1
-    result = result.T
-    result = AXIS_CONVERT_MAT_A2B @ result
     result = mat @ result
     result = result.T
     result = result[:, 0:3]
@@ -111,8 +98,8 @@ if __name__ == "__main__":
     traj_A = traj_A[:min_length]
     traj_B = traj_B[:min_length]
 
-    traj_A_axis_converted = apply_mat_A2B(np.eye(4), traj_A.copy())
-    traj_B_axis_converted = apply_mat_B2A(np.eye(4), traj_B.copy())
+    traj_A_axis_converted = convert_traj(AXIS_CONVERT_MAT_A2B, traj_A.copy())
+    traj_B_axis_converted = convert_traj(AXIS_CONVERT_MAT_A2B.T, traj_B.copy())
 
     mat_B2A = calc_mat_B2A(traj_A.copy(), traj_B_axis_converted.copy())
     mat_A2B = calc_mat_B2A(traj_B.copy(), traj_A_axis_converted.copy())
