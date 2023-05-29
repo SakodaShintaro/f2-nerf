@@ -286,7 +286,7 @@ NerfBasedLocalizer::localize(
   initial_pose[2][3] = pose.position.z;
   initial_pose = initial_pose.to(torch::kCUDA);
   initial_pose = initial_pose.to(torch::kFloat32);
-  RCLCPP_INFO_STREAM(this->get_logger(), "world_before: " << initial_pose);
+  RCLCPP_INFO_STREAM(this->get_logger(), "world_before:\n" << initial_pose);
 
   initial_pose = world2camera(initial_pose);
 
@@ -353,7 +353,7 @@ NerfBasedLocalizer::localize(
   // Convert pose to base_link
   optimized_pose = camera2world(optimized_pose);
 
-  RCLCPP_INFO_STREAM(this->get_logger(), "world_after: " << optimized_pose);
+  RCLCPP_INFO_STREAM(this->get_logger(), "world_after:\n" << optimized_pose);
 
   geometry_msgs::msg::Pose result_pose_lidar;
   result_pose_lidar.position.x = optimized_pose[0][3].item<float>();
