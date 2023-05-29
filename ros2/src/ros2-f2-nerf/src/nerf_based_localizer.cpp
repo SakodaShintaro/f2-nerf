@@ -410,9 +410,9 @@ void NerfBasedLocalizer::service_trigger_node(
 torch::Tensor NerfBasedLocalizer::world2camera(const torch::Tensor & pose_in_world)
 {
   torch::Tensor x = pose_in_world;
-  x = x.matmul(axis_convert_mat1_);
-  x = axis_convert_mat1_.t().matmul(x);
-  x = convert_mat_B2A_.matmul(x);
+  x = torch::mm(x, axis_convert_mat1_);
+  x = torch::mm(axis_convert_mat1_.t(), x);
+  x = torch::mm(convert_mat_B2A_, x);
   x = localizer_core_.normalize_position(x);
   x = x.index({Slc(0, 3), Slc(0, 4)});
   return x;
@@ -423,8 +423,8 @@ torch::Tensor NerfBasedLocalizer::camera2world(const torch::Tensor & pose_in_cam
   torch::Tensor x = pose_in_camera;
   x = torch::cat({x, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
   x = localizer_core_.inverse_normalize_position(x);
-  x = x.matmul(axis_convert_mat1_.t());
-  x = axis_convert_mat1_.matmul(x);
-  x = convert_mat_A2B_.matmul(x);
+  x = torch::mm(x, axis_convert_mat1_.t());
+  x = torch::mm(axis_convert_mat1_, x);
+  x = torch::mm(convert_mat_A2B_, x);
   return x;
 }
