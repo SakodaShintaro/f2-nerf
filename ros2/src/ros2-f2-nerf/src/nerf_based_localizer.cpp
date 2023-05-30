@@ -55,15 +55,28 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   /*
     [[0, 0, -1, 0],
     [-1, 0, 0, 0],
-    [0, +1, 0, 0],
+    [0, -1, 0, 0],
     [0, 0, 0, 1]]
   */
   axis_convert_mat1_ = torch::zeros({4, 4});
   axis_convert_mat1_[0][2] = -1;
   axis_convert_mat1_[1][0] = -1;
-  axis_convert_mat1_[2][1] = +1;
+  axis_convert_mat1_[2][1] = -1;
   axis_convert_mat1_[3][3] = 1;
   axis_convert_mat1_ = axis_convert_mat1_.to(torch::kCUDA);
+
+  /*
+    [[1, 0, 0, 0],
+    [0, 1, 0, 0],
+    [0, 0, -1, 0],
+    [0, 0, 0, 1]]
+  */
+  axis_convert_mat2_ = torch::zeros({4, 4});
+  axis_convert_mat2_[0][0] = 1;
+  axis_convert_mat2_[1][1] = 1;
+  axis_convert_mat2_[2][2] = -1;
+  axis_convert_mat2_[3][3] = 1;
+  axis_convert_mat2_ = axis_convert_mat2_.to(torch::kCUDA);
 
   std::vector<float> mat_A2B{
     -1.327284, 0.008350, 0.118095,  1.719275,  // row0
@@ -410,6 +423,7 @@ void NerfBasedLocalizer::service_trigger_node(
 torch::Tensor NerfBasedLocalizer::world2camera(const torch::Tensor & pose_in_world)
 {
   torch::Tensor x = pose_in_world;
+  x = torch::mm(axis_convert_mat2_, x);
   x = torch::mm(x, axis_convert_mat1_);
   x = torch::mm(axis_convert_mat1_.t(), x);
   x = torch::mm(convert_mat_B2A_, x);
@@ -426,5 +440,6 @@ torch::Tensor NerfBasedLocalizer::camera2world(const torch::Tensor & pose_in_cam
   x = torch::mm(x, axis_convert_mat1_.t());
   x = torch::mm(axis_convert_mat1_, x);
   x = torch::mm(convert_mat_A2B_, x);
+  x = torch::mm(axis_convert_mat2_, x);
   return x;
 }

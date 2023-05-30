@@ -145,6 +145,7 @@ std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
   Tensor pred_img = pred_colors.view({H, W, 3});
   pred_img = pred_img.clip(0.f, 1.f);
   pred_img = pred_img.to(image.device());
+  pred_img = torch::flipud(pred_img);
 
   Tensor diff = pred_img - image.view({H, W, 3});
   Tensor loss = (diff * diff).mean(-1).sum();
@@ -239,7 +240,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
   pred_pixels = pred_pixels.clip(0.f, 1.f);
   pred_pixels = pred_pixels.to(image.device());  // (pose_num, pixel_num, 3)
 
-  Tensor gt_pixels = image.index({i, j});              // (pixel_num, 3)
+  Tensor gt_pixels = image.index({H - 1 - i, j});      // (pixel_num, 3)
   Tensor diff = pred_pixels - gt_pixels;               // (pose_num, pixel_num, 3)
   Tensor loss = (diff * diff).mean(-1).sum(-1).cpu();  // (pose_num,)
   loss = pixel_num / (loss + 1e-6f);
