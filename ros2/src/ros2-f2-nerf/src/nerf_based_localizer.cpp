@@ -16,6 +16,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
 : Node("nerf_based_localizer", name_space, options),
   tf_buffer_(this->get_clock()),
   tf_listener_(tf_buffer_),
+  tf2_broadcaster_(*this),
   map_frame_("map"),
   is_activated_(false)
 {
@@ -397,6 +398,16 @@ NerfBasedLocalizer::localize(
 
   std_msgs::msg::Float32 score_msg;
   score_msg.data = score;
+
+  geometry_msgs::msg::TransformStamped transform;
+  transform.transform.translation.x = result_pose_base_link.position.x;
+  transform.transform.translation.y = result_pose_base_link.position.y;
+  transform.transform.translation.z = result_pose_base_link.position.z;
+  transform.transform.rotation = result_pose_base_link.orientation;
+  transform.header = header;
+  transform.header.frame_id = "map";
+  transform.child_frame_id = "base_link";
+  tf2_broadcaster_.sendTransform(transform);
 
   RCLCPP_INFO_STREAM(get_logger(), "localize time: " << timer);
 
