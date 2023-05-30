@@ -141,7 +141,7 @@ if __name__ == "__main__":
     traj_B_from_A = pose_B_from_A[:, 0:3, 3]
     traj_A_from_B = pose_A_from_B[:, 0:3, 3]
 
-    fig, axes = plt.subplots(2, 2, figsize=(15, 15))
+    fig, axes = plt.subplots(3, 2, figsize=(15, 15))
 
     # Upper left: A alone
     # Upper right: B alone
@@ -185,8 +185,25 @@ if __name__ == "__main__":
             ax.arrow(position[2], position[0],
                      vec_l[2], vec_l[0], color=color, width=0.1 * scale)
 
+    def plot_arrow_UD(ax, pose_mat, initial_dir, position, color):
+        scale = 0.5
+        if initial_dir == "x":
+            vec_u = pose_mat @ np.array([1, 0, +0.25]) * scale
+            vec_d = pose_mat @ np.array([1, 0, -0.25]) * scale
+            ax.arrow(position[0], position[2],
+                     vec_u[0], vec_u[2], color=color, width=0.2 * scale)
+            ax.arrow(position[0], position[2],
+                     vec_d[0], vec_d[2], color=color, width=0.1 * scale)
+        else:
+            vec_u = pose_mat @ np.array([0, +0.25, -1]) * scale
+            vec_d = pose_mat @ np.array([0, -0.25, -1]) * scale
+            ax.arrow(position[2], position[1],
+                     vec_u[2], vec_u[1], color=color, width=0.2 * scale)
+            ax.arrow(position[2], position[1],
+                     vec_d[2], vec_d[1], color=color, width=0.1 * scale)
+
     n = min_length
-    for i in range(0, n, n // 20):
+    for i in range(0, n, n // 10):
         orientation_A = pose_A[i, 0:3, 0:3]
         orientation_B = pose_B[i, 0:3, 0:3]
 
@@ -202,6 +219,16 @@ if __name__ == "__main__":
         plot_arrow(axes[1, 1], orientation_B, "x", traj_B[i, 0:3], "red")
         plot_arrow(axes[1, 1], pose_B_from_A[i, 0:3, 0:3], "x",
                    traj_B_from_A[i, 0:3], "blue")
+
+        # calc converted_B
+        plot_arrow_UD(axes[2, 0], orientation_A, "z", traj_A[i, 0:3], "red")
+        plot_arrow_UD(axes[2, 0], pose_A_from_B[i, 0:3, 0:3], "z",
+                        traj_A_from_B[i, 0:3], "blue")
+
+        # calc converted_A
+        plot_arrow_UD(axes[2, 1], orientation_B, "x", traj_B[i, 0:3], "red")
+        plot_arrow_UD(axes[2, 1], pose_B_from_A[i, 0:3, 0:3], "x",
+                        traj_B_from_A[i, 0:3], "blue")
 
     plt.axis('equal')
     plt.xlabel('x')
