@@ -2,8 +2,10 @@ nerf_based_localizer:
   ros__parameters:
     particle_num: 100
     render_pixel_num: 128
-    noise_position_x: 0.025
+    noise_position_x: 0.05
     noise_position_y: 0.0125
-    noise_position_z: 0.025
-    noise_rotation: 1.0
+    noise_position_z: 0.05
+    noise_rotation_x: 1.0
+    noise_rotation_y: 2.0
+    noise_rotation_z: 1.0
     output_covariance: 0.000000225

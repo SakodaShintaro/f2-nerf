@@ -19,7 +19,9 @@ struct LocalizerCoreParam
   float noise_position_x = 0.025f;
   float noise_position_y = 0.025f;
   float noise_position_z = 0.025f;
-  float noise_rotation = 2.5f;
+  float noise_rotation_x = 2.5f;
+  float noise_rotation_y = 2.5f;
+  float noise_rotation_z = 2.5f;
 };
 
 class LocalizerCore

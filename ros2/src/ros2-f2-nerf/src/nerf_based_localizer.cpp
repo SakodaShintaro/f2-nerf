@@ -31,7 +31,9 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   param.noise_position_x = this->declare_parameter<float>("noise_position_x");
   param.noise_position_y = this->declare_parameter<float>("noise_position_y");
   param.noise_position_z = this->declare_parameter<float>("noise_position_z");
-  param.noise_rotation = this->declare_parameter<float>("noise_rotation");
+  param.noise_rotation_x = this->declare_parameter<float>("noise_rotation_x");
+  param.noise_rotation_y = this->declare_parameter<float>("noise_rotation_y");
+  param.noise_rotation_z = this->declare_parameter<float>("noise_rotation_z");
   localizer_core_ = LocalizerCore("./runtime_config.yaml", param);
 
   initial_pose_with_covariance_subscriber_ =

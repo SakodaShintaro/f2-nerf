@@ -42,7 +42,9 @@ std::vector<Particle> LocalizerCore::random_search(
   std::normal_distribution<float> dist_position_x(0.0f, param_.noise_position_x);
   std::normal_distribution<float> dist_position_y(0.0f, param_.noise_position_y);
   std::normal_distribution<float> dist_position_z(0.0f, param_.noise_position_z);
-  std::normal_distribution<float> dist_rotation(0.0f, param_.noise_rotation);
+  std::normal_distribution<float> dist_rotation_x(0.0f, param_.noise_rotation_x);
+  std::normal_distribution<float> dist_rotation_y(0.0f, param_.noise_rotation_y);
+  std::normal_distribution<float> dist_rotation_z(0.0f, param_.noise_rotation_z);
 
   std::vector<Tensor> poses;
   for (int64_t i = 0; i < particle_num; i++) {
@@ -53,9 +55,9 @@ std::vector<Particle> LocalizerCore::random_search(
     curr_pose[2][3] += dist_position_z(engine);
 
     // orientation
-    const float theta_x = dist_rotation(engine) * M_PI / 180.0;
-    const float theta_y = dist_rotation(engine) * M_PI / 180.0;
-    const float theta_z = dist_rotation(engine) * M_PI / 180.0;
+    const float theta_x = dist_rotation_x(engine) * M_PI / 180.0;
+    const float theta_y = dist_rotation_y(engine) * M_PI / 180.0;
+    const float theta_z = dist_rotation_z(engine) * M_PI / 180.0;
     Eigen::Matrix3f rotation_matrix_x(Eigen::AngleAxisf(theta_x, Eigen::Vector3f::UnitX()));
     Eigen::Matrix3f rotation_matrix_y(Eigen::AngleAxisf(theta_y, Eigen::Vector3f::UnitY()));
     Eigen::Matrix3f rotation_matrix_z(Eigen::AngleAxisf(theta_z, Eigen::Vector3f::UnitZ()));
