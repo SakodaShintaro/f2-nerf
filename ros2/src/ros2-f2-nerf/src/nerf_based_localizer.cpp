@@ -214,6 +214,8 @@ void NerfBasedLocalizer::service(
   const tier4_localization_msgs::srv::PoseWithCovarianceStamped::Request::SharedPtr req,
   tier4_localization_msgs::srv::PoseWithCovarianceStamped::Response::SharedPtr res)
 {
+  RCLCPP_INFO(this->get_logger(), "start NerfBasedLocalizer::service");
+
   // lock mutex for image
   std::lock_guard<std::mutex> image_array_lock(image_array_mtx_);
   if (image_msg_ptr_array_.empty()) {
@@ -234,6 +236,8 @@ void NerfBasedLocalizer::service(
   res->pose_with_covariance.header.stamp = image_msg_ptr->header.stamp;
   res->pose_with_covariance.pose.pose = pose_msg;
   res->pose_with_covariance.pose.covariance = req->pose_with_covariance.pose.covariance;
+
+  RCLCPP_INFO(this->get_logger(), "finish NerfBasedLocalizer::service");
 }
 
 std::tuple<geometry_msgs::msg::Pose, sensor_msgs::msg::Image, std_msgs::msg::Float32>
