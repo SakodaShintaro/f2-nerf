@@ -50,6 +50,10 @@ std::vector<Particle> LocalizerCore::random_search(
   for (int64_t i = 0; i < particle_num; i++) {
     // Sample a random translation
     Tensor curr_pose = initial_pose.clone();
+    if (i == 0) {
+      poses.push_back(curr_pose);
+      continue;
+    }
     curr_pose[0][3] += dist_position_x(engine);
     curr_pose[1][3] += dist_position_y(engine);
     curr_pose[2][3] += dist_position_z(engine);
