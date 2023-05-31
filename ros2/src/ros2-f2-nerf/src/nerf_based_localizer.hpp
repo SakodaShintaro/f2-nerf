@@ -78,6 +78,8 @@ private:
   static constexpr float OFFSET_X = 0.05f;
   static constexpr float OFFSET_Z = -0.35f;
 
+  float previous_score_;
+
   // Service
   rclcpp::Service<tier4_localization_msgs::srv::PoseWithCovarianceStamped>::SharedPtr service_;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr service_trigger_node_;

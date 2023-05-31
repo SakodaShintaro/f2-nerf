@@ -25,6 +25,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   this->declare_parameter("save_particles_images", false);
   this->declare_parameter("particle_num", 100);
   this->declare_parameter("output_covariance", 0.1);
+  this->declare_parameter("base_score", 40.0f);
 
   LocalizerCoreParam param;
   param.render_pixel_num = this->declare_parameter<int>("render_pixel_num");
@@ -100,6 +101,8 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   convert_mat_B2A_ = torch::tensor(mat_B2A);
   convert_mat_B2A_ = convert_mat_B2A_.view({4, 4});
   convert_mat_B2A_ = convert_mat_B2A_.to(torch::kCUDA);
+
+  previous_score_ = this->get_parameter("base_score").as_double();
 
   service_ = this->create_service<tier4_localization_msgs::srv::PoseWithCovarianceStamped>(
     "nerf_service",
@@ -295,8 +298,10 @@ NerfBasedLocalizer::localize(
 
   // run NeRF
   Timer timer2;
+  const double base_score = this->get_parameter("base_score").as_double();
+  const float noise_coeff = (base_score > 0 ? base_score / previous_score_ : 1.0f);
   std::vector<Particle> particles = localizer_core_.random_search(
-    initial_pose, image_tensor, this->get_parameter("particle_num").as_int());
+    initial_pose, image_tensor, this->get_parameter("particle_num").as_int(), noise_coeff);
 
   if (this->get_parameter("save_particles_images").as_bool()) {
     static int cnt = 0;
@@ -322,6 +327,7 @@ NerfBasedLocalizer::localize(
     localizer_core_.pred_image_and_calc_score(optimized_pose, image_tensor);
 
   RCLCPP_INFO_STREAM(this->get_logger(), "score = " << score);
+  previous_score_ = score;
   if (this->get_parameter("save_particles").as_bool()) {
     static int cnt = 0;
     namespace fs = std::experimental::filesystem::v1;

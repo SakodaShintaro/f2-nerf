@@ -8,4 +8,5 @@ nerf_based_localizer:
     noise_rotation_x: 1.0
     noise_rotation_y: 2.0
     noise_rotation_z: 1.0
+    base_score: -1.0
     output_covariance: 0.000000225

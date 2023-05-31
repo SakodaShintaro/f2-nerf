@@ -34,17 +34,17 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
 }
 
 std::vector<Particle> LocalizerCore::random_search(
-  Tensor initial_pose, Tensor image_tensor, int64_t particle_num)
+  Tensor initial_pose, Tensor image_tensor, int64_t particle_num, float noise_coeff)
 {
   torch::NoGradGuard no_grad_guard;
 
   std::mt19937_64 engine(std::random_device{}());
-  std::normal_distribution<float> dist_position_x(0.0f, param_.noise_position_x);
-  std::normal_distribution<float> dist_position_y(0.0f, param_.noise_position_y);
-  std::normal_distribution<float> dist_position_z(0.0f, param_.noise_position_z);
-  std::normal_distribution<float> dist_rotation_x(0.0f, param_.noise_rotation_x);
-  std::normal_distribution<float> dist_rotation_y(0.0f, param_.noise_rotation_y);
-  std::normal_distribution<float> dist_rotation_z(0.0f, param_.noise_rotation_z);
+  std::normal_distribution<float> dist_position_x(0.0f, param_.noise_position_x * noise_coeff);
+  std::normal_distribution<float> dist_position_y(0.0f, param_.noise_position_y * noise_coeff);
+  std::normal_distribution<float> dist_position_z(0.0f, param_.noise_position_z * noise_coeff);
+  std::normal_distribution<float> dist_rotation_x(0.0f, param_.noise_rotation_x * noise_coeff);
+  std::normal_distribution<float> dist_rotation_y(0.0f, param_.noise_rotation_y * noise_coeff);
+  std::normal_distribution<float> dist_rotation_z(0.0f, param_.noise_rotation_z * noise_coeff);
 
   std::vector<Tensor> poses;
   for (int64_t i = 0; i < particle_num; i++) {
