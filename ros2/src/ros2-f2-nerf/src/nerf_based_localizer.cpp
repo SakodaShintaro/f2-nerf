@@ -174,13 +174,15 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
 
   // (1) publish nerf_pose
   geometry_msgs::msg::PoseStamped pose_stamped_msg;
-  pose_stamped_msg.header = pose_base_link->header;
+  pose_stamped_msg.header.frame_id = map_frame_;
+  pose_stamped_msg.header.stamp = image_msg_ptr->header.stamp;
   pose_stamped_msg.pose = pose_msg;
   nerf_pose_publisher_->publish(pose_stamped_msg);
 
   // (2) publish nerf_pose_with_covariance
   geometry_msgs::msg::PoseWithCovarianceStamped pose_with_cov_msg;
-  pose_with_cov_msg.header = pose_base_link->header;
+  pose_with_cov_msg.header.frame_id = map_frame_;
+  pose_with_cov_msg.header.stamp = image_msg_ptr->header.stamp;
   pose_with_cov_msg.pose.pose = pose_msg;
   const double cov = this->get_parameter("output_covariance").as_double();
   pose_with_cov_msg.pose.covariance[0] = cov;
@@ -228,7 +230,8 @@ void NerfBasedLocalizer::service(
     localize(req->pose_with_covariance.pose.pose, *image_msg_ptr);
 
   res->success = true;
-  res->pose_with_covariance.header = req->pose_with_covariance.header;
+  res->pose_with_covariance.header.frame_id = map_frame_;
+  res->pose_with_covariance.header.stamp = image_msg_ptr->header.stamp;
   res->pose_with_covariance.pose.pose = pose_msg;
   res->pose_with_covariance.pose.covariance = req->pose_with_covariance.pose.covariance;
 }
