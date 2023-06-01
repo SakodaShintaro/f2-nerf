@@ -104,9 +104,9 @@ NerfBasedLocalizer::NerfBasedLocalizer(
 
   offset_mat_ = torch::zeros({4, 4}).to(torch::kCUDA);
   offset_mat_inv_ = torch::zeros({4, 4}).to(torch::kCUDA);
-  const double offset_potision_x = this->declare_parameter<double>("offset_potision_x");
-  const double offset_potision_y = this->declare_parameter<double>("offset_potision_y");
-  const double offset_potision_z = this->declare_parameter<double>("offset_potision_z");
+  const double offset_potision_x = this->declare_parameter<double>("offset_position_x");
+  const double offset_potision_y = this->declare_parameter<double>("offset_position_y");
+  const double offset_potision_z = this->declare_parameter<double>("offset_position_z");
   const double offset_rotation_w = this->declare_parameter<double>("offset_rotation_w");
   const double offset_rotation_x = this->declare_parameter<double>("offset_rotation_x");
   const double offset_rotation_y = this->declare_parameter<double>("offset_rotation_y");
