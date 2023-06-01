@@ -102,6 +102,33 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   convert_mat_B2A_ = convert_mat_B2A_.view({4, 4});
   convert_mat_B2A_ = convert_mat_B2A_.to(torch::kCUDA);
 
+  offset_mat_ = torch::zeros({4, 4}).to(torch::kCUDA);
+  offset_mat_inv_ = torch::zeros({4, 4}).to(torch::kCUDA);
+  const double offset_potision_x = this->declare_parameter<double>("offset_potision_x");
+  const double offset_potision_y = this->declare_parameter<double>("offset_potision_y");
+  const double offset_potision_z = this->declare_parameter<double>("offset_potision_z");
+  const double offset_rotation_w = this->declare_parameter<double>("offset_rotation_w");
+  const double offset_rotation_x = this->declare_parameter<double>("offset_rotation_x");
+  const double offset_rotation_y = this->declare_parameter<double>("offset_rotation_y");
+  const double offset_rotation_z = this->declare_parameter<double>("offset_rotation_z");
+  Eigen::Quaternionf offset_quat(
+    offset_rotation_w, offset_rotation_x, offset_rotation_y, offset_rotation_z);
+  Eigen::Matrix3f offset_mat(offset_quat);
+  torch::Tensor offset_mat_tensor =
+    torch::from_blob(offset_mat.data(), {3, 3}).to(torch::kFloat32).to(torch::kCUDA);
+  offset_mat_[0][3] = offset_potision_x;
+  offset_mat_[1][3] = offset_potision_y;
+  offset_mat_[2][3] = offset_potision_z;
+  offset_mat_.index_put_(
+    {torch::indexing::Slice(0, 3), torch::indexing::Slice(0, 3)}, offset_mat_tensor);
+  offset_mat_[3][3] = 1;
+  offset_mat_inv_[0][3] = -offset_potision_x;
+  offset_mat_inv_[1][3] = -offset_potision_y;
+  offset_mat_inv_[2][3] = -offset_potision_z;
+  offset_mat_inv_.index_put_(
+    {torch::indexing::Slice(0, 3), torch::indexing::Slice(0, 3)}, offset_mat_tensor.t());
+  offset_mat_inv_[3][3] = 1;
+
   previous_score_ = this->get_parameter("base_score").as_double();
 
   service_ = this->create_service<tier4_localization_msgs::srv::PoseWithCovarianceStamped>(
@@ -452,8 +479,7 @@ void NerfBasedLocalizer::service_trigger_node(
 torch::Tensor NerfBasedLocalizer::world2camera(const torch::Tensor & pose_in_world)
 {
   torch::Tensor x = pose_in_world;
-  x[0][3] += OFFSET_X;
-  x[2][3] += OFFSET_Z;
+  x = torch::mm(offset_mat_, x);
   x = torch::mm(axis_convert_mat2_, x);
   x = torch::mm(x, axis_convert_mat1_);
   x = torch::mm(axis_convert_mat1_.t(), x);
@@ -472,7 +498,6 @@ torch::Tensor NerfBasedLocalizer::camera2world(const torch::Tensor & pose_in_cam
   x = torch::mm(axis_convert_mat1_, x);
   x = torch::mm(convert_mat_A2B_, x);
   x = torch::mm(axis_convert_mat2_, x);
-  x[0][3] -= OFFSET_X;
-  x[2][3] -= OFFSET_Z;
+  x = torch::mm(offset_mat_inv_, x);
   return x;
 }

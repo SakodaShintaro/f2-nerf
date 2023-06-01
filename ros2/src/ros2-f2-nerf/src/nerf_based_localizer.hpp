@@ -75,8 +75,8 @@ private:
   torch::Tensor axis_convert_mat2_;
   torch::Tensor convert_mat_A2B_;
   torch::Tensor convert_mat_B2A_;
-  static constexpr float OFFSET_X = 0.05f;
-  static constexpr float OFFSET_Z = -0.35f;
+  torch::Tensor offset_mat_;
+  torch::Tensor offset_mat_inv_;
 
   float previous_score_;
 
