@@ -30,7 +30,28 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   H = 1280 / factor;
   W = 1920 / factor;
   std::cout << "H = " << H << ", W = " << W << ", factor = " << factor << std::endl;
-  dataset_->intri_ /= factor;
+
+  /*
+    - 41.416473388671875
+    - 0.0
+    - 59.303839466429054
+    - 0.0
+    - 50.588050842285156
+    - 38.93704936160293
+    - 0.0
+    - 0.0
+    - 1.0
+  */
+
+  dataset_->intri_[0][0][0] = 41.416473388671875;
+  dataset_->intri_[0][0][1] = 0.0;
+  dataset_->intri_[0][0][2] = 59.303839466429054;
+  dataset_->intri_[0][1][0] = 0.0;
+  dataset_->intri_[0][1][1] = 50.588050842285156;
+  dataset_->intri_[0][1][2] = 38.93704936160293;
+  dataset_->intri_[0][2][0] = 0.0;
+  dataset_->intri_[0][2][1] = 0.0;
+  dataset_->intri_[0][2][2] = 1.0;
 }
 
 std::vector<Particle> LocalizerCore::random_search(
