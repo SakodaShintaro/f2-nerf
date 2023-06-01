@@ -311,6 +311,9 @@ NerfBasedLocalizer::localize(
     initial_pose, image_tensor, this->get_parameter("particle_num").as_int(), noise_coeff);
 
   if (this->get_parameter("save_particles_images").as_bool()) {
+    std::sort(particles.begin() + 1, particles.end(), [](const Particle & a, const Particle & b) {
+      return a.weight > b.weight;
+    });
     static int cnt = 0;
     namespace fs = std::experimental::filesystem::v1;
     fs::create_directories("./result_images/trial/particles_images/");
