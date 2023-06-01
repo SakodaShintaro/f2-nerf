@@ -344,9 +344,6 @@ NerfBasedLocalizer::localize(
     static int cnt = 0;
     namespace fs = std::experimental::filesystem::v1;
     fs::create_directories("./result_images/trial/particles_images/");
-    std::ofstream ofs_score("./result_images/trial/score.tsv");
-    ofs_score << "id\tscore" << std::endl;
-    ofs_score << std::fixed;
 
     for (int32_t i = 0; i < particles.size(); i++) {
       auto [score, nerf_image] =
@@ -354,7 +351,7 @@ NerfBasedLocalizer::localize(
       std::stringstream ss;
       ss << "./result_images/trial/particles_images/";
       save_image(nerf_image, ss.str(), i);
-      ofs_score << i << "\t" << score << std::endl;
+      particles[i].weight = score;
     }
     cnt++;
   }
