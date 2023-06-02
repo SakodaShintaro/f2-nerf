@@ -22,6 +22,7 @@ struct LocalizerCoreParam
   float noise_rotation_x = 2.5f;
   float noise_rotation_y = 2.5f;
   float noise_rotation_z = 2.5f;
+  bool is_awsim;
 };
 
 class LocalizerCore

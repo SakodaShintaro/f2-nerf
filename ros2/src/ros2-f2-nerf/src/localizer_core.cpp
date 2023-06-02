@@ -27,8 +27,13 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
 
   // set
   const float factor = global_data_pool_->config_["dataset"]["factor_to_infer"].as<float>();
-  H = 1280 / factor;
-  W = 1920 / factor;
+  if (param_.is_awsim) {
+    H = 460 / factor;
+    W = 1280 / factor;
+  } else {
+    H = 1280 / factor;
+    W = 1920 / factor;
+  }
   std::cout << "H = " << H << ", W = " << W << ", factor = " << factor << std::endl;
 
   /*
@@ -43,15 +48,17 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
     - 1.0
   */
 
-  dataset_->intri_[0][0][0] = 41.416473388671875;
-  dataset_->intri_[0][0][1] = 0.0;
-  dataset_->intri_[0][0][2] = 59.303839466429054;
-  dataset_->intri_[0][1][0] = 0.0;
-  dataset_->intri_[0][1][1] = 50.588050842285156;
-  dataset_->intri_[0][1][2] = 38.93704936160293;
-  dataset_->intri_[0][2][0] = 0.0;
-  dataset_->intri_[0][2][1] = 0.0;
-  dataset_->intri_[0][2][2] = 1.0;
+  if (!param_.is_awsim) {
+    dataset_->intri_[0][0][0] = 41.416473388671875;
+    dataset_->intri_[0][0][1] = 0.0;
+    dataset_->intri_[0][0][2] = 59.303839466429054;
+    dataset_->intri_[0][1][0] = 0.0;
+    dataset_->intri_[0][1][1] = 50.588050842285156;
+    dataset_->intri_[0][1][2] = 38.93704936160293;
+    dataset_->intri_[0][2][0] = 0.0;
+    dataset_->intri_[0][2][1] = 0.0;
+    dataset_->intri_[0][2][2] = 1.0;
+  }
 }
 
 std::vector<Particle> LocalizerCore::random_search(
@@ -172,7 +179,9 @@ std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
   Tensor pred_img = pred_colors.view({H, W, 3});
   pred_img = pred_img.clip(0.f, 1.f);
   pred_img = pred_img.to(image.device());
-  pred_img = torch::flipud(pred_img);
+  if (!param_.is_awsim) {
+    pred_img = torch::flipud(pred_img);
+  }
 
   Tensor diff = pred_img - image.view({H, W, 3});
   Tensor loss = (diff * diff).mean(-1).sum();
@@ -267,7 +276,8 @@ std::vector<float> LocalizerCore::evaluate_poses(
   pred_pixels = pred_pixels.clip(0.f, 1.f);
   pred_pixels = pred_pixels.to(image.device());  // (pose_num, pixel_num, 3)
 
-  Tensor gt_pixels = image.index({H - 1 - i, j});      // (pixel_num, 3)
+  Tensor gt_pixels =
+    (param_.is_awsim ? image.index({i, j}) : image.index({H - 1 - i, j}));  // (pixel_num, 3)
   Tensor diff = pred_pixels - gt_pixels;               // (pose_num, pixel_num, 3)
   Tensor loss = (diff * diff).mean(-1).sum(-1).cpu();  // (pose_num,)
   loss = pixel_num / (loss + 1e-6f);

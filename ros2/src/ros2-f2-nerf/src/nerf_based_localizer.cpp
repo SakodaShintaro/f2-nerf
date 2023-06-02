@@ -26,6 +26,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   this->declare_parameter("particle_num", 100);
   this->declare_parameter("output_covariance", 0.1);
   this->declare_parameter("base_score", 40.0f);
+  is_awsim_ = this->declare_parameter<bool>("is_awsim", false);
 
   LocalizerCoreParam param;
   param.render_pixel_num = this->declare_parameter<int>("render_pixel_num");
@@ -35,6 +36,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   param.noise_rotation_x = this->declare_parameter<float>("noise_rotation_x");
   param.noise_rotation_y = this->declare_parameter<float>("noise_rotation_y");
   param.noise_rotation_z = this->declare_parameter<float>("noise_rotation_z");
+  param.is_awsim = is_awsim_;
   localizer_core_ = LocalizerCore("./runtime_config.yaml", param);
 
   initial_pose_with_covariance_subscriber_ =
@@ -295,14 +297,21 @@ NerfBasedLocalizer::localize(
   image_tensor = image_tensor.to(torch::kFloat32);
   image_tensor /= 255.0;
   image_tensor = image_tensor.flip(2);  // BGR to RGB
+  if (is_awsim_) {
+    image_tensor = image_tensor.index({Slc(0, 460)});
+  }
 
   geometry_msgs::msg::PoseWithCovarianceStamped pose_lidar;
-  try {
-    geometry_msgs::msg::TransformStamped transform =
-      tf_buffer_.lookupTransform("base_link", "velodyne_front", tf2::TimePointZero);
-    tf2::doTransform(pose_msg, pose_lidar.pose.pose, transform);
-  } catch (tf2::TransformException & ex) {
-    RCLCPP_WARN(this->get_logger(), "%s", ex.what());
+  if (is_awsim_) {
+    pose_lidar.pose.pose = pose_msg;
+  } else {
+    try {
+      geometry_msgs::msg::TransformStamped transform =
+        tf_buffer_.lookupTransform("base_link", "velodyne_front", tf2::TimePointZero);
+      tf2::doTransform(pose_msg, pose_lidar.pose.pose, transform);
+    } catch (tf2::TransformException & ex) {
+      RCLCPP_WARN(this->get_logger(), "%s", ex.what());
+    }
   }
 
   const geometry_msgs::msg::Pose pose = pose_lidar.pose.pose;
@@ -418,12 +427,16 @@ NerfBasedLocalizer::localize(
   result_pose_lidar.orientation.w = quat_out.w();
 
   geometry_msgs::msg::Pose result_pose_base_link;
-  try {
-    geometry_msgs::msg::TransformStamped transform =
-      tf_buffer_.lookupTransform("velodyne_front", "base_link", tf2::TimePointZero);
-    tf2::doTransform(result_pose_lidar, result_pose_base_link, transform);
-  } catch (tf2::TransformException & ex) {
-    RCLCPP_WARN(this->get_logger(), "%s", ex.what());
+  if (is_awsim_) {
+    result_pose_base_link = result_pose_lidar;
+  } else {
+    try {
+      geometry_msgs::msg::TransformStamped transform =
+        tf_buffer_.lookupTransform("velodyne_front", "base_link", tf2::TimePointZero);
+      tf2::doTransform(result_pose_lidar, result_pose_base_link, transform);
+    } catch (tf2::TransformException & ex) {
+      RCLCPP_WARN(this->get_logger(), "%s", ex.what());
+    }
   }
 
   nerf_image = nerf_image * 255;
@@ -479,11 +492,16 @@ void NerfBasedLocalizer::service_trigger_node(
 torch::Tensor NerfBasedLocalizer::world2camera(const torch::Tensor & pose_in_world)
 {
   torch::Tensor x = pose_in_world;
-  x = torch::mm(offset_mat_, x);
-  x = torch::mm(axis_convert_mat2_, x);
-  x = torch::mm(x, axis_convert_mat1_);
-  x = torch::mm(axis_convert_mat1_.t(), x);
-  x = torch::mm(convert_mat_B2A_, x);
+  if (is_awsim_) {
+    x = torch::mm(x, axis_convert_mat1_);
+    x = torch::mm(axis_convert_mat1_.t(), x);
+  } else {
+    x = torch::mm(offset_mat_, x);
+    x = torch::mm(axis_convert_mat2_, x);
+    x = torch::mm(x, axis_convert_mat1_);
+    x = torch::mm(axis_convert_mat1_.t(), x);
+    x = torch::mm(convert_mat_B2A_, x);
+  }
   x = localizer_core_.normalize_position(x);
   x = x.index({Slc(0, 3), Slc(0, 4)});
   return x;
@@ -494,10 +512,15 @@ torch::Tensor NerfBasedLocalizer::camera2world(const torch::Tensor & pose_in_cam
   torch::Tensor x = pose_in_camera;
   x = torch::cat({x, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
   x = localizer_core_.inverse_normalize_position(x);
-  x = torch::mm(x, axis_convert_mat1_.t());
-  x = torch::mm(axis_convert_mat1_, x);
-  x = torch::mm(convert_mat_A2B_, x);
-  x = torch::mm(axis_convert_mat2_, x);
-  x = torch::mm(offset_mat_inv_, x);
+  if (is_awsim_) {
+    x = torch::mm(x, axis_convert_mat1_.t());
+    x = torch::mm(axis_convert_mat1_, x);
+  } else {
+    x = torch::mm(x, axis_convert_mat1_.t());
+    x = torch::mm(axis_convert_mat1_, x);
+    x = torch::mm(convert_mat_A2B_, x);
+    x = torch::mm(axis_convert_mat2_, x);
+    x = torch::mm(offset_mat_inv_, x);
+  }
   return x;
 }

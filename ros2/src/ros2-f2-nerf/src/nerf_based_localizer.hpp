@@ -95,6 +95,8 @@ private:
 
   bool is_activated_;
 
+  bool is_awsim_;
+
   LocalizerCore localizer_core_;
 };
 
