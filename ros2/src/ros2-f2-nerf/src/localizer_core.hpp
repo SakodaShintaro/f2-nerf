@@ -44,14 +44,14 @@ public:
 
   std::unique_ptr<Dataset> dataset_;
 
+  int H;
+  int W;
+
 private:
   void load_checkpoint(const std::string & checkpoint_path);
   std::tuple<Tensor, Tensor, Tensor> render_all_rays(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
   std::vector<float> evaluate_poses(const std::vector<Tensor> & poses, const Tensor & image);
-
-  int H;
-  int W;
 
   LocalizerCoreParam param_;
 

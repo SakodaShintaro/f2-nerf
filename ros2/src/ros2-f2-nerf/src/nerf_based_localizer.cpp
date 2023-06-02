@@ -300,6 +300,20 @@ NerfBasedLocalizer::localize(
   if (is_awsim_) {
     image_tensor = image_tensor.index({Slc(0, 460)});
   }
+  if (height != localizer_core_.H || width != localizer_core_.W) {
+    // change HWC to CHW
+    image_tensor = image_tensor.permute({2, 0, 1});
+    image_tensor = image_tensor.unsqueeze(0);  // add batch dim
+
+    // Resize
+    std::vector<int64_t> size = {localizer_core_.H, localizer_core_.W};
+    image_tensor = torch::nn::functional::interpolate(
+      image_tensor, torch::nn::functional::InterpolateFuncOptions().size(size));
+
+    // change CHW to HWC
+    image_tensor = image_tensor.squeeze(0);  // remove batch dim
+    image_tensor = image_tensor.permute({1, 2, 0});
+  }
 
   geometry_msgs::msg::PoseWithCovarianceStamped pose_lidar;
   if (is_awsim_) {

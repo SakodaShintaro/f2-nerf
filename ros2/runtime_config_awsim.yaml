@@ -18,7 +18,7 @@ train:
   var_loss_end: 10000
 dataset:
   factor: 1
-  factor_to_infer: 1
+  factor_to_infer: 10
   ray_sample_mode: all_images
   data_at_gpu: true
   bounds_factor:

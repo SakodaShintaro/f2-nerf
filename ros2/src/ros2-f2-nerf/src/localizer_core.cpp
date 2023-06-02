@@ -35,6 +35,8 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
     W = 1920 / factor;
   }
   std::cout << "H = " << H << ", W = " << W << ", factor = " << factor << std::endl;
+  dataset_->intri_[0] /= factor;
+  dataset_->intri_[0][2][2] = 1.0;
 
   /*
     - 41.416473388671875
