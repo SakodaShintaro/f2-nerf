@@ -19,10 +19,7 @@ cmake . -B build
 cmake --build build --target main --config RelWithDebInfo -j8
 
 sudo apt install -y python3-pip
-pip3 install click
-pip3 install numpy
-pip3 install omegaconf
-pip3 install hydra-core
+pip3 install click numpy omegaconf hydra-core
 
 # Prepare directory
 ln -s /root/data/learn_result/ ./exp
@@ -46,17 +43,14 @@ sudo apt install -y ros-humble-ros-base
 sudo apt install -y ros-humble-cv-bridge
 sudo apt install -y ros-humble-geographic-msgs
 sudo apt install -y ros-humble-rmw-cyclonedds-cpp
+sudo apt install -y ros-humble-demo-nodes-cpp
 echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
 echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc
 ```
 
 ## Others
 ```bash
-sudo apt install -y ffmpeg
-sudo apt install -y colmap
-sudo apt install -y python3-colcon-common-extensions
-sudo apt install -y ccache vim
-sudo apt install -y gdb
+sudo apt install -y ffmpeg colmap python3-colcon-common-extensions ccache vim gdb
 
 sudo add-apt-repository ppa:borglab/gtsam-release-4.1
 sudo apt update
