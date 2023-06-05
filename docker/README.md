@@ -44,6 +44,7 @@ sudo apt install -y ros-humble-cv-bridge
 sudo apt install -y ros-humble-geographic-msgs
 sudo apt install -y ros-humble-rmw-cyclonedds-cpp
 sudo apt install -y ros-humble-demo-nodes-cpp
+sudo apt install -y ros-humble-rosbag2-storage-mcap
 echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
 echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc
 ```
