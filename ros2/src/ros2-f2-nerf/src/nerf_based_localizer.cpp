@@ -108,9 +108,9 @@ NerfBasedLocalizer::NerfBasedLocalizer(
 
   offset_mat_ = torch::zeros({4, 4}).to(torch::kCUDA);
   offset_mat_inv_ = torch::zeros({4, 4}).to(torch::kCUDA);
-  const double offset_potision_x = this->declare_parameter<double>("offset_position_x");
-  const double offset_potision_y = this->declare_parameter<double>("offset_position_y");
-  const double offset_potision_z = this->declare_parameter<double>("offset_position_z");
+  const double offset_position_x = this->declare_parameter<double>("offset_position_x");
+  const double offset_position_y = this->declare_parameter<double>("offset_position_y");
+  const double offset_position_z = this->declare_parameter<double>("offset_position_z");
   const double offset_rotation_w = this->declare_parameter<double>("offset_rotation_w");
   const double offset_rotation_x = this->declare_parameter<double>("offset_rotation_x");
   const double offset_rotation_y = this->declare_parameter<double>("offset_rotation_y");
@@ -120,15 +120,15 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   Eigen::Matrix3f offset_mat(offset_quat);
   torch::Tensor offset_mat_tensor =
     torch::from_blob(offset_mat.data(), {3, 3}).to(torch::kFloat32).to(torch::kCUDA);
-  offset_mat_[0][3] = offset_potision_x;
-  offset_mat_[1][3] = offset_potision_y;
-  offset_mat_[2][3] = offset_potision_z;
+  offset_mat_[0][3] = offset_position_x;
+  offset_mat_[1][3] = offset_position_y;
+  offset_mat_[2][3] = offset_position_z;
   offset_mat_.index_put_(
     {torch::indexing::Slice(0, 3), torch::indexing::Slice(0, 3)}, offset_mat_tensor);
   offset_mat_[3][3] = 1;
-  offset_mat_inv_[0][3] = -offset_potision_x;
-  offset_mat_inv_[1][3] = -offset_potision_y;
-  offset_mat_inv_[2][3] = -offset_potision_z;
+  offset_mat_inv_[0][3] = -offset_position_x;
+  offset_mat_inv_[1][3] = -offset_position_y;
+  offset_mat_inv_[2][3] = -offset_position_z;
   offset_mat_inv_.index_put_(
     {torch::indexing::Slice(0, 3), torch::indexing::Slice(0, 3)}, offset_mat_tensor.t());
   offset_mat_inv_[3][3] = 1;
