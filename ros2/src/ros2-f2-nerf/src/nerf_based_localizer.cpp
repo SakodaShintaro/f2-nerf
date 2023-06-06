@@ -480,7 +480,7 @@ NerfBasedLocalizer::localize(
   transform.transform.rotation = result_pose_base_link.orientation;
   transform.header = header;
   transform.header.frame_id = "map";
-  transform.child_frame_id = "base_link";
+  transform.child_frame_id = "nerf_base_link";
   tf2_broadcaster_.sendTransform(transform);
 
   RCLCPP_INFO_STREAM(get_logger(), "localize time: " << timer);
