@@ -2,16 +2,16 @@ nerf_based_localizer:
   ros__parameters:
     runtime_config_path: /root/f2-nerf/ros2/runtime_config_awsim.yaml
     is_awsim: true
-    particle_num: 100
+    particle_num: 50
     render_pixel_num: 128
-    noise_position_x: 0.00625
-    noise_position_y: 0.0012
-    noise_position_z: 0.00625
-    noise_rotation_x: 1.0
-    noise_rotation_y: 2.5
-    noise_rotation_z: 1.0
+    noise_position_x: 0.003
+    noise_position_y: 0.0006
+    noise_position_z: 0.003
+    noise_rotation_x: 0.5
+    noise_rotation_y: 1.0
+    noise_rotation_z: 0.5
     base_score: -1.0
-    output_covariance: 0.0000225
+    output_covariance: 0.000225
 
     offset_position_x: -0.156678
     offset_position_y: 0.039400
