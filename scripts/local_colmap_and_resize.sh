@@ -25,9 +25,6 @@ export QT_QPA_PLATFORM=offscreen
 CAMERA=OPENCV
 
 USE_GPU=0
-# Replace this with your own local copy of the file.
-# Download from: https://demuc.de/colmap/#download
-VOCABTREE_PATH=/root/f2-nerf/vocab_tree_flickr100K_words32K.bin
 
 # Run COLMAP.
 
@@ -46,12 +43,14 @@ colmap feature_extractor \
 ## Use if your scene has > 500 images
 ## Replace this path with your own local copy of the file.
 ## Download from: https://demuc.de/colmap/#download
-colmap vocab_tree_matcher \
+# colmap vocab_tree_matcher \
+#     --database_path "$DATASET_PATH"/database.db \
+#     --VocabTreeMatching.vocab_tree_path /root/f2-nerf/vocab_tree_flickr100K_words32K.bin \
+#     --SiftMatching.use_gpu "$USE_GPU"
+
+colmap sequential_matcher \
     --database_path "$DATASET_PATH"/database.db \
-    --VocabTreeMatching.vocab_tree_path /root/f2-nerf/vocab_tree_flickr100K_words32K.bin \
     --SiftMatching.use_gpu "$USE_GPU"
-
-
 
 mkdir -p "$DATASET_PATH"/sparse
 
