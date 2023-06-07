@@ -3,6 +3,7 @@
 set -eux
 
 cd $(dirname $0)/../
+ROSBAG_PATH=$(readlink -f $1)
 
 colcon build --symlink-install --packages-up-to pose_and_image_publisher --cmake-args -DCMAKE_BUILD_TYPE=Release
 
@@ -18,7 +19,7 @@ ros2 service call /trigger_node_srv std_srvs/srv/SetBool "{data: true}"
 IMAGE_TOPIC_NAME=/sensing/camera/traffic_light/image_raw
 POSE_TOPIC_NAME=/localization/pose_twist_fusion_filter/biased_pose_with_covariance
 
-ros2 bag play --rate 1 $1 \
+ros2 bag play --rate 1 $ROSBAG_PATH \
               --topics ${IMAGE_TOPIC_NAME} \
                        ${POSE_TOPIC_NAME} \
                        /tf \
