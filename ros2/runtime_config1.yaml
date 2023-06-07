@@ -24,7 +24,7 @@ dataset:
   bounds_factor:
   - 0.25
   - 2.0
-  data_path: /root/f2-nerf/data/converted/20230501_try1
+  data_path: /root/f2-nerf/data/logiee/20230605_trial2_skip2
 renderer:
   bg_color: rand_noise
   use_app_emb: true
@@ -66,10 +66,10 @@ shader:
   d_hidden: 64
   n_hiddens: 2
   degree: 4
-dataset_name: converted
-case_name: 20230501_try1_colmap
+dataset_name: logiee
+case_name: 20230605_trial2_skip2
 exp_name: test
 is_continue: true
 mode: localize
 base_dir: /root/f2-nerf
-base_exp_dir: /root/f2-nerf/exp/20230501_try1_colmap/test
+base_exp_dir: /root/f2-nerf/exp/20230605_trial2_skip2/test

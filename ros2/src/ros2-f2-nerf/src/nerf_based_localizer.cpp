@@ -319,11 +319,9 @@ NerfBasedLocalizer::localize(
 
   geometry_msgs::msg::PoseWithCovarianceStamped pose_lidar;
   if (is_awsim_) {
-    pose_lidar.pose.pose = pose_msg;
-  } else {
     try {
       geometry_msgs::msg::TransformStamped transform =
-        tf_buffer_.lookupTransform("base_link", "velodyne_front", tf2::TimePointZero);
+        tf_buffer_.lookupTransform("velodyne_front", "base_link", tf2::TimePointZero);
       tf2::doTransform(pose_msg, pose_lidar.pose.pose, transform);
     } catch (tf2::TransformException & ex) {
       RCLCPP_WARN(this->get_logger(), "%s", ex.what());
@@ -444,11 +442,9 @@ NerfBasedLocalizer::localize(
 
   geometry_msgs::msg::Pose result_pose_base_link;
   if (is_awsim_) {
-    result_pose_base_link = result_pose_lidar;
-  } else {
     try {
       geometry_msgs::msg::TransformStamped transform =
-        tf_buffer_.lookupTransform("velodyne_front", "base_link", tf2::TimePointZero);
+        tf_buffer_.lookupTransform("base_link", "velodyne_front", tf2::TimePointZero);
       tf2::doTransform(result_pose_lidar, result_pose_base_link, transform);
     } catch (tf2::TransformException & ex) {
       RCLCPP_WARN(this->get_logger(), "%s", ex.what());
