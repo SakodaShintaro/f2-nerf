@@ -54,14 +54,14 @@ colmap mapper \
     --image_path "$DATASET_PATH"/images \
     --output_path "$DATASET_PATH"/sparse
 
-python3 scripts/convert_pose_tsv_to_colmap_format.py "$DATASET_PATH"/pose.tsv
+python3 convert_pose_tsv_to_colmap_format.py "$DATASET_PATH"/pose.tsv
 mkdir -p "$DATASET_PATH"/pose_aligned
 
 colmap model_aligner \
   --input_path "$DATASET_PATH"/sparse/0/ \
-  --output_path "$DATASET_PATH"/pose_alinged \
+  --output_path "$DATASET_PATH"/pose_aligned \
   --ref_images_path "$DATASET_PATH"/reference_trajectory.txt \
   --robust_alignment_max_error 1 \
   --ref_is_gps 0
 
-python3 scripts/colmap2poses.py --data_dir $DATASET_PATH
+python3 colmap2poses.py --data_dir $DATASET_PATH
