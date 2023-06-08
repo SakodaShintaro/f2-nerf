@@ -12,11 +12,3 @@ nerf_based_localizer:
     noise_rotation_z: 1.0
     base_score: -1.0
     output_covariance: 0.0000225
-
-    offset_position_x: -0.156678
-    offset_position_y: 0.039400
-    offset_position_z: -0.018178
-    offset_rotation_w: 0.999237
-    offset_rotation_x: 0.000162
-    offset_rotation_y: -0.033626
-    offset_rotation_z: -0.019856

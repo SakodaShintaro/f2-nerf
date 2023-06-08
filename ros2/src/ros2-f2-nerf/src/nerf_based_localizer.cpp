@@ -73,66 +73,6 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   axis_convert_mat1_[3][3] = 1;
   axis_convert_mat1_ = axis_convert_mat1_.to(torch::kCUDA);
 
-  /*
-    [[1, 0, 0, 0],
-    [0, 1, 0, 0],
-    [0, 0, -1, 0],
-    [0, 0, 0, 1]]
-  */
-  axis_convert_mat2_ = torch::zeros({4, 4});
-  axis_convert_mat2_[0][0] = 1;
-  axis_convert_mat2_[1][1] = 1;
-  axis_convert_mat2_[2][2] = -1;
-  axis_convert_mat2_[3][3] = 1;
-  axis_convert_mat2_ = axis_convert_mat2_.to(torch::kCUDA);
-
-  std::vector<float> mat_A2B{
-    -1.327284, 0.008350, 0.118095,  1.719275,  // row0
-    0.011544,  1.332029, 0.035553,  3.282300,  // row1
-    -0.117825, 0.036435, -1.326834, 0.158593,  // row2
-    0.000000,  0.000000, 0.000000,  1.000000,  // row3
-  };
-  convert_mat_A2B_ = torch::tensor(mat_A2B);
-  convert_mat_A2B_ = convert_mat_A2B_.view({4, 4});
-  convert_mat_A2B_ = convert_mat_A2B_.to(torch::kCUDA);
-
-  std::vector<float> mat_B2A{
-    0.750144, 0.020519,  0.004703,  2.473535,   // row0
-    0.020022, -0.747218, 0.066506,  0.061556,   // row1
-    0.006501, -0.066354, -0.747471, -1.274295,  // row2
-    0.000000, 0.000000,  0.000000,  1.000000,   // row3
-  };
-  convert_mat_B2A_ = torch::tensor(mat_B2A);
-  convert_mat_B2A_ = convert_mat_B2A_.view({4, 4});
-  convert_mat_B2A_ = convert_mat_B2A_.to(torch::kCUDA);
-
-  offset_mat_ = torch::zeros({4, 4}).to(torch::kCUDA);
-  offset_mat_inv_ = torch::zeros({4, 4}).to(torch::kCUDA);
-  const double offset_position_x = this->declare_parameter<double>("offset_position_x");
-  const double offset_position_y = this->declare_parameter<double>("offset_position_y");
-  const double offset_position_z = this->declare_parameter<double>("offset_position_z");
-  const double offset_rotation_w = this->declare_parameter<double>("offset_rotation_w");
-  const double offset_rotation_x = this->declare_parameter<double>("offset_rotation_x");
-  const double offset_rotation_y = this->declare_parameter<double>("offset_rotation_y");
-  const double offset_rotation_z = this->declare_parameter<double>("offset_rotation_z");
-  Eigen::Quaternionf offset_quat(
-    offset_rotation_w, offset_rotation_x, offset_rotation_y, offset_rotation_z);
-  Eigen::Matrix3f offset_mat(offset_quat);
-  torch::Tensor offset_mat_tensor =
-    torch::from_blob(offset_mat.data(), {3, 3}).to(torch::kFloat32).to(torch::kCUDA);
-  offset_mat_[0][3] = offset_position_x;
-  offset_mat_[1][3] = offset_position_y;
-  offset_mat_[2][3] = offset_position_z;
-  offset_mat_.index_put_(
-    {torch::indexing::Slice(0, 3), torch::indexing::Slice(0, 3)}, offset_mat_tensor);
-  offset_mat_[3][3] = 1;
-  offset_mat_inv_[0][3] = -offset_position_x;
-  offset_mat_inv_[1][3] = -offset_position_y;
-  offset_mat_inv_[2][3] = -offset_position_z;
-  offset_mat_inv_.index_put_(
-    {torch::indexing::Slice(0, 3), torch::indexing::Slice(0, 3)}, offset_mat_tensor.t());
-  offset_mat_inv_[3][3] = 1;
-
   previous_score_ = this->get_parameter("base_score").as_double();
 
   service_ = this->create_service<tier4_localization_msgs::srv::PoseWithCovarianceStamped>(
