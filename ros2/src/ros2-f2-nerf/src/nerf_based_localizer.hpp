@@ -80,6 +80,7 @@ private:
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr service_trigger_node_;
 
   std::string map_frame_;
+  std::string target_frame_;
 
   // data deque
   std::deque<geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr>
