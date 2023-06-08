@@ -16,7 +16,10 @@
 set -eux
 
 # Path to a directory `base/` with images in `base/images/`.
-DATASET_PATH=$1
+DATASET_PATH=$(readlink -f $1)
+
+# move to the directory where this script is
+cd $(dirname $0)
 
 # set for command line
 export QT_QPA_PLATFORM=offscreen
@@ -60,3 +63,5 @@ colmap model_aligner \
   --ref_images_path "$DATASET_PATH"/reference_trajectory.txt \
   --robust_alignment_max_error 1 \
   --ref_is_gps 0
+
+python3 scripts/colmap2poses.py --data_dir $DATASET_PATH
