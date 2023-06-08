@@ -27,7 +27,7 @@ export QT_QPA_PLATFORM=offscreen
 # Recommended CAMERA values: OPENCV for perspective, OPENCV_FISHEYE for fisheye.
 CAMERA=OPENCV
 
-USE_GPU=0
+USE_GPU=1
 
 # Run COLMAP.
 
@@ -38,12 +38,7 @@ colmap feature_extractor \
     --ImageReader.camera_model "$CAMERA" \
     --SiftExtraction.use_gpu "$USE_GPU"
 
-
-# colmap exhaustive_matcher \
-#     --database_path "$DATASET_PATH"/database.db \
-#     --SiftMatching.use_gpu "$USE_GPU"
-
-colmap sequential_matcher \
+colmap exhaustive_matcher \
     --database_path "$DATASET_PATH"/database.db \
     --SiftMatching.use_gpu "$USE_GPU"
 
@@ -52,7 +47,8 @@ mkdir -p "$DATASET_PATH"/sparse
 colmap mapper \
     --database_path "$DATASET_PATH"/database.db \
     --image_path "$DATASET_PATH"/images \
-    --output_path "$DATASET_PATH"/sparse
+    --output_path "$DATASET_PATH"/sparse \
+    --Mapper.ba_global_pba_gpu_index 0
 
 python3 convert_pose_tsv_to_colmap_format.py "$DATASET_PATH"/pose.tsv
 mkdir -p "$DATASET_PATH"/pose_aligned
@@ -65,3 +61,8 @@ colmap model_aligner \
   --ref_is_gps 0
 
 python3 colmap2poses.py --data_dir $DATASET_PATH
+
+i=$SECONDS
+((sec=i%60, min=(i%3600)/60, hrs=i/3600))
+timestamp=$(printf "%d:%02d:%02d" "$hrs" "$min" "$sec")
+echo "Processing time is $timestamp"
