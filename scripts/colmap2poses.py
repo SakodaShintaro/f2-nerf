@@ -7,6 +7,7 @@ import camera_utils
 import cv2 as cv
 from pycolmap.pycolmap.scene_manager import SceneManager
 from typing import Mapping, Optional, Sequence, Text, Tuple, Union
+from convert_pose_tsv_to_f2_format import AXIS_CONVERT_MAT_W2N
 
 
 # This implementation is from MipNeRF360
@@ -18,7 +19,7 @@ class NeRFSceneManager(SceneManager):
     """
 
     def __init__(self, data_dir):
-        super(NeRFSceneManager, self).__init__(pjoin(data_dir, 'sparse', '0'))
+        super(NeRFSceneManager, self).__init__(pjoin(data_dir, 'pose_aligned'))
 
     def process(
             self
@@ -60,15 +61,22 @@ class NeRFSceneManager(SceneManager):
 
         # Convert extrinsics to camera-to-world.
         c2w_mats = np.linalg.inv(w2c_mats)
-        poses = c2w_mats[:, :3, :4]
+        poses = c2w_mats[:, :4, :4]
 
         # Image names from COLMAP. No need for permuting the poses according to
         # image names anymore.
         names = [imdata[k].name for k in imdata]
 
-        # Switch from COLMAP (right, down, fwd) to NeRF (right, up, back) frame.
-        poses = poses @ np.diag([1, -1, -1, 1])
-        # pixtocam = np.diag([1, -1, -1]) @ pixtocam
+        # Switch from COLMAP (right, down, fwd) to World (fwd, left, up).
+        colmap_to_world = np.array([[0, 0, 1, 0],
+                                [-1, 0, 0, 0],
+                                [0, -1, 0, 0],
+                                [0, 0, 0, 1]])
+        poses = poses @ colmap_to_world.T
+
+        # Switch from World (fwd, left, up) to NeRF (right, up, back) frame.
+        poses = AXIS_CONVERT_MAT_W2N @ poses @ AXIS_CONVERT_MAT_W2N.T
+        poses = poses[:, :3, :4]
 
         # Get distortion parameters.
         type_ = cam.camera_type

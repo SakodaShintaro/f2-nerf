@@ -28,6 +28,12 @@ AXIS_CONVERT_MAT_A2B = np.array(
      [0, -1, 0, 0],
      [0, 0, 0, 1]], dtype=np.float64
 )
+AXIS_CONVERT_MAT_W2N = np.array(
+    [[ 0, -1,  0,  0],
+     [ 0,  0, +1,  0],
+     [-1,  0,  0,  0],
+     [ 0,  0,  0, +1]], dtype=np.float64
+)
 
 if __name__ == "__main__":
     args = parse_args()

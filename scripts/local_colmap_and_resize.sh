@@ -40,14 +40,6 @@ colmap feature_extractor \
 #     --database_path "$DATASET_PATH"/database.db \
 #     --SiftMatching.use_gpu "$USE_GPU"
 
-## Use if your scene has > 500 images
-## Replace this path with your own local copy of the file.
-## Download from: https://demuc.de/colmap/#download
-# colmap vocab_tree_matcher \
-#     --database_path "$DATASET_PATH"/database.db \
-#     --VocabTreeMatching.vocab_tree_path /root/f2-nerf/vocab_tree_flickr100K_words32K.bin \
-#     --SiftMatching.use_gpu "$USE_GPU"
-
 colmap sequential_matcher \
     --database_path "$DATASET_PATH"/database.db \
     --SiftMatching.use_gpu "$USE_GPU"
@@ -59,10 +51,12 @@ colmap mapper \
     --image_path "$DATASET_PATH"/images \
     --output_path "$DATASET_PATH"/sparse
 
-mkdir -p "$DATASET_PATH"/dense
+python3 scripts/convert_pose_tsv_to_colmap_format.py "$DATASET_PATH"/pose.tsv
+mkdir -p "$DATASET_PATH"/pose_aligned
 
-colmap image_undistorter \
-    --image_path "$DATASET_PATH"/images \
-    --input_path "$DATASET_PATH"/sparse/0 \
-    --output_path "$DATASET_PATH"/dense \
-    --output_type COLMAP
+colmap model_aligner \
+  --input_path "$DATASET_PATH"/sparse/0/ \
+  --output_path "$DATASET_PATH"/pose_alinged \
+  --ref_images_path "$DATASET_PATH"/reference_trajectory.txt \
+  --robust_alignment_max_error 1 \
+  --ref_is_gps 0
