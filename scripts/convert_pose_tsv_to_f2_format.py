@@ -22,12 +22,6 @@ def load_camera_info_from_yaml(filename):
         return camera_info_dict
 
 
-AXIS_CONVERT_MAT_A2B = np.array(
-    [[0, 0, -1, 0],
-     [-1, 0, 0, 0],
-     [0, -1, 0, 0],
-     [0, 0, 0, 1]], dtype=np.float64
-)
 AXIS_CONVERT_MAT_W2N = np.array(
     [[ 0, -1,  0,  0],
      [ 0,  0, +1,  0],
@@ -51,7 +45,7 @@ if __name__ == "__main__":
     mat[:, 0:3, 3:4] = pose_xyz.reshape((n, 3, 1))
 
     # convert axis
-    mat = AXIS_CONVERT_MAT_A2B.T @ mat @ AXIS_CONVERT_MAT_A2B
+    mat = AXIS_CONVERT_MAT_W2N @ mat @ AXIS_CONVERT_MAT_W2N.T
     mat = mat[:, 0:3, :]
     mat = mat.reshape((n, 12))
 

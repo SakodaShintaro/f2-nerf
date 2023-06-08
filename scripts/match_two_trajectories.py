@@ -5,9 +5,8 @@ import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.linalg import orthogonal_procrustes
 from scipy.spatial.transform import Rotation
-from convert_pose_tsv_to_f2_format import AXIS_CONVERT_MAT_A2B
+from convert_pose_tsv_to_f2_format import AXIS_CONVERT_MAT_W2N
 import os
 
 
@@ -16,52 +15,6 @@ def parse_args():
     parser.add_argument('path_to_trajectory_A', type=str)
     parser.add_argument('path_to_trajectory_B', type=str)
     return parser.parse_args()
-
-
-def calc_mat_B2A(traj_A: np.array, traj_B: np.array):
-    # Make the origin the center.
-    center_A = traj_A[0].copy()
-    center_B = traj_B[0].copy()
-    traj_A -= center_A
-    traj_B -= center_B
-
-    # set scale
-    s2_A = (traj_A ** 2.).sum()
-    s2_B = (traj_B ** 2.).sum()
-
-    # centred Frobenius norm
-    norm_A = np.sqrt(s2_A)
-    norm_B = np.sqrt(s2_B)
-    print(norm_A, norm_B)
-
-    # scale to equal (unit) norm
-    traj_A /= norm_A
-    traj_B /= norm_B
-
-    # Align rotation and scale.
-    rotation_matrix, _ = orthogonal_procrustes(traj_B, traj_A)
-
-    rotation_matrix_4x4 = np.eye(4)
-    rotation_matrix_4x4[0:3, 0:3] = rotation_matrix.T
-
-    scaling_factor = norm_A / norm_B
-    scaling_matrix_4x4 = np.eye(4)
-    scaling_matrix_4x4[0:3, 0:3] = scaling_factor * np.eye(3)
-
-    translation_vec_B = center_B
-    translation_matrix_4x4_B = np.eye(4)
-    translation_matrix_4x4_B[0:3, 3] = -translation_vec_B
-    translation_vec_A = center_A
-    translation_matrix_4x4_A = np.eye(4)
-    translation_matrix_4x4_A[0:3, 3] = translation_vec_A
-
-    # Composition of matrices.
-    mat = np.eye(4)
-    mat = np.dot(translation_matrix_4x4_B, mat)
-    mat = np.dot(scaling_matrix_4x4, mat)
-    mat = np.dot(rotation_matrix_4x4, mat)
-    mat = np.dot(translation_matrix_4x4_A, mat)
-    return mat
 
 
 def convert_traj(mat, vec):
@@ -104,39 +57,21 @@ if __name__ == "__main__":
     traj_A = traj_A[:min_length]
     traj_B = traj_B[:min_length]
 
-    traj_A_axis_converted = convert_traj(AXIS_CONVERT_MAT_A2B, traj_A.copy())
-    traj_B_axis_converted = convert_traj(AXIS_CONVERT_MAT_A2B.T, traj_B.copy())
-
-    mat_B2A = calc_mat_B2A(traj_A.copy(), traj_B_axis_converted.copy())
-    mat_A2B = calc_mat_B2A(traj_B.copy(), traj_A_axis_converted.copy())
+    traj_A_axis_converted = convert_traj(AXIS_CONVERT_MAT_W2N.T, traj_A.copy())
+    traj_B_axis_converted = convert_traj(AXIS_CONVERT_MAT_W2N, traj_B.copy())
 
     # Fixed decimal point representation
     np.set_printoptions(precision=6, suppress=True)
-    print("mat_A2B")
-    print(mat_A2B)
-    print("mat_B2A")
-    print(mat_B2A)
-
-    with open(f"{save_dir}/mat_A2B.txt", "w") as f:
-        for i in range(4):
-            f.write(" ".join([f"{mat_A2B[i][j]:.6f}," for j in range(4)]))
-            f.write(f" // row{i}")
-            f.write("\n")
-    with open(f"{save_dir}/mat_B2A.txt", "w") as f:
-        for i in range(4):
-            f.write(" ".join([f"{mat_B2A[i][j]:.6f}," for j in range(4)]))
-            f.write(f" // row{i}")
-            f.write("\n")
 
     # apply
-    pose_B_from_A = mat_A2B @ \
-        AXIS_CONVERT_MAT_A2B @ \
+    pose_B_from_A = \
+        AXIS_CONVERT_MAT_W2N.T @ \
         pose_A @ \
-        AXIS_CONVERT_MAT_A2B.T
-    pose_A_from_B = mat_B2A @ \
-        AXIS_CONVERT_MAT_A2B.T @ \
+        AXIS_CONVERT_MAT_W2N
+    pose_A_from_B = \
+        AXIS_CONVERT_MAT_W2N @ \
         pose_B @ \
-        AXIS_CONVERT_MAT_A2B
+        AXIS_CONVERT_MAT_W2N.T
 
     traj_B_from_A = pose_B_from_A[:, 0:3, 3]
     traj_A_from_B = pose_A_from_B[:, 0:3, 3]
