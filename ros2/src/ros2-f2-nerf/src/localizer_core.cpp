@@ -37,30 +37,6 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   std::cout << "H = " << H << ", W = " << W << ", factor = " << factor << std::endl;
   dataset_->intri_[0] /= factor;
   dataset_->intri_[0][2][2] = 1.0;
-
-  /*
-    - 41.416473388671875
-    - 0.0
-    - 59.303839466429054
-    - 0.0
-    - 50.588050842285156
-    - 38.93704936160293
-    - 0.0
-    - 0.0
-    - 1.0
-  */
-
-  if (!param_.is_awsim) {
-    dataset_->intri_[0][0][0] = 41.416473388671875;
-    dataset_->intri_[0][0][1] = 0.0;
-    dataset_->intri_[0][0][2] = 59.303839466429054;
-    dataset_->intri_[0][1][0] = 0.0;
-    dataset_->intri_[0][1][1] = 50.588050842285156;
-    dataset_->intri_[0][1][2] = 38.93704936160293;
-    dataset_->intri_[0][2][0] = 0.0;
-    dataset_->intri_[0][2][1] = 0.0;
-    dataset_->intri_[0][2][2] = 1.0;
-  }
 }
 
 std::vector<Particle> LocalizerCore::random_search(
@@ -181,9 +157,6 @@ std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
   Tensor pred_img = pred_colors.view({H, W, 3});
   pred_img = pred_img.clip(0.f, 1.f);
   pred_img = pred_img.to(image.device());
-  if (!param_.is_awsim) {
-    pred_img = torch::flipud(pred_img);
-  }
 
   Tensor diff = pred_img - image.view({H, W, 3});
   Tensor loss = (diff * diff).mean(-1).sum();
@@ -278,8 +251,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
   pred_pixels = pred_pixels.clip(0.f, 1.f);
   pred_pixels = pred_pixels.to(image.device());  // (pose_num, pixel_num, 3)
 
-  Tensor gt_pixels =
-    (param_.is_awsim ? image.index({i, j}) : image.index({H - 1 - i, j}));  // (pixel_num, 3)
+  Tensor gt_pixels = image.index({i, j});              // (pixel_num, 3)
   Tensor diff = pred_pixels - gt_pixels;               // (pose_num, pixel_num, 3)
   Tensor loss = (diff * diff).mean(-1).sum(-1).cpu();  // (pose_num,)
   loss = pixel_num / (loss + 1e-6f);
