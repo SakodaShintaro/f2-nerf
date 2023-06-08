@@ -186,6 +186,7 @@ void NerfBasedLocalizer::callback_image(const sensor_msgs::msg::Image::ConstShar
   }
 
   if (!is_activated_) {
+    RCLCPP_ERROR(this->get_logger(), "NerfBasedLocalizer is not activated in callback_image.");
     return;
   }
 
