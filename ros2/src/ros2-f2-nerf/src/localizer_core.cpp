@@ -14,6 +14,7 @@ using Tensor = torch::Tensor;
 LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreParam & param)
 : param_(param)
 {
+  std::cout << "start LocalizerCore::LocalizerCore" << std::endl;
   global_data_pool_ = std::make_unique<GlobalDataPool>(conf_path);
   global_data_pool_->mode_ = RunningMode::VALIDATE;
   dataset_ = std::make_unique<Dataset>(global_data_pool_.get());
@@ -97,11 +98,13 @@ std::vector<Particle> LocalizerCore::random_search(
 void LocalizerCore::load_checkpoint(const std::string & checkpoint_path)
 {
   {
+    std::cout << "Loading scalars" << std::endl;
     Tensor scalars;
     torch::load(scalars, checkpoint_path + "/scalars.pt");
   }
 
   {
+    std::cout << "Loading renderer" << std::endl;
     std::vector<Tensor> scene_states;
     torch::load(scene_states, checkpoint_path + "/renderer.pt");
     renderer_->LoadStates(scene_states, 0);
