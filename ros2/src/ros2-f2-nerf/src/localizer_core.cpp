@@ -24,7 +24,7 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
   std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
   global_data_pool_->base_exp_dir_ = base_exp_dir;
-  load_checkpoint(base_exp_dir + "/checkpoints/latest");
+  load_checkpoint(base_exp_dir + "/checkpoints/00020000");
 
   // set
   const float factor = global_data_pool_->config_["dataset"]["factor_to_infer"].as<float>();

@@ -2,7 +2,7 @@ nerf_based_localizer:
   ros__parameters:
     runtime_config_path: /root/f2-nerf/ros2/runtime_config_awsim.yaml
     is_awsim: true
-    target_frame: camera0/camera_link
+    target_frame: base_link
     particle_num: 50
     render_pixel_num: 128
     noise_position_x: 0.003
