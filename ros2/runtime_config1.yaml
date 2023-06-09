@@ -24,7 +24,7 @@ dataset:
   bounds_factor:
   - 0.25
   - 2.0
-  data_path: /root/f2-nerf/data/logiee/20230608_unknown_fixed_link_colmap
+  data_path: /root/f2-nerf/data/logiee/20230609_base_link
 renderer:
   bg_color: rand_noise
   use_app_emb: true
@@ -67,9 +67,9 @@ shader:
   n_hiddens: 2
   degree: 4
 dataset_name: logiee
-case_name: 20230608_unknown_fixed_link_colmap
+case_name: 20230609_base_link
 exp_name: test
 is_continue: true
 mode: localize
 base_dir: /root/f2-nerf
-base_exp_dir: /root/f2-nerf/exp/20230608_unknown_fixed_link_colmap/test
+base_exp_dir: /root/f2-nerf/exp/20230609_base_link/test
