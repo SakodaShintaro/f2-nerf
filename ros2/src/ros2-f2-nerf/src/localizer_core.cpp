@@ -27,14 +27,11 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   load_checkpoint(base_exp_dir + "/checkpoints/00020000");
 
   // set
+  H = global_data_pool_->config_["dataset"]["original_H"].as<float>();
+  W = global_data_pool_->config_["dataset"]["original_W"].as<float>();
   const float factor = global_data_pool_->config_["dataset"]["factor_to_infer"].as<float>();
-  if (param_.is_awsim) {
-    H = 460 / factor;
-    W = 1280 / factor;
-  } else {
-    H = 1280 / factor;
-    W = 1920 / factor;
-  }
+  H /= factor;
+  W /= factor;
   std::cout << "H = " << H << ", W = " << W << ", factor = " << factor << std::endl;
   dataset_->intri_[0] /= factor;
   dataset_->intri_[0][2][2] = 1.0;
