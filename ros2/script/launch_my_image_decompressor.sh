@@ -11,5 +11,5 @@ source install/setup.bash
 set -u
 
 ros2 run my_image_decompressor my_image_decompressor \
-    --ros-args --remap src_topic:=/image_comp \
-    --ros-args --remap dst_topic:=/image
+    --ros-args --remap src_topic:=/sensing/camera/camera0/image_rect_color/compressed \
+    --ros-args --remap dst_topic:=/sensing/camera/camera0/image_rect_color/decompressed

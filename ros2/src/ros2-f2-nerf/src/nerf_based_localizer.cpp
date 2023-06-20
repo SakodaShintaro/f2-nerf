@@ -18,7 +18,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   tf_listener_(tf_buffer_),
   tf2_broadcaster_(*this),
   map_frame_("map"),
-  is_activated_(false)
+  is_activated_(true)
 {
   this->declare_parameter("save_image", false);
   this->declare_parameter("save_particles", false);
