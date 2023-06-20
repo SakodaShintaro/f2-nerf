@@ -360,6 +360,7 @@ NerfBasedLocalizer::localize(
 
   // Convert pose to base_link
   optimized_pose = camera2world(optimized_pose);
+  // optimized_pose = initial_pose;
 
   RCLCPP_INFO_STREAM(this->get_logger(), "world_after:\n" << optimized_pose);
 
