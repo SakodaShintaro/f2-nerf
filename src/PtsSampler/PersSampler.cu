@@ -331,7 +331,6 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
 
 
   // Second, do ray marching
-  Tensor pts_idx_start_end = torch::zeros({ n_rays, 2 }, CUDAInt);
 
   Tensor rays_noise;
   if (global_data_pool_->mode_ == RunningMode::VALIDATE) {
@@ -344,16 +343,7 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   }
   rays_noise.mul_(global_data_pool_->ray_march_fineness_);
 
-  RayMarchKernel<false><<<grid_dim, block_dim>>>(
-      n_rays, sample_l_,
-      RE_INTER(Wec3f*, rays_o.data_ptr()), RE_INTER(Wec3f*, rays_d.data_ptr()),
-      rays_noise.data_ptr<float>(),
-      RE_INTER(Wec2i*, oct_idx_start_end.data_ptr()), oct_intersect_idx.data_ptr<int>(), RE_INTER(Wec2f*, oct_intersect_near_far.data_ptr()),
-      // unsigned char* occ_bits_tables,
-      RE_INTER(Wec2i*, pts_idx_start_end.data_ptr()),
-      nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr
-  );
-
+  Tensor pts_idx_start_end = torch::ones({ n_rays, 2 }, CUDAInt) * MAX_SAMPLE_PER_RAY;
   pts_idx_start_end.index_put_({Slc(), 0}, torch::cumsum(pts_idx_start_end.index({Slc(), 0}), 0));
 
   int n_all_pts = n_rays * MAX_SAMPLE_PER_RAY;
