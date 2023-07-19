@@ -359,7 +359,7 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
 
   pts_idx_start_end.index_put_({Slc(), 0}, torch::cumsum(pts_idx_start_end.index({Slc(), 0}), 0));
 
-  int n_all_pts = pts_idx_start_end.index({-1, 0}).item<int>();
+  int n_all_pts = n_rays * MAX_SAMPLE_PER_RAY;
   Tensor sampled_world_pts = torch::empty({ n_all_pts, 3 }, CUDAFloat);
   Tensor sampled_pts = torch::empty({ n_all_pts, 3 }, CUDAFloat);
   Tensor sampled_dirs = torch::empty({ n_all_pts, 3 }, CUDAFloat);
