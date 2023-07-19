@@ -190,7 +190,6 @@ template<bool FILL>
 __global__ void RayMarchKernel(int n_rays, float sample_l,
                                Wec3f* rays_o_ptr, Wec3f* rays_d_ptr, float* rays_noise,
                                Wec2i* oct_idx_start_end_ptr, int* oct_intersect_idx, Wec2f* oct_intersect_near_far,
-                               TreeNode* tree_nodes, TransInfo* transes,
                                Wec2i* pts_idx_start_end_ptr,
                                Wec3f* sampled_world_pts, Wec3f* sampled_pts, Wec3f* sampled_dirs, Wec3i* sampled_anchors,
                                float* sampled_dists, float* sampled_ts, int* sampled_oct_idx,
@@ -351,8 +350,6 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
       rays_noise.data_ptr<float>(),
       RE_INTER(Wec2i*, oct_idx_start_end.data_ptr()), oct_intersect_idx.data_ptr<int>(), RE_INTER(Wec2f*, oct_intersect_near_far.data_ptr()),
       // unsigned char* occ_bits_tables,
-      RE_INTER(TreeNode*, pers_octree_->tree_nodes_gpu_.data_ptr()),
-      RE_INTER(TransInfo*, pers_octree_->pers_trans_gpu_.data_ptr()),
       RE_INTER(Wec2i*, pts_idx_start_end.data_ptr()),
       nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr
   );
@@ -375,8 +372,6 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
       rays_noise.data_ptr<float>(),
       RE_INTER(Wec2i*, oct_idx_start_end.data_ptr()), oct_intersect_idx.data_ptr<int>(), RE_INTER(Wec2f*, oct_intersect_near_far.data_ptr()),
       // unsigned char* occ_bits_tables,
-      RE_INTER(TreeNode*, pers_octree_->tree_nodes_gpu_.data_ptr()),
-      RE_INTER(TransInfo*, pers_octree_->pers_trans_gpu_.data_ptr()),
       RE_INTER(Wec2i*, pts_idx_start_end.data_ptr()),
       RE_INTER(Wec3f*, sampled_world_pts.data_ptr()),
       RE_INTER(Wec3f*, sampled_pts.data_ptr()),
