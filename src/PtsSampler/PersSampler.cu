@@ -186,7 +186,6 @@ void __device__ QueryFrameTransformJac(const TransInfo& trans,
   *jac = weighted_jac;
 }
 
-template<bool FILL>
 __global__ void RayMarchKernel(int n_rays, float sample_l,
                                Wec3f* rays_o_ptr, Wec3f* rays_d_ptr, float* rays_noise,
                                Wec2i* oct_idx_start_end_ptr, int* oct_intersect_idx, Wec2f* oct_intersect_near_far,
@@ -208,28 +207,26 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
   auto& pts_idx_start_end = pts_idx_start_end_ptr[ray_idx];
 
   int pts_idx = 0;
-  if (FILL) {
-    int idx_end = pts_idx_start_end[0];
-    int idx_cnt = pts_idx_start_end[1];
-    pts_idx_start_end[0] = idx_end - idx_cnt;
-    pts_idx_start_end[1] = idx_end;
-    pts_idx = pts_idx_start_end[0];
-    sampled_world_pts = sampled_world_pts + pts_idx;
-    sampled_pts = sampled_pts + pts_idx;
-    sampled_dirs = sampled_dirs + pts_idx;
-    sampled_anchors = sampled_anchors + pts_idx;
-    sampled_dists = sampled_dists + pts_idx;
-    sampled_ts = sampled_ts + pts_idx;
-    sampled_oct_idx = sampled_oct_idx + pts_idx;
+  int idx_end = pts_idx_start_end[0];
+  int idx_cnt = pts_idx_start_end[1];
+  pts_idx_start_end[0] = idx_end - idx_cnt;
+  pts_idx_start_end[1] = idx_end;
+  pts_idx = pts_idx_start_end[0];
+  sampled_world_pts = sampled_world_pts + pts_idx;
+  sampled_pts = sampled_pts + pts_idx;
+  sampled_dirs = sampled_dirs + pts_idx;
+  sampled_anchors = sampled_anchors + pts_idx;
+  sampled_dists = sampled_dists + pts_idx;
+  sampled_ts = sampled_ts + pts_idx;
+  sampled_oct_idx = sampled_oct_idx + pts_idx;
 
-    if (oct_idx_start_end[0] < oct_idx_start_end[1]) {
-      first_oct_dis[ray_idx] = oct_intersect_near_far[0][0];
-    }
-    else {
-      first_oct_dis[ray_idx] = 1e9f;
-    }
+  if (oct_idx_start_end[0] < oct_idx_start_end[1]) {
+    first_oct_dis[ray_idx] = oct_intersect_near_far[0][0];
   }
-  int max_n_samples = FILL ? pts_idx_start_end[1] - pts_idx_start_end[0] : MAX_SAMPLE_PER_RAY;
+  else {
+    first_oct_dis[ray_idx] = 1e9f;
+  }
+  int max_n_samples = pts_idx_start_end[1] - pts_idx_start_end[0];
 
   if (max_n_samples <= 0) {
     return;
@@ -255,26 +252,18 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
     cur_t += cur_march_step;
     cur_xyz = rays_o + rays_d * cur_t;
 
-    if (FILL) {
-      sampled_world_pts[pts_ptr] = cur_xyz;
-      sampled_ts[pts_ptr] = cur_t;
-      sampled_oct_idx[pts_ptr] = cur_oct_idx;
-      sampled_dirs[pts_ptr] = rays_d;
-      const auto pre_xyz = (pts_ptr == 0 ? first_xyz : sampled_world_pts[pts_ptr - 1]);
-      sampled_dists[pts_ptr] = (cur_xyz - pre_xyz).norm();
-      sampled_pts[pts_ptr] = cur_xyz;
-      sampled_anchors[pts_ptr][0] = 0;
-      sampled_anchors[pts_ptr][1] = cur_oct_idx;
-    }
+    sampled_world_pts[pts_ptr] = cur_xyz;
+    sampled_ts[pts_ptr] = cur_t;
+    sampled_oct_idx[pts_ptr] = cur_oct_idx;
+    sampled_dirs[pts_ptr] = rays_d;
+    const auto pre_xyz = (pts_ptr == 0 ? first_xyz : sampled_world_pts[pts_ptr - 1]);
+    sampled_dists[pts_ptr] = (cur_xyz - pre_xyz).norm();
+    sampled_pts[pts_ptr] = cur_xyz;
+    sampled_anchors[pts_ptr][0] = 0;
+    sampled_anchors[pts_ptr][1] = cur_oct_idx;
   }
 
-  if (FILL) {
-    pts_idx_start_end[1] = pts_idx_start_end[0] + max_n_samples;
-  }
-  else {
-    pts_idx_start_end[0] = max_n_samples;
-    pts_idx_start_end[1] = max_n_samples;
-  }
+  pts_idx_start_end[1] = pts_idx_start_end[0] + max_n_samples;
 }
 
 
@@ -356,7 +345,7 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   Tensor sampled_oct_idx = torch::full({ n_all_pts }, -1,CUDAInt).contiguous();
   Tensor first_oct_dis = torch::zeros({ n_rays, 1 }, CUDAFloat).contiguous();
 
-  RayMarchKernel<true><<<grid_dim, block_dim>>>(
+  RayMarchKernel<<<grid_dim, block_dim>>>(
       n_rays, sample_l_,
       RE_INTER(Wec3f*, rays_o.data_ptr()), RE_INTER(Wec3f*, rays_d.data_ptr()),
       rays_noise.data_ptr<float>(),
