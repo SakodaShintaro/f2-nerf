@@ -250,13 +250,14 @@ __global__ void RayMarchKernel(int n_rays, float sample_l, bool scale_by_dis,
   Wec3f first_xyz = rays_o + rays_d * cur_t;
   Wec3f cur_xyz = first_xyz;
 
-  bool the_first_pts = true;
-  while (pts_ptr < max_n_samples && oct_ptr < n_oct_nodes) {
+  while (pts_ptr < max_n_samples) {
     float exp_march_step_warp = sample_l * rays_noise[pts_ptr];
     exp_march_step = exp_march_step_warp;
+    cur_march_step = exp_march_step;
+    cur_t += cur_march_step;
+    cur_xyz = rays_o + rays_d * cur_t;
 
-    // Do not consider the first point in sampling, because the first point has no randomness in training.
-    if (FILL && !the_first_pts) {
+    if (FILL) {
       sampled_world_pts[pts_ptr] = cur_xyz;
       sampled_ts[pts_ptr] = cur_t;
       sampled_oct_idx[pts_ptr] = cur_oct_idx;
@@ -267,14 +268,8 @@ __global__ void RayMarchKernel(int n_rays, float sample_l, bool scale_by_dis,
       sampled_anchors[pts_ptr][0] = 0;
       sampled_anchors[pts_ptr][1] = cur_oct_idx;
     }
-    if (!the_first_pts) {
-      pts_ptr += 1;
-    }
 
-    cur_march_step = exp_march_step;
-    cur_t += cur_march_step;
-    cur_xyz = rays_o + rays_d * cur_t;
-    the_first_pts = false;
+    pts_ptr += 1;
   }
 
   if (FILL) {
