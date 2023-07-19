@@ -190,7 +190,7 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
                                Wec3f* rays_o_ptr, Wec3f* rays_d_ptr, float* rays_noise,
                                Wec2i* oct_idx_start_end_ptr, int* oct_intersect_idx, Wec2f* oct_intersect_near_far,
                                Wec2i* pts_idx_start_end_ptr,
-                               Wec3f* sampled_world_pts, Wec3f* sampled_pts, Wec3f* sampled_dirs, Wec3i* sampled_anchors,
+                               Wec3f* sampled_pts, Wec3f* sampled_dirs, Wec3i* sampled_anchors,
                                float* sampled_dists, float* sampled_ts,
                                float* first_oct_dis) {
   int ray_idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -212,7 +212,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
   pts_idx_start_end[0] = idx_end - idx_cnt;
   pts_idx_start_end[1] = idx_end;
   pts_idx = pts_idx_start_end[0];
-  sampled_world_pts = sampled_world_pts + pts_idx;
   sampled_pts = sampled_pts + pts_idx;
   sampled_dirs = sampled_dirs + pts_idx;
   sampled_anchors = sampled_anchors + pts_idx;
@@ -246,10 +245,9 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
     cur_t += cur_march_step;
     cur_xyz = rays_o + rays_d * cur_t;
 
-    sampled_world_pts[pts_ptr] = cur_xyz;
     sampled_ts[pts_ptr] = cur_t;
     sampled_dirs[pts_ptr] = rays_d;
-    const auto pre_xyz = (pts_ptr == 0 ? first_xyz : sampled_world_pts[pts_ptr - 1]);
+    const auto pre_xyz = (pts_ptr == 0 ? first_xyz : sampled_pts[pts_ptr - 1]);
     sampled_dists[pts_ptr] = (cur_xyz - pre_xyz).norm();
     sampled_pts[pts_ptr] = cur_xyz;
     sampled_anchors[pts_ptr][0] = 0;
@@ -329,7 +327,6 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   pts_idx_start_end.index_put_({Slc(), 0}, torch::cumsum(pts_idx_start_end.index({Slc(), 0}), 0));
 
   int n_all_pts = n_rays * MAX_SAMPLE_PER_RAY;
-  Tensor sampled_world_pts = torch::empty({ n_all_pts, 3 }, CUDAFloat);
   Tensor sampled_pts = torch::empty({ n_all_pts, 3 }, CUDAFloat);
   Tensor sampled_dirs = torch::empty({ n_all_pts, 3 }, CUDAFloat);
   Tensor sampled_anchors = torch::empty({ n_all_pts, 3 }, CUDAInt);
@@ -344,7 +341,6 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
       RE_INTER(Wec2i*, oct_idx_start_end.data_ptr()), oct_intersect_idx.data_ptr<int>(), RE_INTER(Wec2f*, oct_intersect_near_far.data_ptr()),
       // unsigned char* occ_bits_tables,
       RE_INTER(Wec2i*, pts_idx_start_end.data_ptr()),
-      RE_INTER(Wec3f*, sampled_world_pts.data_ptr()),
       RE_INTER(Wec3f*, sampled_pts.data_ptr()),
       RE_INTER(Wec3f*, sampled_dirs.data_ptr()),
       RE_INTER(Wec3i*, sampled_anchors.data_ptr()),
