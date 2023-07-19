@@ -237,7 +237,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l, bool scale_by_dis,
   }
 
   int oct_ptr = 0;
-  int pts_ptr = 0;
   int cur_oct_idx = oct_intersect_idx[0];
   float cur_march_step = 0.f;
   float exp_march_step = 0.f;
@@ -250,7 +249,7 @@ __global__ void RayMarchKernel(int n_rays, float sample_l, bool scale_by_dis,
   Wec3f first_xyz = rays_o + rays_d * cur_t;
   Wec3f cur_xyz = first_xyz;
 
-  while (pts_ptr < max_n_samples) {
+  for (int pts_ptr = 0; pts_ptr < max_n_samples; pts_ptr++) {
     float exp_march_step_warp = sample_l * rays_noise[pts_ptr];
     exp_march_step = exp_march_step_warp;
     cur_march_step = exp_march_step;
@@ -268,16 +267,14 @@ __global__ void RayMarchKernel(int n_rays, float sample_l, bool scale_by_dis,
       sampled_anchors[pts_ptr][0] = 0;
       sampled_anchors[pts_ptr][1] = cur_oct_idx;
     }
-
-    pts_ptr += 1;
   }
 
   if (FILL) {
-    pts_idx_start_end[1] = pts_idx_start_end[0] + pts_ptr;
+    pts_idx_start_end[1] = pts_idx_start_end[0] + max_n_samples;
   }
   else {
-    pts_idx_start_end[0] = pts_ptr;
-    pts_idx_start_end[1] = pts_ptr;
+    pts_idx_start_end[0] = max_n_samples;
+    pts_idx_start_end[1] = max_n_samples;
   }
 }
 
