@@ -239,9 +239,9 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
 
   int n_oct_nodes = oct_idx_start_end[1] - oct_idx_start_end[0];
 
-  float cur_t = oct_intersect_near_far[0][0];
-  float cur_far = oct_intersect_near_far[0][1];
-  float cur_near = oct_intersect_near_far[0][0];
+  float cur_t = 0;
+  float cur_far = 1e8f;
+  float cur_near = 0;
   Wec3f first_xyz = rays_o + rays_d * cur_t;
   Wec3f cur_xyz = first_xyz;
 
