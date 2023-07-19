@@ -187,7 +187,7 @@ void __device__ QueryFrameTransformJac(const TransInfo& trans,
 }
 
 template<bool FILL>
-__global__ void RayMarchKernel(int n_rays, float sample_l, bool scale_by_dis,
+__global__ void RayMarchKernel(int n_rays, float sample_l,
                                Wec3f* rays_o_ptr, Wec3f* rays_d_ptr, float* rays_noise,
                                Wec2i* oct_idx_start_end_ptr, int* oct_intersect_idx, Wec2f* oct_intersect_near_far,
                                TreeNode* tree_nodes, TransInfo* transes,
@@ -346,7 +346,7 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   rays_noise.mul_(global_data_pool_->ray_march_fineness_);
 
   RayMarchKernel<false><<<grid_dim, block_dim>>>(
-      n_rays, sample_l_, scale_by_dis_,
+      n_rays, sample_l_,
       RE_INTER(Wec3f*, rays_o.data_ptr()), RE_INTER(Wec3f*, rays_d.data_ptr()),
       rays_noise.data_ptr<float>(),
       RE_INTER(Wec2i*, oct_idx_start_end.data_ptr()), oct_intersect_idx.data_ptr<int>(), RE_INTER(Wec2f*, oct_intersect_near_far.data_ptr()),
@@ -370,7 +370,7 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   Tensor first_oct_dis = torch::zeros({ n_rays, 1 }, CUDAFloat).contiguous();
 
   RayMarchKernel<true><<<grid_dim, block_dim>>>(
-      n_rays, sample_l_, scale_by_dis_,
+      n_rays, sample_l_,
       RE_INTER(Wec3f*, rays_o.data_ptr()), RE_INTER(Wec3f*, rays_d.data_ptr()),
       rays_noise.data_ptr<float>(),
       RE_INTER(Wec2i*, oct_idx_start_end.data_ptr()), oct_intersect_idx.data_ptr<int>(), RE_INTER(Wec2f*, oct_intersect_near_far.data_ptr()),
