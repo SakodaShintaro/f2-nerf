@@ -252,9 +252,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l, bool scale_by_dis,
 
   bool the_first_pts = true;
   while (pts_ptr < max_n_samples && oct_ptr < n_oct_nodes) {
-    Wec3f fill_xyz = Wec3f::Zero();
-
-    const auto& cur_node = tree_nodes[cur_oct_idx];
     float exp_march_step_warp = sample_l * rays_noise[pts_ptr];
     exp_march_step = exp_march_step_warp;
 
@@ -267,7 +264,7 @@ __global__ void RayMarchKernel(int n_rays, float sample_l, bool scale_by_dis,
       const auto pre_xyz = (pts_ptr == 0 ? first_xyz : sampled_world_pts[pts_ptr - 1]);
       sampled_dists[pts_ptr] = (cur_xyz - pre_xyz).norm();
       sampled_pts[pts_ptr] = cur_xyz;
-      sampled_anchors[pts_ptr][0] = cur_node.trans_idx;
+      sampled_anchors[pts_ptr][0] = 0;
       sampled_anchors[pts_ptr][1] = cur_oct_idx;
     }
     if (!the_first_pts) {
