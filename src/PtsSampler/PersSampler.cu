@@ -191,7 +191,7 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
                                Wec2i* oct_idx_start_end_ptr, int* oct_intersect_idx, Wec2f* oct_intersect_near_far,
                                Wec2i* pts_idx_start_end_ptr,
                                Wec3f* sampled_world_pts, Wec3f* sampled_pts, Wec3f* sampled_dirs, Wec3i* sampled_anchors,
-                               float* sampled_dists, float* sampled_ts, int* sampled_oct_idx,
+                               float* sampled_dists, float* sampled_ts,
                                float* first_oct_dis) {
   int ray_idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (ray_idx >= n_rays) {
@@ -218,14 +218,8 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
   sampled_anchors = sampled_anchors + pts_idx;
   sampled_dists = sampled_dists + pts_idx;
   sampled_ts = sampled_ts + pts_idx;
-  sampled_oct_idx = sampled_oct_idx + pts_idx;
 
-  if (oct_idx_start_end[0] < oct_idx_start_end[1]) {
-    first_oct_dis[ray_idx] = oct_intersect_near_far[0][0];
-  }
-  else {
-    first_oct_dis[ray_idx] = 1e9f;
-  }
+  first_oct_dis[ray_idx] = 1e9f;
   int max_n_samples = pts_idx_start_end[1] - pts_idx_start_end[0];
 
   if (max_n_samples <= 0) {
@@ -254,7 +248,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
 
     sampled_world_pts[pts_ptr] = cur_xyz;
     sampled_ts[pts_ptr] = cur_t;
-    sampled_oct_idx[pts_ptr] = cur_oct_idx;
     sampled_dirs[pts_ptr] = rays_d;
     const auto pre_xyz = (pts_ptr == 0 ? first_xyz : sampled_world_pts[pts_ptr - 1]);
     sampled_dists[pts_ptr] = (cur_xyz - pre_xyz).norm();
@@ -342,7 +335,6 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   Tensor sampled_anchors = torch::empty({ n_all_pts, 3 }, CUDAInt);
   Tensor sampled_dists = torch::empty({ n_all_pts }, CUDAFloat);
   Tensor sampled_t = torch::empty({ n_all_pts }, CUDAFloat);
-  Tensor sampled_oct_idx = torch::full({ n_all_pts }, -1,CUDAInt).contiguous();
   Tensor first_oct_dis = torch::zeros({ n_rays, 1 }, CUDAFloat).contiguous();
 
   RayMarchKernel<<<grid_dim, block_dim>>>(
@@ -357,7 +349,6 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
       RE_INTER(Wec3f*, sampled_dirs.data_ptr()),
       RE_INTER(Wec3i*, sampled_anchors.data_ptr()),
       sampled_dists.data_ptr<float>(), sampled_t.data_ptr<float>(),
-      sampled_oct_idx.data_ptr<int>(),
       first_oct_dis.data_ptr<float>()
   );
 
