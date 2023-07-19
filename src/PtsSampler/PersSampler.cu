@@ -247,29 +247,16 @@ __global__ void RayMarchKernel(int n_rays, float sample_l, bool scale_by_dis,
   float cur_t = oct_intersect_near_far[0][0];
   float cur_far = oct_intersect_near_far[0][1];
   float cur_near = oct_intersect_near_far[0][0];
-  Wec3f cur_xyz = rays_o + rays_d * cur_t;
-  Wec3f nex_xyz;
+  Wec3f first_xyz = rays_o + rays_d * cur_t;
+  Wec3f cur_xyz = first_xyz;
 
   bool the_first_pts = true;
   while (pts_ptr < max_n_samples && oct_ptr < n_oct_nodes) {
     Wec3f fill_xyz = Wec3f::Zero();
 
     const auto& cur_node = tree_nodes[cur_oct_idx];
-
-    // Get march step
-    Watrix33f jac = Watrix33f::Zero();
-    const auto& cur_trans = transes[cur_node.trans_idx];
-    float cur_radius = (rays_o - cur_trans.center).norm() / cur_trans.dis_summary;
-    float cur_radius_clip = fmaxf(cur_radius, 1.f);
-    QueryFrameTransformJac(cur_trans, cur_xyz, &jac);
-    Wec3f proj_xyz = jac * rays_d;
     float exp_march_step_warp = sample_l * rays_noise[pts_ptr];
-    exp_march_step = exp_march_step_warp / (proj_xyz.norm() + 1e-6f);
-    if (scale_by_dis) {
-      exp_march_step *= cur_radius_clip;
-    }
-
-    cur_march_step = exp_march_step;
+    exp_march_step = exp_march_step_warp;
 
     // Do not consider the first point in sampling, because the first point has no randomness in training.
     if (FILL && !the_first_pts) {
@@ -277,10 +264,9 @@ __global__ void RayMarchKernel(int n_rays, float sample_l, bool scale_by_dis,
       sampled_ts[pts_ptr] = cur_t;
       sampled_oct_idx[pts_ptr] = cur_oct_idx;
       sampled_dirs[pts_ptr] = rays_d;
-
-      QueryFrameTransform(cur_trans, cur_xyz, &fill_xyz);
-      sampled_dists[pts_ptr] = exp_march_step * (proj_xyz.norm() + 1e-6f);
-      sampled_pts[pts_ptr] = fill_xyz;
+      const auto pre_xyz = (pts_ptr == 0 ? first_xyz : sampled_world_pts[pts_ptr - 1]);
+      sampled_dists[pts_ptr] = (cur_xyz - pre_xyz).norm();
+      sampled_pts[pts_ptr] = cur_xyz;
       sampled_anchors[pts_ptr][0] = cur_node.trans_idx;
       sampled_anchors[pts_ptr][1] = cur_oct_idx;
     }
@@ -288,17 +274,7 @@ __global__ void RayMarchKernel(int n_rays, float sample_l, bool scale_by_dis,
       pts_ptr += 1;
     }
 
-    while (cur_t + cur_march_step > cur_far) {
-      oct_ptr++;
-      if (oct_ptr >= n_oct_nodes) {
-        break;
-      }
-      cur_oct_idx = oct_intersect_idx[oct_ptr];
-      cur_near = oct_intersect_near_far[oct_ptr][0];
-      cur_far = oct_intersect_near_far[oct_ptr][1];
-      int ex_march_steps = ceilf(fmaxf((cur_near - cur_t) / exp_march_step, 1.f));
-      cur_march_step = exp_march_step * float(ex_march_steps);
-    }
+    cur_march_step = exp_march_step;
     cur_t += cur_march_step;
     cur_xyz = rays_o + rays_d * cur_t;
     the_first_pts = false;
