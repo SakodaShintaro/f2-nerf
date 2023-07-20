@@ -45,7 +45,6 @@ public:
   Rays Img2WorldRay(int cam_idx, const Tensor& ij);
   static Rays Img2WorldRay(const Tensor& pose, const Tensor& intri, const Tensor& dist_params, const Tensor& ij);
   Rays Img2WorldRayFlex(const Tensor& cam_indices, const Tensor& ij);
-  static Tensor CameraUndistort(const Tensor& cam_xy, const Tensor& dist_params);
 
   int n_images_ = 0;
   Tensor poses_, c2w_, w2c_, intri_, dist_params_, bounds_;

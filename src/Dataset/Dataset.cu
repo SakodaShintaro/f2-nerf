@@ -68,33 +68,6 @@ __device__ __host__ inline void iterative_camera_undistortion(const T* params, T
   *v = x(1);
 }
 
-__global__ void CameraUndistortKernel(int n_pixels, const float* params, float* u, float* v) {
-  int pix_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (pix_idx >= n_pixels) { return; }
-
-  iterative_camera_undistortion<float>(params + pix_idx * 4, u + pix_idx, v + pix_idx);
-}
-
-// Input:
-//    cam_xy: the xy coordinates in camera sapce **in OpenGL style**
-//    dist_params: distortion parameters: k1, k2, p1, p2
-Tensor Dataset::CameraUndistort(const Tensor& cam_xy, const Tensor& dist_params) {
-  int n_pixels = cam_xy.sizes()[0];
-  CHECK_EQ(n_pixels, dist_params.sizes()[0]);
-  Tensor u = cam_xy.index({Slc(), 0}).contiguous();
-  Tensor v = -cam_xy.index({Slc(), 1}).contiguous();   // OpenGL -> OpenCV
-
-  CK_CONT(dist_params); CK_CONT(u); CK_CONT(v);
-  dim3 grid_dim = LIN_GRID_DIM(n_pixels);
-  dim3 block_dim = LIN_BLOCK_DIM(n_pixels);
-  CameraUndistortKernel<<<grid_dim, block_dim>>>(n_pixels,
-                                                 dist_params.data_ptr<float>(),
-                                                 u.data_ptr<float>(),
-                                                 v.data_ptr<float>());
-  return torch::stack({ u, -v }, -1).contiguous();
-}
-
-
 __global__ void Img2WorldRayKernel(int n_rays,
                                    Watrix34f* poses,
                                    Watrix33f* intri,
@@ -116,7 +89,7 @@ __global__ void Img2WorldRayKernel(int n_rays,
 
   float u = (j - cx) / fx;
   float v = (i - cy) / fy;  // OpenCV style
-  iterative_camera_undistortion<float>((float*) (dist_params + cam_idx), &u, &v);
+  // iterative_camera_undistortion<float>((float*) (dist_params + cam_idx), &u, &v);
   Wec3f dir = {u, -v, -1.f };  // OpenGL style
   out_rays_d[ray_idx] = poses[cam_idx].block<3, 3>(0, 0) * dir;
   out_rays_o[ray_idx] = poses[cam_idx].block<3, 1>(0, 3);

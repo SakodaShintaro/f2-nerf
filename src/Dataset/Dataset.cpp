@@ -164,7 +164,6 @@ Rays Dataset::Img2WorldRay(const Tensor& pose,
 
   Tensor uv = torch::stack( { (j - cx) / fx, -(i - cy) / fy }, -1);
   Tensor params = dist_param.unsqueeze(0).repeat({ n_pts, 1 }).contiguous();
-  uv = CameraUndistort(uv, params);
   Tensor dirs = torch::cat({ uv, -torch::ones({n_pts, 1}, CUDAFloat)}, -1);
   Tensor rays_d = torch::matmul(pose.index({ None, Slc(0, 3), Slc(0, 3)}), dirs.index({"...", None}));
 
