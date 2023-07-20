@@ -49,7 +49,6 @@ public:
                            const Tensor& intri,
                            const Tensor& center); // Share intri;
   void ProcOctree(bool compact, bool subdivide, bool brute_force);
-  void MarkInvisibleNodes();
 
   void ConstructEdgePool();
 
