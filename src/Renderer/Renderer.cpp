@@ -155,23 +155,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   Tensor anchors = sample_result_early_stop.anchors.index({"...", 0}).contiguous();
   n_all_pts = pts.size(0);
 
-  // Feature variation loss.
-  if (global_data_pool_->mode_ == RunningMode::TRAIN) {
-    const int n_edge_pts = 8192;
-    auto [ edge_pts, edge_anchors ] = pts_sampler_->GetEdgeSamples(n_edge_pts);
-    edge_pts = edge_pts.reshape({ n_edge_pts * 2, 3 }).contiguous();
-    edge_anchors = edge_anchors.reshape({ n_edge_pts * 2 }).contiguous();
-
-    Tensor query_pts = torch::cat({ pts, edge_pts }, 0);
-    Tensor query_anchors = torch::cat({ anchors, edge_anchors }, 0);
-    Tensor all_feat = scene_field_->AnchoredQuery(query_pts, query_anchors);
-    scene_feat = all_feat.slice(0, 0, n_all_pts);
-  }
-  else {
-    // Query density &gra color
-    scene_feat = scene_field_->AnchoredQuery(pts, anchors);  // [n_pts, feat_dim];
-  }
-
+  scene_feat = scene_field_->AnchoredQuery(pts, anchors);  // [n_pts, feat_dim];
 
   Tensor sampled_density = DensityAct(scene_feat.index({ Slc(), Slc(0, 1) }));
 
