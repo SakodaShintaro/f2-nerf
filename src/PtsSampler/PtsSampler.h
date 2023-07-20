@@ -33,10 +33,6 @@ public:
     CHECK(false) << "Not implemented";
     return { Tensor(), Tensor(), Tensor(), Tensor(), Tensor() };
   }
-  virtual std::tuple<Tensor, Tensor> GetEdgeSamples(int n_pts) {
-    CHECK(false) << "Not implemented";
-    return { Tensor(), Tensor() };
-  }
 
   virtual void UpdateOctNodes(const SampleResultFlex& sample_result,
                               const Tensor& sampled_weights,

@@ -34,45 +34,6 @@ void __device__ QueryFrameTransform(const TransInfo& trans,
   *fill_xyz = weighted;
 }
 
-__global__ void GetEdgeSamplesKernel(int n_pts, EdgePool* edge_pool, TransInfo* trans, int* edge_indices, Wec2f* edge_coords,
-                                     Wec3f* out_pts, int* out_idx) {
-  int pts_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (pts_idx >= n_pts) { return; }
-  int edge_idx = edge_indices[pts_idx];
-  edge_pool += edge_idx;
-  Wec3f world_pts = edge_pool->center + edge_pool->dir_0 * edge_coords[pts_idx][0] + edge_pool->dir_1 * edge_coords[pts_idx][1];
-  Wec3f warp_pts_a, warp_pts_b;
-  int a = edge_pool->t_idx_a; int b = edge_pool->t_idx_b;
-  QueryFrameTransform(trans[a], world_pts, &warp_pts_a);
-  QueryFrameTransform(trans[b], world_pts, &warp_pts_b);
-
-  out_pts[pts_idx * 2] = warp_pts_a;
-  out_pts[pts_idx * 2 + 1] = warp_pts_b;
-  out_idx[pts_idx * 2] = a;
-  out_idx[pts_idx * 2 + 1] = b;
-}
-
-std::tuple<Tensor, Tensor> PersSampler::GetEdgeSamples(int n_pts) {
-  int n_edges = pers_octree_->edge_pool_.size();
-  Tensor edge_idx = torch::randint(0, n_edges, { n_pts }, CUDAInt).contiguous();
-  Tensor edge_coord = (torch::rand({n_pts, 2}, CUDAFloat) * 2.f - 1.f).contiguous();
-  Tensor out_pts = torch::empty({n_pts, 2, 3}, CUDAFloat).contiguous();
-  Tensor out_idx = torch::empty({n_pts, 2}, CUDAInt).contiguous();
-
-  dim3 block_dim = LIN_BLOCK_DIM(n_pts);
-  dim3 grid_dim  = LIN_GRID_DIM(n_pts);
-
-  GetEdgeSamplesKernel<<<grid_dim, block_dim>>>(n_pts,
-                                               RE_INTER(EdgePool*, pers_octree_->edge_pool_gpu_.data_ptr()),
-                                               RE_INTER(TransInfo*, pers_octree_->pers_trans_gpu_.data_ptr()),
-                                               edge_idx.data_ptr<int>(),
-                                               RE_INTER(Wec2f*, edge_coord.data_ptr()),
-                                               RE_INTER(Wec3f*, out_pts.data_ptr()),
-                                               out_idx.data_ptr<int>());
-
-  return { out_pts, out_idx };
-}
-
 __global__ void MarkVistNodeKernel(int n_rays,
                                    int* pts_idx_start_end,
                                    int* oct_indices,

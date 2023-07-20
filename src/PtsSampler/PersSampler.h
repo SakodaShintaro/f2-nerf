@@ -85,7 +85,6 @@ public:
   std::vector<Tensor> States() override;
   int LoadStates(const std::vector<Tensor>& states, int idx) override;
 
-  std::tuple<Tensor, Tensor> GetEdgeSamples(int n_pts);
   std::unique_ptr<PersOctree> pers_octree_;
   std::vector<int> sub_div_milestones_;
   int compact_freq_;
