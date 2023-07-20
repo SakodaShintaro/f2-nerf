@@ -36,52 +36,15 @@ struct alignas(32) EdgePool {
   Wec3f dir_1;
 };
 
-class PersOctree {
-  using Tensor = torch::Tensor;
-public:
-  PersOctree(int max_depth, float bbox_side_len, float split_dist_thres,
-             const Tensor& c2w, const Tensor& w2c, const Tensor& intri, const Tensor& bound);
-
-  std::vector<int> CalcVisiCams(const Tensor& pts);
-  void ConstructTreeNode(int u, int depth, Wec3f center, float side_len);
-  TransInfo ConstructTrans(const Tensor& rand_pts,
-                           const Tensor& c2w,
-                           const Tensor& intri,
-                           const Tensor& center); // Share intri;
-  void ProcOctree(bool compact, bool subdivide, bool brute_force);
-
-  void ConstructEdgePool();
-
-  int max_depth_;
-  Tensor c2w_, w2c_, intri_, bound_;
-  float bbox_side_len_;
-  float split_dist_thres_;
-
-  std::vector<TreeNode> tree_nodes_;
-  Tensor tree_nodes_gpu_;
-  Tensor tree_weight_stats_, tree_alpha_stats_;
-  Tensor tree_visit_cnt_;
-  Tensor node_search_order_;
-
-  std::vector<TransInfo> pers_trans_;
-  Tensor pers_trans_gpu_;
-
-  std::vector<EdgePool> edge_pool_;
-  Tensor edge_pool_gpu_;
-};
-
 class PersSampler : public PtsSampler {
   using Tensor = torch::Tensor;
 public:
   PersSampler(GlobalDataPool* global_data_pool);
   SampleResultFlex GetSamples(const Tensor& rays_o, const Tensor& rays_d, const Tensor& bounds) override;
 
-  void VisOctree();
-
   std::vector<Tensor> States() override;
   int LoadStates(const std::vector<Tensor>& states, int idx) override;
 
-  std::unique_ptr<PersOctree> pers_octree_;
   std::vector<int> sub_div_milestones_;
   int compact_freq_;
   int max_oct_intersect_per_ray_;
