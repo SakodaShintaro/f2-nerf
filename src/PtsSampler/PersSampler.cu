@@ -190,7 +190,7 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
                                Wec3f* rays_o_ptr, Wec3f* rays_d_ptr, float* rays_noise,
                                Wec2i* pts_idx_start_end_ptr,
                                Wec3f* sampled_pts, Wec3f* sampled_dirs, Wec3i* sampled_anchors,
-                               float* sampled_dists, float* sampled_ts) {
+                               float* sampled_dists) {
   int ray_idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (ray_idx >= n_rays) {
     return;
@@ -211,7 +211,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
   sampled_dirs = sampled_dirs + pts_idx;
   sampled_anchors = sampled_anchors + pts_idx;
   sampled_dists = sampled_dists + pts_idx;
-  sampled_ts = sampled_ts + pts_idx;
 
   int max_n_samples = pts_idx_start_end[1] - pts_idx_start_end[0];
 
@@ -230,7 +229,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
     cur_t += exp_march_step_warp;
     cur_xyz = rays_o + rays_d * cur_t;
 
-    sampled_ts[pts_ptr] = cur_t;
     sampled_dirs[pts_ptr] = rays_d;
     const auto pre_xyz = (pts_ptr == 0 ? first_xyz : sampled_pts[pts_ptr - 1]);
     sampled_dists[pts_ptr] = (cur_xyz - pre_xyz).norm();
@@ -256,24 +254,32 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
 
   // do ray marching
 
+  const int n_all_pts = n_rays * MAX_SAMPLE_PER_RAY;
+
   Tensor rays_noise;
   if (global_data_pool_->mode_ == RunningMode::VALIDATE) {
-    rays_noise = torch::ones({ MAX_SAMPLE_PER_RAY + n_rays + 10 }, CUDAFloat);
+    rays_noise = torch::ones({ n_all_pts }, CUDAFloat);
   }
   else {
-    rays_noise = ((torch::rand({ MAX_SAMPLE_PER_RAY + n_rays + 10 }, CUDAFloat) - .5f) + 1.f).contiguous();
+    rays_noise = ((torch::rand({ n_all_pts }, CUDAFloat) - .5f) + 1.f).contiguous();
   }
   rays_noise.mul_(global_data_pool_->ray_march_fineness_);
+  rays_noise = rays_noise.view({ n_rays, MAX_SAMPLE_PER_RAY }).contiguous();
+  Tensor cum_noise = torch::cumsum(rays_noise, 1) * sample_l_;
+  Tensor sampled_t = cum_noise.reshape({ n_all_pts }).contiguous();
+
+  rays_o = rays_o.view({ n_rays, 1, 3 }).contiguous();
+  rays_d = rays_d.view({ n_rays, 1, 3 }).contiguous();
+  cum_noise = cum_noise.unsqueeze(-1).contiguous();
+  Tensor sampled_pts = rays_o + rays_d * cum_noise;
+  sampled_pts = sampled_pts.view({ n_all_pts, 3 });
 
   Tensor pts_idx_start_end = torch::ones({ n_rays, 2 }, CUDAInt) * MAX_SAMPLE_PER_RAY;
   pts_idx_start_end.index_put_({Slc(), 0}, torch::cumsum(pts_idx_start_end.index({Slc(), 0}), 0));
 
-  int n_all_pts = n_rays * MAX_SAMPLE_PER_RAY;
-  Tensor sampled_pts = torch::empty({ n_all_pts, 3 }, CUDAFloat);
   Tensor sampled_dirs = torch::empty({ n_all_pts, 3 }, CUDAFloat);
   Tensor sampled_anchors = torch::empty({ n_all_pts, 3 }, CUDAInt);
   Tensor sampled_dists = torch::empty({ n_all_pts }, CUDAFloat);
-  Tensor sampled_t = torch::empty({ n_all_pts }, CUDAFloat);
   Tensor first_oct_dis = torch::full({ n_rays, 1 }, 1e9f, CUDAFloat).contiguous();
 
   RayMarchKernel<<<grid_dim, block_dim>>>(
@@ -285,7 +291,7 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
       RE_INTER(Wec3f*, sampled_pts.data_ptr()),
       RE_INTER(Wec3f*, sampled_dirs.data_ptr()),
       RE_INTER(Wec3i*, sampled_anchors.data_ptr()),
-      sampled_dists.data_ptr<float>(), sampled_t.data_ptr<float>()
+      sampled_dists.data_ptr<float>()
   );
 
   return {
