@@ -190,8 +190,7 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
                                Wec3f* rays_o_ptr, Wec3f* rays_d_ptr, float* rays_noise,
                                Wec2i* pts_idx_start_end_ptr,
                                Wec3f* sampled_pts, Wec3f* sampled_dirs, Wec3i* sampled_anchors,
-                               float* sampled_dists, float* sampled_ts,
-                               float* first_oct_dis) {
+                               float* sampled_dists, float* sampled_ts) {
   int ray_idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (ray_idx >= n_rays) {
     return;
@@ -214,7 +213,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
   sampled_dists = sampled_dists + pts_idx;
   sampled_ts = sampled_ts + pts_idx;
 
-  first_oct_dis[ray_idx] = 1e9f;
   int max_n_samples = pts_idx_start_end[1] - pts_idx_start_end[0];
 
   if (max_n_samples <= 0) {
@@ -276,7 +274,7 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   Tensor sampled_anchors = torch::empty({ n_all_pts, 3 }, CUDAInt);
   Tensor sampled_dists = torch::empty({ n_all_pts }, CUDAFloat);
   Tensor sampled_t = torch::empty({ n_all_pts }, CUDAFloat);
-  Tensor first_oct_dis = torch::zeros({ n_rays, 1 }, CUDAFloat).contiguous();
+  Tensor first_oct_dis = torch::full({ n_rays, 1 }, 1e9f, CUDAFloat).contiguous();
 
   RayMarchKernel<<<grid_dim, block_dim>>>(
       n_rays, sample_l_,
@@ -287,8 +285,7 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
       RE_INTER(Wec3f*, sampled_pts.data_ptr()),
       RE_INTER(Wec3f*, sampled_dirs.data_ptr()),
       RE_INTER(Wec3i*, sampled_anchors.data_ptr()),
-      sampled_dists.data_ptr<float>(), sampled_t.data_ptr<float>(),
-      first_oct_dis.data_ptr<float>()
+      sampled_dists.data_ptr<float>(), sampled_t.data_ptr<float>()
   );
 
   return {
