@@ -259,51 +259,10 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   Tensor bounds = torch::stack({ torch::full({n_rays}, global_near_, CUDAFloat),
                                torch::full({n_rays}, 1e8f, CUDAFloat) }, -1).contiguous();
 
-  // First, find octree intersections
-  Tensor oct_idx_counter = torch::zeros({1}, CUDAInt);
-  Tensor oct_idx_start_end = torch::zeros({ n_rays, 2 }, CUDAInt);
-  Tensor stack_info = torch::zeros({ n_rays * MAX_STACK_SIZE }, CUDAInt);
-
-  CK_CONT(rays_o);
-  CK_CONT(rays_d);
-  CK_CONT(oct_idx_counter);
-  CK_CONT(oct_idx_start_end);
-  CK_CONT(stack_info);
-  CK_CONT(bounds);
-  CK_CONT(pers_octree_->tree_nodes_gpu_);
-  CK_CONT(pers_octree_->pers_trans_gpu_);
-
   dim3 block_dim = LIN_BLOCK_DIM(n_rays);
   dim3 grid_dim = LIN_GRID_DIM(n_rays);
 
-  FindRayOctreeIntersectionKernel<false><<<grid_dim, block_dim>>>(
-      n_rays, max_oct_intersect_per_ray_,
-      pers_octree_->node_search_order_.data_ptr<uint8_t>(),
-      RE_INTER(Wec3f*, rays_o.data_ptr()),
-      RE_INTER(Wec3f*, rays_d.data_ptr()),
-      RE_INTER(Wec2f*, bounds.data_ptr()),
-      oct_idx_counter.data_ptr<int>(), RE_INTER(Wec2i*, oct_idx_start_end.data_ptr()),
-      RE_INTER(TreeNode*, pers_octree_->tree_nodes_gpu_.data_ptr()),
-      nullptr, nullptr,
-      stack_info.data_ptr<int>());
-
-  int n_all_oct_intersect = oct_idx_counter.item<int>();
-  Tensor oct_intersect_idx = torch::empty({ n_all_oct_intersect }, CUDAInt);
-  Tensor oct_intersect_near_far = torch::empty({ n_all_oct_intersect, 2 }, CUDAFloat);
-
-  FindRayOctreeIntersectionKernel<true><<<grid_dim, block_dim>>>(
-      n_rays, max_oct_intersect_per_ray_,
-      pers_octree_->node_search_order_.data_ptr<uint8_t>(),
-      RE_INTER(Wec3f*, rays_o.data_ptr()),
-      RE_INTER(Wec3f*, rays_d.data_ptr()),
-      RE_INTER(Wec2f*, bounds.data_ptr()),
-      oct_idx_counter.data_ptr<int>(), RE_INTER(Wec2i*, oct_idx_start_end.data_ptr()),
-      RE_INTER(TreeNode*, pers_octree_->tree_nodes_gpu_.data_ptr()),
-      oct_intersect_idx.data_ptr<int>(), RE_INTER(Wec2f*, oct_intersect_near_far.data_ptr()),
-      stack_info.data_ptr<int>());
-
-
-  // Second, do ray marching
+  // do ray marching
 
   Tensor rays_noise;
   if (global_data_pool_->mode_ == RunningMode::VALIDATE) {
@@ -311,8 +270,6 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   }
   else {
     rays_noise = ((torch::rand({ MAX_SAMPLE_PER_RAY + n_rays + 10 }, CUDAFloat) - .5f) + 1.f).contiguous();
-    float sampled_oct_per_ray = float(n_all_oct_intersect) / float(n_rays);
-    global_data_pool_->sampled_oct_per_ray_ = global_data_pool_->sampled_oct_per_ray_ * .9f + sampled_oct_per_ray * .1f;
   }
   rays_noise.mul_(global_data_pool_->ray_march_fineness_);
 
