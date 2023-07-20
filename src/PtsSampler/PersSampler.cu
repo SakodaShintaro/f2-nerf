@@ -201,12 +201,7 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
   const auto& rays_d = rays_d_ptr[ray_idx];
   auto& pts_idx_start_end = pts_idx_start_end_ptr[ray_idx];
 
-  int pts_idx = 0;
-  int idx_end = pts_idx_start_end[0];
-  int idx_cnt = pts_idx_start_end[1];
-  pts_idx_start_end[0] = idx_end - idx_cnt;
-  pts_idx_start_end[1] = idx_end;
-  pts_idx = pts_idx_start_end[0];
+  int pts_idx = pts_idx_start_end[0];
   sampled_pts = sampled_pts + pts_idx;
   sampled_dists = sampled_dists + pts_idx;
 
@@ -231,8 +226,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
     sampled_dists[pts_ptr] = (cur_xyz - pre_xyz).norm();
     sampled_pts[pts_ptr] = cur_xyz;
   }
-
-  pts_idx_start_end[1] = pts_idx_start_end[0] + max_n_samples;
 }
 
 
@@ -270,7 +263,10 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   sampled_pts = sampled_pts.view({ n_all_pts, 3 });
 
   Tensor pts_idx_start_end = torch::ones({ n_rays, 2 }, CUDAInt) * MAX_SAMPLE_PER_RAY;
-  pts_idx_start_end.index_put_({Slc(), 0}, torch::cumsum(pts_idx_start_end.index({Slc(), 0}), 0));
+  Tensor pts_num = pts_idx_start_end.index({Slc(), 0});
+  Tensor cum_num = torch::cumsum(pts_num, 0);
+  pts_idx_start_end.index_put_({Slc(), 0}, cum_num - pts_num);
+  pts_idx_start_end.index_put_({Slc(), 1}, cum_num);
 
   Tensor sampled_dirs = rays_d.expand({-1, MAX_SAMPLE_PER_RAY, -1}).reshape({ n_all_pts, 3 }).contiguous();
   Tensor sampled_anchors = torch::zeros({ n_all_pts, 3 }, CUDAInt);
