@@ -221,10 +221,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
     return;
   }
 
-  int oct_ptr = 0;
-  float cur_march_step = 0.f;
-  float exp_march_step = 0.f;
-
   float cur_t = 0;
   float cur_far = 1e8f;
   float cur_near = 0;
@@ -233,9 +229,7 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
 
   for (int pts_ptr = 0; pts_ptr < max_n_samples; pts_ptr++) {
     float exp_march_step_warp = sample_l * rays_noise[pts_ptr];
-    exp_march_step = exp_march_step_warp;
-    cur_march_step = exp_march_step;
-    cur_t += cur_march_step;
+    cur_t += exp_march_step_warp;
     cur_xyz = rays_o + rays_d * cur_t;
 
     sampled_ts[pts_ptr] = cur_t;
