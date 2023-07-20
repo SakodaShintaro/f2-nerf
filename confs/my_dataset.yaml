@@ -7,8 +7,8 @@ defaults:
   - shader: sh_shader
   - _self_
 
-dataset_name: kashiwa
-case_name: 20230622_loop8_2
+dataset_name: AWSIM
+case_name: 20230717_loop
 exp_name: test
 
 is_continue: false
