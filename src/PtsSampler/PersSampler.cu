@@ -186,48 +186,6 @@ void __device__ QueryFrameTransformJac(const TransInfo& trans,
   *jac = weighted_jac;
 }
 
-__global__ void RayMarchKernel(int n_rays, float sample_l,
-                               Wec3f* rays_o_ptr, Wec3f* rays_d_ptr, float* rays_noise,
-                               Wec2i* pts_idx_start_end_ptr,
-                               Wec3f* sampled_pts,
-                               float* sampled_dists) {
-  int ray_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (ray_idx >= n_rays) {
-    return;
-  }
-
-  rays_noise = rays_noise + ray_idx;
-  const auto& rays_o = rays_o_ptr[ray_idx];
-  const auto& rays_d = rays_d_ptr[ray_idx];
-  auto& pts_idx_start_end = pts_idx_start_end_ptr[ray_idx];
-
-  int pts_idx = pts_idx_start_end[0];
-  sampled_pts = sampled_pts + pts_idx;
-  sampled_dists = sampled_dists + pts_idx;
-
-  int max_n_samples = pts_idx_start_end[1] - pts_idx_start_end[0];
-
-  if (max_n_samples <= 0) {
-    return;
-  }
-
-  float cur_t = 0;
-  float cur_far = 1e8f;
-  float cur_near = 0;
-  Wec3f first_xyz = rays_o + rays_d * cur_t;
-  Wec3f cur_xyz = first_xyz;
-
-  for (int pts_ptr = 0; pts_ptr < max_n_samples; pts_ptr++) {
-    float exp_march_step_warp = sample_l * rays_noise[pts_ptr];
-    cur_t += exp_march_step_warp;
-    cur_xyz = rays_o + rays_d * cur_t;
-
-    const auto pre_xyz = (pts_ptr == 0 ? first_xyz : sampled_pts[pts_ptr - 1]);
-    sampled_dists[pts_ptr] = (cur_xyz - pre_xyz).norm();
-  }
-}
-
-
 SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor& rays_d_raw, const Tensor& bounds_raw) {
   Tensor rays_o = rays_o_raw.contiguous();
   Tensor rays_d = (rays_d_raw / torch::linalg_norm(rays_d_raw, 2, -1, true)).contiguous();
@@ -274,16 +232,6 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   Tensor sampled_dirs = rays_d.expand({-1, MAX_SAMPLE_PER_RAY, -1}).reshape({ n_all_pts, 3 }).contiguous();
   Tensor sampled_anchors = torch::zeros({ n_all_pts, 3 }, CUDAInt);
   Tensor first_oct_dis = torch::full({ n_rays, 1 }, 1e9f, CUDAFloat).contiguous();
-
-  // RayMarchKernel<<<grid_dim, block_dim>>>(
-  //     n_rays, sample_l_,
-  //     RE_INTER(Wec3f*, rays_o.data_ptr()), RE_INTER(Wec3f*, rays_d.data_ptr()),
-  //     rays_noise.data_ptr<float>(),
-  //     // unsigned char* occ_bits_tables,
-  //     RE_INTER(Wec2i*, pts_idx_start_end.data_ptr()),
-  //     RE_INTER(Wec3f*, sampled_pts.data_ptr()),
-  //     sampled_dists.data_ptr<float>()
-  // );
 
   return {
       sampled_pts,
