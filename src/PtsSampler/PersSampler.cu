@@ -224,7 +224,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
 
     const auto pre_xyz = (pts_ptr == 0 ? first_xyz : sampled_pts[pts_ptr - 1]);
     sampled_dists[pts_ptr] = (cur_xyz - pre_xyz).norm();
-    sampled_pts[pts_ptr] = cur_xyz;
   }
 }
 
