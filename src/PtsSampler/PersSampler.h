@@ -42,10 +42,6 @@ public:
   PersSampler(GlobalDataPool* global_data_pool);
   SampleResultFlex GetSamples(const Tensor& rays_o, const Tensor& rays_d, const Tensor& bounds) override;
 
-  std::vector<Tensor> States() override;
-  int LoadStates(const std::vector<Tensor>& states, int idx) override;
-
-  std::vector<int> sub_div_milestones_;
   int compact_freq_;
   int max_oct_intersect_per_ray_;
   float global_near_;

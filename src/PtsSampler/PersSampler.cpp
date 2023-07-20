@@ -11,79 +11,6 @@
 
 using Tensor = torch::Tensor;
 
-namespace {
-
-float DistanceSummary(const Tensor& dis) {
-  if (dis.reshape(-1).size(0) <= 0) { return 1e8f; }
-  Tensor log_dis = torch::log(dis);
-  float thres = torch::quantile(log_dis, 0.25).item<float>();
-  Tensor mask = (log_dis < thres).to(torch::kFloat32);
-  if (mask.sum().item<float>() < 1e-3f) {
-    return std::exp(log_dis.mean().item<float>());
-  }
-  return std::exp(((log_dis * mask).sum() / mask.sum()).item<float>());
-}
-
-std::vector<int> GetVisiCams(float bbox_side_len,
-                             const Tensor& center,
-                             const Tensor& c2w,
-                             const Tensor& intri,
-                             const Tensor& bound) {
-  float half_w = intri.index({0, 0, 2}).item<float>();
-  float half_h = intri.index({0, 1, 2}).item<float>();
-  float cx = intri.index({ 0, 0, 2 }).item<float>();
-  float cy = intri.index({ 0, 1, 2 }).item<float>();
-  float fx = intri.index({ 0, 0, 0 }).item<float>();
-  float fy = intri.index({ 0, 1, 1 }).item<float>();
-  int res_w = 128;
-  int res_h = std::round(res_w / half_w * half_h);
-
-  Tensor i = torch::linspace(.5f, half_h * 2.f - .5f, res_h, CUDAFloat);
-  Tensor j = torch::linspace(.5f, half_w * 2.f - .5f, res_w, CUDAFloat);
-  auto ijs = torch::meshgrid({i, j}, "ij");
-  i = ijs[0].reshape({-1});
-  j = ijs[1].reshape({-1});
-  Tensor cam_coords = torch::stack({ (j - cx) / fx, -(i - cy) / fy, -torch::ones_like(j, CUDAFloat)}, -1); // [ n_pix, 3 ]
-  Tensor rays_d = torch::matmul(c2w.index({ Slc(), None, Slc(0, 3), Slc(0, 3) }), cam_coords.index({None, Slc(), Slc(), None})).index({"...", 0});  // [ n_cams, n_pix, 3 ]
-  Tensor rays_o = c2w.index({Slc(), None, Slc(0, 3), 3}).repeat({1, res_h * res_w, 1 });
-  Tensor a = ((center - bbox_side_len * .5f).index({None, None}) - rays_o) / rays_d;
-  Tensor b = ((center + bbox_side_len * .5f).index({None, None}) - rays_o) / rays_d;
-  a = torch::nan_to_num(a, 0.f, 1e6f, -1e6f);
-  b = torch::nan_to_num(b, 0.f, 1e6f, -1e6f);
-  Tensor aa = torch::maximum(a, b);
-  Tensor bb = torch::minimum(a, b);
-  auto [ far, far_idx ] = torch::min(aa, -1);
-  auto [ near, near_idx ] = torch::max(bb, -1);
-  far = torch::minimum(far, bound.index({Slc(), None, 1}));
-  near = torch::maximum(near, bound.index({Slc(), None, 0}));
-  Tensor mask = (far > near).to(torch::kFloat32).sum(-1);
-  Tensor good = torch::where(mask > 0)[0].to(torch::kInt32).to(torch::kCPU);
-  std::vector<int> ret;
-  for (int idx = 0; idx < good.sizes()[0]; idx++) {
-    ret.push_back(good[idx].item<int>());
-  }
-  return ret;
-}
-
-}
-
-std::tuple<Tensor, Tensor> PCA(const Tensor& pts) {
-  Tensor mean = pts.mean(0, true);
-  Tensor moved = pts - mean;
-  Tensor cov = torch::matmul(moved.unsqueeze(-1), moved.unsqueeze(1));  // [ n_pts, n_frames, n_frames ];
-  cov = cov.mean(0);
-  auto [ L, V ] = torch::linalg_eigh(cov);
-  L = L.to(torch::kFloat32);
-  V = V.to(torch::kFloat32);
-  auto [ L_sorted, indices ] = torch::sort(L, 0, true);
-  V = V.permute({1, 0}).contiguous().index({ indices }).permute({1, 0}).contiguous();   // { in_dims, 3 }
-  L = L.index({ indices }).contiguous();
-  return { L, V };
-}
-
-// -------------------------------------------- Sampler ------------------------------------------------
-
-
 PersSampler::PersSampler(GlobalDataPool* global_data_pool) {
   ScopeWatch watch("PersSampler::PersSampler");
   global_data_pool_ = global_data_pool;
@@ -91,10 +18,8 @@ PersSampler::PersSampler(GlobalDataPool* global_data_pool) {
   auto dataset = RE_INTER(Dataset*, global_data_pool_->dataset_);
 
   float split_dist_thres = config["split_dist_thres"].as<float>();
-  sub_div_milestones_ = config["sub_div_milestones"].as<std::vector<int>>();
   compact_freq_ = config["compact_freq"].as<int>();
   max_oct_intersect_per_ray_ = config["max_oct_intersect_per_ray"].as<int>();
-  std::reverse(sub_div_milestones_.begin(), sub_div_milestones_.end());
 
   global_near_ = config["near"].as<float>();
   scale_by_dis_ = config["scale_by_dis"].as<bool>();
@@ -103,24 +28,6 @@ PersSampler::PersSampler(GlobalDataPool* global_data_pool) {
 
   sample_l_ = config["sample_l"].as<float>();
   int max_level = config["max_level"].as<int>();
-}
-
-std::vector<Tensor> PersSampler::States() {
-  std::vector<Tensor> ret;
-  Tensor milestones_ts = torch::from_blob(sub_div_milestones_.data(), sub_div_milestones_.size(), CPUInt).to(torch::kCUDA);
-  ret.push_back(milestones_ts);
-
-  return ret;
-}
-
-int PersSampler::LoadStates(const std::vector<Tensor>& states, int idx) {
-  Tensor milestones_ts = states[idx++].clone().to(torch::kCPU).contiguous();
-
-  sub_div_milestones_.resize(milestones_ts.sizes()[0]);
-  std::memcpy(sub_div_milestones_.data(), milestones_ts.data_ptr(), milestones_ts.sizes()[0] * sizeof(int));
-  PRINT_VAL(sub_div_milestones_);
-
-  return idx;
 }
 
 SampleResultFlex PersSampler::GetSamples(
