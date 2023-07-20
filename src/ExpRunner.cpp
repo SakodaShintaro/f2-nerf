@@ -96,9 +96,6 @@ void ExpRunner::Train() {
 
       Tensor disparity_loss = disparity.square().mean();
 
-      Tensor edge_feats = render_result.edge_feats;
-      Tensor tv_loss = (edge_feats.index({Slc(), 0}) - edge_feats.index({Slc(), 1})).square().mean();
-
       Tensor sampled_weights = render_result.weights;
       Tensor idx_start_end = render_result.idx_start_end;
       Tensor sampled_var = CustomOps::WeightVar(sampled_weights, idx_start_end);
@@ -113,8 +110,7 @@ void ExpRunner::Train() {
       }
 
       Tensor loss = color_loss + var_loss * var_loss_weight +
-                    disparity_loss * disp_loss_weight_ +
-                    tv_loss * tv_loss_weight_;
+                    disparity_loss * disp_loss_weight_;
 
       float mse = (pred_colors - gt_colors).square().mean().item<float>();
       float psnr = 20.f * std::log10(1 / std::sqrt(mse));

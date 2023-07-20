@@ -20,7 +20,6 @@ struct RenderResult {
   Tensor colors;
   Tensor first_oct_dis;
   Tensor disparity;
-  Tensor edge_feats;
   Tensor depth;
   Tensor weights;
   Tensor idx_start_end;

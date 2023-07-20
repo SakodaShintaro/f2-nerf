@@ -90,7 +90,6 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
       colors,
       torch::zeros({ n_rays, 1 }, CUDAFloat),
       torch::zeros({ n_rays }, CUDAFloat),
-      Tensor(),
       torch::full({ n_rays }, 512.f, CUDAFloat),
       Tensor(),
       Tensor()
@@ -150,7 +149,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     }
   }
 
-  Tensor scene_feat, edge_feat;
+  Tensor scene_feat;
   Tensor pts  = sample_result_early_stop.pts;
   Tensor dirs = sample_result_early_stop.dirs;
   Tensor anchors = sample_result_early_stop.anchors.index({"...", 0}).contiguous();
@@ -167,7 +166,6 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     Tensor query_anchors = torch::cat({ anchors, edge_anchors }, 0);
     Tensor all_feat = scene_field_->AnchoredQuery(query_pts, query_anchors);
     scene_feat = all_feat.slice(0, 0, n_all_pts);
-    edge_feat = all_feat.slice(0, n_all_pts, n_all_pts + n_edge_pts * 2).reshape({ n_edge_pts, 2, -1 });
   }
   else {
     // Query density &gra color
@@ -205,7 +203,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
 
   CHECK_NOT_NAN(colors);
 
-  return { colors, sample_result_early_stop.first_oct_dis, disparity, edge_feat, depth, weights, idx_start_end };
+  return { colors, sample_result_early_stop.first_oct_dis, disparity, depth, weights, idx_start_end };
 }
 
 

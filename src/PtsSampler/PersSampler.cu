@@ -34,24 +34,6 @@ void __device__ QueryFrameTransform(const TransInfo& trans,
   *fill_xyz = weighted;
 }
 
-void __device__ QueryFrameTransformJac(const TransInfo& trans,
-                                       const Wec3f& cur_xyz,
-                                       Watrix33f* jac) {
-  Wec4f cur_xyz_ext = cur_xyz.homogeneous();
-  Eigen::Matrix<float, N_PROS, 3, Eigen::RowMajor> transed_jac;
-
-#pragma unroll
-  for (int i = 0; i < N_PROS; i++) {
-    Wec2f xz = trans.w2xz[i] * cur_xyz_ext;
-    Eigen::Matrix<float, 1, 2, Eigen::RowMajor> dv_dxz;
-    dv_dxz(0, 0) = 1 / xz[1]; dv_dxz(0, 1) =-xz[0] / (xz[1] * xz[1]);
-    transed_jac.block<1, 3>(i, 0) = dv_dxz * trans.w2xz[i].block<2, 3>(0, 0);
-  }
-
-  Watrix33f weighted_jac = trans.weight * transed_jac;
-  *jac = weighted_jac;
-}
-
 __global__ void GetEdgeSamplesKernel(int n_pts, EdgePool* edge_pool, TransInfo* trans, int* edge_indices, Wec2f* edge_coords,
                                      Wec3f* out_pts, int* out_idx) {
   int pts_idx = blockIdx.x * blockDim.x + threadIdx.x;
