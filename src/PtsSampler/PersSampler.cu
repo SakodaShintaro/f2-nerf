@@ -189,7 +189,7 @@ void __device__ QueryFrameTransformJac(const TransInfo& trans,
 __global__ void RayMarchKernel(int n_rays, float sample_l,
                                Wec3f* rays_o_ptr, Wec3f* rays_d_ptr, float* rays_noise,
                                Wec2i* pts_idx_start_end_ptr,
-                               Wec3f* sampled_pts, Wec3f* sampled_dirs, Wec3i* sampled_anchors,
+                               Wec3f* sampled_pts, Wec3f* sampled_dirs,
                                float* sampled_dists) {
   int ray_idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (ray_idx >= n_rays) {
@@ -209,7 +209,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
   pts_idx = pts_idx_start_end[0];
   sampled_pts = sampled_pts + pts_idx;
   sampled_dirs = sampled_dirs + pts_idx;
-  sampled_anchors = sampled_anchors + pts_idx;
   sampled_dists = sampled_dists + pts_idx;
 
   int max_n_samples = pts_idx_start_end[1] - pts_idx_start_end[0];
@@ -233,8 +232,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
     const auto pre_xyz = (pts_ptr == 0 ? first_xyz : sampled_pts[pts_ptr - 1]);
     sampled_dists[pts_ptr] = (cur_xyz - pre_xyz).norm();
     sampled_pts[pts_ptr] = cur_xyz;
-    sampled_anchors[pts_ptr][0] = 0;
-    sampled_anchors[pts_ptr][1] = 0;
   }
 
   pts_idx_start_end[1] = pts_idx_start_end[0] + max_n_samples;
@@ -278,7 +275,7 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
   pts_idx_start_end.index_put_({Slc(), 0}, torch::cumsum(pts_idx_start_end.index({Slc(), 0}), 0));
 
   Tensor sampled_dirs = torch::empty({ n_all_pts, 3 }, CUDAFloat);
-  Tensor sampled_anchors = torch::empty({ n_all_pts, 3 }, CUDAInt);
+  Tensor sampled_anchors = torch::zeros({ n_all_pts, 3 }, CUDAInt);
   Tensor sampled_dists = torch::empty({ n_all_pts }, CUDAFloat);
   Tensor first_oct_dis = torch::full({ n_rays, 1 }, 1e9f, CUDAFloat).contiguous();
 
@@ -290,7 +287,6 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
       RE_INTER(Wec2i*, pts_idx_start_end.data_ptr()),
       RE_INTER(Wec3f*, sampled_pts.data_ptr()),
       RE_INTER(Wec3f*, sampled_dirs.data_ptr()),
-      RE_INTER(Wec3i*, sampled_anchors.data_ptr()),
       sampled_dists.data_ptr<float>()
   );
 
