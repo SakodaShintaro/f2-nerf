@@ -188,7 +188,7 @@ void __device__ QueryFrameTransformJac(const TransInfo& trans,
 
 __global__ void RayMarchKernel(int n_rays, float sample_l,
                                Wec3f* rays_o_ptr, Wec3f* rays_d_ptr, float* rays_noise,
-                               Wec2i* oct_idx_start_end_ptr, int* oct_intersect_idx, Wec2f* oct_intersect_near_far,
+                               Wec2i* oct_idx_start_end_ptr, int* oct_intersect_idx,
                                Wec2i* pts_idx_start_end_ptr,
                                Wec3f* sampled_pts, Wec3f* sampled_dirs, Wec3i* sampled_anchors,
                                float* sampled_dists, float* sampled_ts,
@@ -203,7 +203,6 @@ __global__ void RayMarchKernel(int n_rays, float sample_l,
   const auto& rays_d = rays_d_ptr[ray_idx];
   const auto& oct_idx_start_end = oct_idx_start_end_ptr[ray_idx];
   oct_intersect_idx = oct_intersect_idx + oct_idx_start_end[0];
-  oct_intersect_near_far = oct_intersect_near_far + oct_idx_start_end[0];
   auto& pts_idx_start_end = pts_idx_start_end_ptr[ray_idx];
 
   int pts_idx = 0;
@@ -338,7 +337,7 @@ SampleResultFlex PersSampler::GetSamples(const Tensor& rays_o_raw, const Tensor&
       n_rays, sample_l_,
       RE_INTER(Wec3f*, rays_o.data_ptr()), RE_INTER(Wec3f*, rays_d.data_ptr()),
       rays_noise.data_ptr<float>(),
-      RE_INTER(Wec2i*, oct_idx_start_end.data_ptr()), oct_intersect_idx.data_ptr<int>(), RE_INTER(Wec2f*, oct_intersect_near_far.data_ptr()),
+      RE_INTER(Wec2i*, oct_idx_start_end.data_ptr()), oct_intersect_idx.data_ptr<int>(),
       // unsigned char* occ_bits_tables,
       RE_INTER(Wec2i*, pts_idx_start_end.data_ptr()),
       RE_INTER(Wec3f*, sampled_pts.data_ptr()),
