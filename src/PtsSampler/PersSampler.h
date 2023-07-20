@@ -78,9 +78,6 @@ public:
   SampleResultFlex GetSamples(const Tensor& rays_o, const Tensor& rays_d, const Tensor& bounds) override;
 
   void VisOctree();
-  void UpdateOctNodes(const SampleResultFlex& sample_result,
-                      const Tensor& sampled_weights,
-                      const Tensor& sampled_alpha) override;
 
   std::vector<Tensor> States() override;
   int LoadStates(const std::vector<Tensor>& states, int idx) override;

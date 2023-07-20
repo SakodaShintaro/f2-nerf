@@ -135,18 +135,6 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     sample_result_early_stop.pts_idx_bounds = FilterIdxBounds(sample_result_.pts_idx_bounds, mask);
 
     CHECK_EQ(sample_result_early_stop.pts_idx_bounds.max().item<int>(), sample_result_early_stop.pts.size(0));
-
-
-    if (global_data_pool_->mode_ == RunningMode::TRAIN) {
-      pts_sampler_->UpdateOctNodes(sample_result_,
-                                   weights.detach(),
-                                   alphas.detach());
-
-      float meaningful_per_ray = mask.to(torch::kFloat32).sum().item<float>();
-      meaningful_per_ray /= n_rays;
-      global_data_pool_->meaningful_sampled_pts_per_ray_ =
-          global_data_pool_->meaningful_sampled_pts_per_ray_ * 0.9f + meaningful_per_ray * 0.1f;
-    }
   }
 
   Tensor scene_feat;

@@ -34,11 +34,5 @@ public:
     return { Tensor(), Tensor(), Tensor(), Tensor(), Tensor() };
   }
 
-  virtual void UpdateOctNodes(const SampleResultFlex& sample_result,
-                              const Tensor& sampled_weights,
-                              const Tensor& sampled_alpha) {
-    CHECK(false) << "Not implemented";
-  }
-
   GlobalDataPool* global_data_pool_ = nullptr;
 };
