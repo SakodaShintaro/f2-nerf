@@ -97,7 +97,7 @@ std::vector<Particle> LocalizerCore::random_search(
 Tensor LocalizerCore::optimize_pose(Tensor initial_pose, Tensor image_tensor, int64_t iteration_num)
 {
   initial_pose = initial_pose.requires_grad_(true);
-  torch::optim::SGD optimizer({initial_pose}, 1e7);
+  torch::optim::SGD optimizer({initial_pose}, 1e4);
   for (int64_t i = 0; i < iteration_num; i++) {
     auto [rays_o, rays_d, bounds] = dataset_->RaysFromPose(initial_pose);
     auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
