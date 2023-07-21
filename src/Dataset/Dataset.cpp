@@ -20,6 +20,7 @@ Dataset::Dataset(GlobalDataPool* global_data_pool) {
 
   const auto& config = global_data_pool_->config_["dataset"];
   const auto data_path = config["data_path"].as<std::string>();
+  std::cout << "data_path = " << data_path << std::endl;
   const auto factor = config["factor"].as<float>();
   const auto ray_sample_mode = config["ray_sample_mode"].as<std::string>();
   if (ray_sample_mode == "single_image") {
