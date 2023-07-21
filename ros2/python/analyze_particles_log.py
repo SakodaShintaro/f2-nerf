@@ -12,6 +12,8 @@ import subprocess
 import numpy as np
 import gtsam
 from concurrent.futures import ProcessPoolExecutor
+import matplotlib
+matplotlib.use('Agg')
 
 
 def parse_args():
