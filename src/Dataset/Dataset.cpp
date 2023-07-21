@@ -142,7 +142,7 @@ void Dataset::NormalizeScene() {
   w2c_ = w2c_.index({Slc(), Slc(0, 3), Slc()}).contiguous();
   bounds_ = (bounds_ / radius_).contiguous();
 
-  Utils::TensorExportPCD(global_data_pool_->base_exp_dir_ + "/cam_pos.ply", poses_.index({Slc(), Slc(0, 3), 3}));
+  // Utils::TensorExportPCD(global_data_pool_->base_exp_dir_ + "/cam_pos.ply", poses_.index({Slc(), Slc(0, 3), 3}));
 }
 
 Rays Dataset::Img2WorldRay(int cam_idx, const Tensor &ij) {
