@@ -99,10 +99,10 @@ class ImagePosePublisher(Node):
             f"Number of images ({len(self.image_files)}) and poses ({len(self.poses)}) do not match."
         self.get_logger().info(f"Number of images ({len(self.image_files)}) and poses ({len(self.poses)}).")
 
-        self.offset = [0.705, 0.0, 0.262]
+        self.offset = [0.0, 0.0, 0.0]
 
         # Publish tf
-        self.target_frame = "velodyne_front"
+        self.target_frame = "camera0/camera_link"
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
         self.tf_msg = geometry_msgs.msg.TransformStamped()
         self.tf_msg.header.stamp = self.get_clock().now().to_msg()
