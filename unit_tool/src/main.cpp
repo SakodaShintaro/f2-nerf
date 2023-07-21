@@ -12,6 +12,8 @@ int main()
 
   constexpr int32_t iteration_num = 1;
 
+  std::ofstream score_ofs("score.tsv");
+
   for (int32_t i = 0; i < core.dataset_->n_images_; i++) {
     torch::Tensor initial_pose = core.dataset_->poses_[i];
     torch::Tensor image_tensor = core.dataset_->image_tensors_[i];
@@ -24,7 +26,7 @@ int main()
     Utils::WriteImageTensor("image_02_before.png", nerf_image_before);
 
     // Added noise
-    initial_pose[0][3] += 0.05f;
+    initial_pose[0][3] += 0.0125f;
     auto [score_noised, nerf_image_noised] =
       core.pred_image_and_calc_score(initial_pose, image_tensor);
     std::cout << "score_noised: " << score_noised << std::endl;
@@ -39,11 +41,15 @@ int main()
       auto [score_after, nerf_image_after] =
         core.pred_image_and_calc_score(optimized_pose, image_tensor);
       std::cout << "score_after " << std::setw(2) << j << " : " << score_after << std::endl;
-      Utils::WriteImageTensor("image_04_after_" + std::to_string(j) + ".png", nerf_image_after);
+      std::stringstream ss;
+      ss << "image_04_after_" << std::setfill('0') << std::setw(4) << j << ".png";
+      Utils::WriteImageTensor(ss.str(), nerf_image_after);
+
+      score_ofs << j << "\t" << score_after << std::endl;
     }
 
-    // torch::Tensor diff = optimized_pose - before_optim;
-    // std::cout << "diff\n" << diff << std::endl;
+    torch::Tensor diff = optimized_pose - before_optim;
+    std::cout << "diff\n" << diff << std::endl;
 
     break;
   }
