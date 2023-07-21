@@ -24,7 +24,7 @@ int main()
     Utils::WriteImageTensor("image_02_before.png", nerf_image_before);
 
     // Added noise
-    initial_pose[0][0] += 0.1f;
+    initial_pose[0][3] += 0.05f;
     auto [score_noised, nerf_image_noised] =
       core.pred_image_and_calc_score(initial_pose, image_tensor);
     std::cout << "score_noised: " << score_noised << std::endl;
