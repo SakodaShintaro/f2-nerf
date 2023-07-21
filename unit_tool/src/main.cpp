@@ -16,6 +16,7 @@ int main()
   constexpr int32_t iteration_num = 1;
 
   std::ofstream score_ofs("score.tsv");
+  score_ofs << "iteration\tscore" << std::endl;
   const std::string save_dir = "./result_images/";
   fs::create_directories(save_dir);
 
