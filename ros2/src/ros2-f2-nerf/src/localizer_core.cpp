@@ -94,6 +94,11 @@ std::vector<Particle> LocalizerCore::random_search(
   return result;
 }
 
+Tensor LocalizerCore::optimize_pose(Tensor initial_pose, Tensor image_tensor, int64_t iteration_num)
+{
+  return initial_pose;
+}
+
 void LocalizerCore::load_checkpoint(const std::string & checkpoint_path)
 {
   {
