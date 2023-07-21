@@ -7,9 +7,9 @@ ROSBAG_PATH=$(readlink -f $1)
 
 colcon build --symlink-install --packages-up-to pose_and_image_publisher --cmake-args -DCMAKE_BUILD_TYPE=Release
 
-set +u
+set +eux
 source install/setup.bash
-set -u
+set -eux
 
 rm -rf ./result_images/trial
 

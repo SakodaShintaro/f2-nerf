@@ -7,9 +7,9 @@ PARAMETER_FILE=$(readlink -f $1)
 
 colcon build --symlink-install --packages-up-to ros2-f2-nerf --cmake-args -DCMAKE_BUILD_TYPE=Release
 
-set +u
+set +eux
 source install/setup.bash
-set -u
+set -eux
 
 rm -rf ~/.ros/log/*
 
