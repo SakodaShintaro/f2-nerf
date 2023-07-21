@@ -33,14 +33,17 @@ int main()
     torch::Tensor before_optim = initial_pose.clone();
 
     // Optimized
-    torch::Tensor optimized_pose = core.optimize_pose(initial_pose, image_tensor, iteration_num);
-    auto [score_after, nerf_image_after] =
-      core.pred_image_and_calc_score(optimized_pose, image_tensor);
-    std::cout << "score_after : " << score_after << std::endl;
-    Utils::WriteImageTensor("image_04_after.png", nerf_image_after);
+    torch::Tensor optimized_pose = initial_pose;
+    for (int32_t j = 0; j < 100; j++) {
+      optimized_pose = core.optimize_pose(optimized_pose, image_tensor, iteration_num);
+      auto [score_after, nerf_image_after] =
+        core.pred_image_and_calc_score(optimized_pose, image_tensor);
+      std::cout << "score_after " << std::setw(2) << j << " : " << score_after << std::endl;
+      Utils::WriteImageTensor("image_04_after_" + std::to_string(j) + ".png", nerf_image_after);
+    }
 
-    torch::Tensor diff = optimized_pose - before_optim;
-    std::cout << "diff\n" << diff << std::endl;
+    // torch::Tensor diff = optimized_pose - before_optim;
+    // std::cout << "diff\n" << diff << std::endl;
 
     break;
   }
