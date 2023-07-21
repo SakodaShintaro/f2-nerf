@@ -52,6 +52,8 @@ private:
   void load_checkpoint(const std::string & checkpoint_path);
   std::tuple<Tensor, Tensor, Tensor> render_all_rays(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
+  std::tuple<Tensor, Tensor, Tensor> render_all_rays_grad(
+    const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
   std::vector<float> evaluate_poses(const std::vector<Tensor> & poses, const Tensor & image);
 
   LocalizerCoreParam param_;
