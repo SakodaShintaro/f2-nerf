@@ -17,19 +17,26 @@ int main()
     torch::Tensor image_tensor = core.dataset_->image_tensors_[i];
     Utils::WriteImageTensor("image_01_gt.png", image_tensor);
 
+    // Before noise
     auto [score_before, nerf_image_before] =
       core.pred_image_and_calc_score(initial_pose, image_tensor);
-
-    std::cout << "Number " << i << std::endl;
     std::cout << "score_before\n" << score_before << std::endl;
     Utils::WriteImageTensor("image_02_before.png", nerf_image_before);
 
+    // Added noise
+    initial_pose[0][0] += 0.1f;
+    auto [score_noised, nerf_image_noised] =
+      core.pred_image_and_calc_score(initial_pose, image_tensor);
+    std::cout << "score_noised\n" << score_noised << std::endl;
+    Utils::WriteImageTensor("image_03_noised.png", nerf_image_noised);
+
+    // Optimized
     torch::Tensor optimized_pose = core.optimize_pose(initial_pose, image_tensor, iteration_num);
     std::cout << "optimized_pose\n" << optimized_pose << std::endl;
     auto [score_after, nerf_image_after] =
       core.pred_image_and_calc_score(optimized_pose, image_tensor);
     std::cout << "score_after\n" << score_after << std::endl;
-    Utils::WriteImageTensor("image_03_after.png", nerf_image_after);
+    Utils::WriteImageTensor("image_04_after.png", nerf_image_after);
 
     break;
   }
