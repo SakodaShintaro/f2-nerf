@@ -1,6 +1,6 @@
 nerf_based_localizer:
   ros__parameters:
-    runtime_config_path: /root/f2-nerf/ros2/runtime_config_awsim.yaml
+    runtime_config_path: ./runtime_config_awsim.yaml
     is_awsim: true
     target_frame: camera0/camera_link
     particle_num: 50
