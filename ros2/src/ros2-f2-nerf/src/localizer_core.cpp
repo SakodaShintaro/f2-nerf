@@ -94,11 +94,23 @@ std::vector<Particle> LocalizerCore::random_search(
   return result;
 }
 
+torch::Tensor gram_schmidt(torch::Tensor A)
+{
+  A = A.clone();
+  for (int i = 0; i < A.size(0); ++i) {
+    for (int j = 0; j < i; ++j) {
+      A[i] -= torch::dot(A[j], A[i]) * A[j];
+    }
+    A[i] = A[i] / A[i].norm();
+  }
+  return A;
+}
+
 Tensor LocalizerCore::optimize_pose(Tensor initial_pose, Tensor image_tensor, int64_t iteration_num)
 {
-  initial_pose = initial_pose.requires_grad_(true);
-  torch::optim::SGD optimizer({initial_pose}, 1e4);
   for (int64_t i = 0; i < iteration_num; i++) {
+    initial_pose = initial_pose.requires_grad_(true);
+    torch::optim::SGD optimizer({initial_pose}, 1e2);
     auto [rays_o, rays_d, bounds] = dataset_->RaysFromPose(initial_pose);
     auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
 
@@ -111,6 +123,12 @@ Tensor LocalizerCore::optimize_pose(Tensor initial_pose, Tensor image_tensor, in
     optimizer.zero_grad();
     loss.backward();
     optimizer.step();
+
+    // orthogonalize
+    initial_pose = initial_pose.detach();
+    Tensor rotation = initial_pose.index({Slc(0, 3), Slc(0, 3)});
+    rotation = gram_schmidt(rotation);
+    initial_pose.index_put_({Slc(0, 3), Slc(0, 3)}, rotation);
   }
   return initial_pose;
 }
