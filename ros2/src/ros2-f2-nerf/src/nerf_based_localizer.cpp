@@ -70,7 +70,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   axis_convert_mat1_ = torch::zeros({4, 4});
   axis_convert_mat1_[0][2] = -1;
   axis_convert_mat1_[1][0] = -1;
-  axis_convert_mat1_[2][1] = -1;
+  axis_convert_mat1_[2][1] = 1;
   axis_convert_mat1_[3][3] = 1;
   axis_convert_mat1_ = axis_convert_mat1_.to(torch::kCUDA);
 
