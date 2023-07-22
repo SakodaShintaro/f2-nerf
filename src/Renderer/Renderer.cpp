@@ -81,9 +81,6 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
 
   if (n_all_pts <= 0) {
     Tensor colors = bg_color;
-    if (global_data_pool_->mode_ == RunningMode::TRAIN) {
-      global_data_pool_->meaningful_sampled_pts_per_ray_ = global_data_pool_->meaningful_sampled_pts_per_ray_ * 0.9f;
-    }
     return {
       colors,
       torch::zeros({ n_rays, 1 }, CUDAFloat),

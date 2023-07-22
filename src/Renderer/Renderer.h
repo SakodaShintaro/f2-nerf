@@ -31,7 +31,6 @@ struct VolumeRenderInfoPool {
   Tensor sampled_density;
   Tensor sampled_color;
   Tensor bg_color;
-  float distortion_weight_;
   // Volume renderer side product
   Tensor cum_density;
   Tensor trans;

@@ -84,7 +84,7 @@ void ExpRunner::Train() {
       // global_data_pool_->drop_out_prob_ = 1.f - std::min(1.f, float(iter_step_) / 1000.f);
       // global_data_pool_->drop_out_prob_ = 0.f;
 
-      int cur_batch_size = int(pts_batch_size_ / global_data_pool_->meaningful_sampled_pts_per_ray_) >> 4 << 4;
+      int cur_batch_size = int(pts_batch_size_ / global_data_pool_->sampled_pts_per_ray_) >> 4 << 4;
       auto [train_rays, gt_colors, emb_idx] = dataset_->RandRaysData(cur_batch_size, DATA_TRAIN_SET);
 
       Tensor& rays_o = train_rays.origins;
