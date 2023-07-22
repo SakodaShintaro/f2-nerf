@@ -70,6 +70,8 @@ void ExpRunner::Train() {
   std::vector<float> mse_records;
   float time_per_iter = 0.f;
   StopWatch clock;
+  Timer timer;
+  timer.start();
 
   float psnr_smooth = -1.0;
   UpdateAdaParams();
@@ -153,16 +155,17 @@ void ExpRunner::Train() {
         SaveCheckpoint();
       }
       time_per_iter = time_per_iter * 0.6f + clock.TimeDuration() * 0.4f;
+      const int64_t total_sec = timer.elapsed_seconds();
+      const int64_t total_m = total_sec / 60;
+      const int64_t total_s = total_sec % 60;
 
       if (iter_step_ % report_freq_ == 0) {
         const std::string log_str = fmt::format(
-            "Iter: {:>6d} PSNR: {:.2f} NRays: {:>5d} OctSamples: {:.1f} Samples: {:.1f} MeaningfulSamples: {:.1f} IPS: {:.1f} LR: {:.4f}",
+            "Time: {:>02d}:{:>02d} Iter: {:>6d} PSNR: {:.2f} IPS: {:.1f} LR: {:.4f}",
+            total_m,
+            total_s,
             iter_step_,
             psnr_smooth,
-            cur_batch_size,
-            global_data_pool_->sampled_oct_per_ray_,
-            global_data_pool_->sampled_pts_per_ray_,
-            global_data_pool_->meaningful_sampled_pts_per_ray_,
             1.f / time_per_iter,
             optimizer_->param_groups()[0].options().get_lr());
         std::cout << log_str << std::endl;
