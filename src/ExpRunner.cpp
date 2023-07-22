@@ -79,7 +79,8 @@ void ExpRunner::Train() {
     StopWatch watch;
     global_data_pool_->iter_step_ = iter_step_;
     for (; iter_step_ < end_iter_;) {
-      int cur_batch_size = int(pts_batch_size_ / global_data_pool_->sampled_pts_per_ray_) >> 4 << 4;
+      constexpr float sampled_pts_per_ray_ = 512.f;
+      int cur_batch_size = int(pts_batch_size_ / sampled_pts_per_ray_) >> 4 << 4;
       auto [train_rays, gt_colors, emb_idx] = dataset_->RandRaysData(cur_batch_size, DATA_TRAIN_SET);
 
       Tensor& rays_o = train_rays.origins;

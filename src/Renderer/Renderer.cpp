@@ -56,10 +56,6 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   sample_result_ = pts_sampler_->GetSamples(rays_o, rays_d, bounds);
   int n_all_pts = sample_result_.pts.sizes()[0];
   float sampled_pts_per_ray = float(n_all_pts) / float(n_rays);
-  if (global_data_pool_->mode_ == RunningMode::TRAIN) {
-    global_data_pool_->sampled_pts_per_ray_ =
-        global_data_pool_->sampled_pts_per_ray_ * 0.9f + sampled_pts_per_ray * 0.1f;
-  }
   CHECK(sample_result_.pts_idx_bounds.max().item<int>() <= n_all_pts);
   CHECK(sample_result_.pts_idx_bounds.min().item<int>() >= 0);
 
