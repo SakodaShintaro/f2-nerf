@@ -42,6 +42,8 @@ public:
   Tensor normalize_position(Tensor pose);
   Tensor inverse_normalize_position(Tensor pose);
 
+  Tensor resize_image(Tensor image);
+
   static Tensor calc_average_pose(const std::vector<Particle> & particles);
 
   int H;

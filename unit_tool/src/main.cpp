@@ -27,6 +27,8 @@ int main()
   for (int32_t i = 0; i < dataset.n_images_; i++) {
     torch::Tensor initial_pose = dataset.poses_[i];
     torch::Tensor image_tensor = dataset.image_tensors_[i];
+
+    image_tensor = core.resize_image(image_tensor);
     Utils::WriteImageTensor(save_dir + "image_01_gt.png", image_tensor);
 
     // Before noise

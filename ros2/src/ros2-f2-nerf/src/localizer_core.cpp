@@ -22,8 +22,8 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   n_images_ = inference_params["n_images"].as<int>();
   height_ = inference_params["height"].as<int>();
   width_ = inference_params["width"].as<int>();
-  intrinsic_ = torch::tensor(inference_params["intrinsic"].as<std::vector<float>>(), CUDAFloat)
-                 .view({3, 3});
+  intrinsic_ =
+    torch::tensor(inference_params["intrinsic"].as<std::vector<float>>(), CUDAFloat).view({3, 3});
   std::vector<float> bounds = inference_params["bounds"].as<std::vector<float>>();
   near_ = bounds[0];
   far_ = bounds[1];
@@ -313,7 +313,8 @@ std::vector<float> LocalizerCore::evaluate_poses(
   Tensor rays_o = torch::cat(rays_o_vec);  // (numel, 3)
   Tensor rays_d = torch::cat(rays_d_vec);  // (numel, 3)
   Tensor bounds =
-    torch::stack({torch::full({numel}, near_, CUDAFloat), torch::full({numel}, far_, CUDAFloat)}, -1)
+    torch::stack(
+      {torch::full({numel}, near_, CUDAFloat), torch::full({numel}, far_, CUDAFloat)}, -1)
       .contiguous();  // (numel, 2)
 
   timer.reset();
@@ -405,8 +406,32 @@ BoundedRays LocalizerCore::rays_from_pose(const Tensor & pose)
   auto [rays_o, rays_d] = Dataset::Img2WorldRay(pose, intrinsic_, torch::stack({i, j}, -1));
 
   Tensor bounds =
-    torch::stack({torch::full({H * W}, near_, CUDAFloat), torch::full({H * W}, far_, CUDAFloat)}, -1)
+    torch::stack(
+      {torch::full({H * W}, near_, CUDAFloat), torch::full({H * W}, far_, CUDAFloat)}, -1)
       .contiguous();
 
   return {rays_o, rays_d, bounds};
+}
+
+Tensor LocalizerCore::resize_image(Tensor image)
+{
+  const int height = image.size(0);
+  const int width = image.size(0);
+  if (height == H && width == W) {
+    return image;
+  }
+
+  // change HWC to CHW
+  image = image.permute({2, 0, 1});
+  image = image.unsqueeze(0);  // add batch dim
+
+  // Resize
+  std::vector<int64_t> size = {H, W};
+  image = torch::nn::functional::interpolate(
+    image, torch::nn::functional::InterpolateFuncOptions().size(size));
+
+  // change CHW to HWC
+  image = image.squeeze(0);  // remove batch dim
+  image = image.permute({1, 2, 0});
+  return image;
 }
