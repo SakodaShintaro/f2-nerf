@@ -4,10 +4,13 @@
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem::v1;
 
-int main()
+int main(int argc, char * argv[])
 {
-  std::cout << "unit tool" << std::endl;
-  const std::string runtime_config_path = "../../ros2/runtime_config_awsim.yaml";
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " [path to config file]" << std::endl;
+    return 1;
+  }
+  const std::string runtime_config_path = argv[1];
 
   LocalizerCoreParam param{};
   param.is_awsim = true;
