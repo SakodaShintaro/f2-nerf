@@ -112,7 +112,7 @@ Tensor LocalizerCore::optimize_pose(Tensor initial_pose, Tensor image_tensor, in
     initial_pose = initial_pose.requires_grad_(true);
     torch::optim::SGD optimizer({initial_pose}, 1e2);
     auto [rays_o, rays_d, bounds] = dataset_->RaysFromPose(initial_pose);
-    auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
+    auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays_grad(rays_o, rays_d, bounds);
 
     Tensor pred_img = pred_colors.view({H, W, 3});
     pred_img = pred_img.clip(0.f, 1.f);
@@ -163,7 +163,7 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays(
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
     Tensor cur_bounds = bounds.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
 
-    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor());
+    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor(), false);
     Tensor colors = render_result.colors.to(torch::kCPU);
     Tensor disp = render_result.disparity.to(torch::kCPU).squeeze();
 
@@ -199,7 +199,7 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays_grad(
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).contiguous();
     Tensor cur_bounds = bounds.index({Slc(i, i_high)}).contiguous();
 
-    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor());
+    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor(), true);
     Tensor colors = render_result.colors;
     Tensor disp = render_result.disparity.squeeze();
 

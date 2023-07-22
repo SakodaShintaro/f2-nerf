@@ -50,7 +50,7 @@ Renderer::Renderer(GlobalDataPool* global_data_pool, int n_images) {
 }
 
 
-RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& bounds, const Tensor& emb_idx) {
+RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& bounds, const Tensor& emb_idx, bool requires_grad) {
 #ifdef PROFILE
   ScopeWatch watch(__func__);
 #endif
@@ -105,7 +105,10 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   // First, inference without gradients - early stop
   SampleResultFlex sample_result_early_stop;
   {
-    torch::NoGradGuard no_grad_guard;
+    std::unique_ptr<torch::NoGradGuard> no_grad_guard;
+    if (!requires_grad) {
+      no_grad_guard = std::make_unique<torch::NoGradGuard>();
+    }
 
     Tensor pts  = sample_result_.pts;
     Tensor dirs = sample_result_.dirs;
