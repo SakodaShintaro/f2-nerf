@@ -18,9 +18,18 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
   std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
 
-  const YAML::Node normalize_params = YAML::LoadFile(base_exp_dir + "/normalize_params.yaml");
-  center_ = torch::tensor(normalize_params["center"].as<std::vector<float>>(), CUDAFloat);
-  radius_ = normalize_params["radius"].as<float>();
+  const YAML::Node inference_params = YAML::LoadFile(base_exp_dir + "/inference_params.yaml");
+  n_images_ = inference_params["n_images"].as<int>();
+  height_ = inference_params["height"].as<int>();
+  width_ = inference_params["width"].as<int>();
+  intrinsic_ = torch::tensor(inference_params["intrinsic"].as<std::vector<float>>(), CUDAFloat)
+                 .view({1, 3, 3});
+  std::vector<float> bounds = inference_params["bounds"].as<std::vector<float>>();
+  near_ = bounds[0];
+  far_ = bounds[1];
+  center_ =
+    torch::tensor(inference_params["normalizing_center"].as<std::vector<float>>(), CUDAFloat);
+  radius_ = inference_params["normalizing_radius"].as<float>();
 
   dataset_ = std::make_unique<Dataset>(config);
   renderer_ = std::make_unique<Renderer>(config, dataset_->n_images_);

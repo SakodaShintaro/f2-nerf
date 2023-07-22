@@ -125,6 +125,7 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
   // Save Params
   const std::string base_exp_dir = config_["base_exp_dir"].as<std::string>();
   std::ofstream ofs(base_exp_dir + "/inference_params.yaml");
+  ofs << std::fixed;
   ofs << "n_images: " << n_images_ << std::endl;
   ofs << "height: " << height_ << std::endl;
   ofs << "width: " << width_ << std::endl;

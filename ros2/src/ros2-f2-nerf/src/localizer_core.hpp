@@ -60,6 +60,10 @@ private:
 
   std::unique_ptr<Renderer> renderer_;
 
+  int n_images_;
+  int height_, width_;
+  Tensor intrinsic_;
+  float near_, far_;
   Tensor center_;
   float radius_;
 };
