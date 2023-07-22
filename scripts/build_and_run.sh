@@ -3,6 +3,8 @@ set -eux
 
 ROOT_DIR=$(readlink -f $(dirname $0)/../)
 
+rm -rf ${ROOT_DIR}/exp/20230717_loop
+
 cd ${ROOT_DIR}
 cmake --build build --target main --config RelWithDebInfo -j8
 
