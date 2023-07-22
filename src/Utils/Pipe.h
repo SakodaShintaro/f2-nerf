@@ -11,7 +11,7 @@ class Pipe {
 public:
   virtual int LoadStates(const std::vector<Tensor>& states, int idx);
   virtual std::vector<Tensor> States();
-  virtual std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups();
+  virtual std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr);
   virtual void Reset();
   void RegisterSubPipe(Pipe* sub_pipe);
 

@@ -17,7 +17,7 @@ public:
 
   int LoadStates(const std::vector<Tensor>& states, int idx) override;
   std::vector<Tensor> States() override;
-  std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups() override;
+  std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
   void Reset() override;
   void InitParams();
 

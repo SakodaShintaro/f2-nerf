@@ -13,7 +13,5 @@ public:
 
   YAML::Node config_;
   RunningMode mode_;
-
-  float learning_rate_ = 1.f;
 };
 

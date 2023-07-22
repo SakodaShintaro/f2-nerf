@@ -22,10 +22,10 @@ std::vector<Tensor> Pipe::States() {
   return ret;
 }
 
-std::vector<torch::optim::OptimizerParamGroup> Pipe::OptimParamGroups() {
+std::vector<torch::optim::OptimizerParamGroup> Pipe::OptimParamGroups(float lr) {
   std::vector<torch::optim::OptimizerParamGroup> ret;
   for (auto pipe : sub_pipes_) {
-    auto cur_params = pipe->OptimParamGroups();
+    auto cur_params = pipe->OptimParamGroups(lr);
     for (const auto& para_group : cur_params) {
       ret.emplace_back(para_group);
     }

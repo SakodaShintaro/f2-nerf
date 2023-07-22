@@ -52,7 +52,7 @@ public:
 
   int LoadStates(const std::vector<Tensor>& states, int idx) override;
   std::vector<Tensor> States() override ;
-  std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups() override;
+  std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
 
   GlobalDataPool* global_data_pool_;
   std::unique_ptr<PtsSampler> pts_sampler_;

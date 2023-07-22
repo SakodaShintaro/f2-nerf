@@ -195,17 +195,17 @@ std::vector<Tensor> Renderer::States() {
   return ret;
 }
 
-std::vector<torch::optim::OptimizerParamGroup> Renderer::OptimParamGroups() {
+std::vector<torch::optim::OptimizerParamGroup> Renderer::OptimParamGroups(float lr) {
   std::vector<torch::optim::OptimizerParamGroup> ret;
   for (auto pipe : sub_pipes_) {
-    auto cur_params = pipe->OptimParamGroups();
+    auto cur_params = pipe->OptimParamGroups(lr);
     for (const auto& para_group : cur_params) {
       ret.emplace_back(para_group);
     }
   }
 
   {
-    auto opt = std::make_unique<torch::optim::AdamOptions>(global_data_pool_->learning_rate_);
+    auto opt = std::make_unique<torch::optim::AdamOptions>(lr);
     opt->betas() = {0.9, 0.99};
     opt->eps() = 1e-15;
     opt->weight_decay() = 1e-6;

@@ -120,11 +120,10 @@ std::vector<Tensor> Hash3DAnchored::States() {
   return ret;
 }
 
-std::vector<torch::optim::OptimizerParamGroup> Hash3DAnchored::OptimParamGroups() {
+std::vector<torch::optim::OptimizerParamGroup> Hash3DAnchored::OptimParamGroups(float lr)
+{
   std::vector<torch::optim::OptimizerParamGroup> ret;
 
-
-  float lr = global_data_pool_->learning_rate_;
   {
     auto opt = std::make_unique<torch::optim::AdamOptions>(lr);
     opt->betas() = {0.9, 0.99};

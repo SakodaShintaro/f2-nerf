@@ -41,8 +41,7 @@ std::vector<Tensor> SHShader::States() {
   return ret;
 }
 
-std::vector<torch::optim::OptimizerParamGroup> SHShader::OptimParamGroups() {
-  float lr = global_data_pool_->learning_rate_;
+std::vector<torch::optim::OptimizerParamGroup> SHShader::OptimParamGroups(float lr) {
   auto opt = std::make_unique<torch::optim::AdamOptions>(lr);
   opt->betas() = { 0.9, 0.99 };
   opt->eps() = 1e-15;

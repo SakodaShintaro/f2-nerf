@@ -260,7 +260,7 @@ std::vector<Tensor> TCNNWP::States() {
   return {};
 }
 
-std::vector<torch::optim::OptimizerParamGroup> TCNNWP::OptimParamGroups() {
+std::vector<torch::optim::OptimizerParamGroup> TCNNWP::OptimParamGroups(float lr) {
   CHECK(false) << "This should be handled by the parent module";
   return {};
 }

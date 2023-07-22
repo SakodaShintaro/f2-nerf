@@ -48,7 +48,7 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   renderer_ = std::make_unique<Renderer>(global_data_pool_.get(), dataset_->n_images_);
 
   // Optimizer
-  optimizer_ = std::make_unique<torch::optim::Adam>(renderer_->OptimParamGroups());
+  optimizer_ = std::make_unique<torch::optim::Adam>(renderer_->OptimParamGroups(learning_rate_));
 
   if (config["is_continue"].as<bool>()) {
     LoadCheckpoint(base_exp_dir_ + "/checkpoints/latest");
