@@ -21,8 +21,8 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
 
   const YAML::Node inference_params = YAML::LoadFile(base_exp_dir + "/inference_params.yaml");
   n_images_ = inference_params["n_images"].as<int>();
-  height_ = inference_params["height"].as<int>();
-  width_ = inference_params["width"].as<int>();
+  train_height_ = inference_params["height"].as<int>();
+  train_width_ = inference_params["width"].as<int>();
   intrinsic_ =
     torch::tensor(inference_params["intrinsic"].as<std::vector<float>>(), CUDAFloat).view({3, 3});
   std::vector<float> bounds = inference_params["bounds"].as<std::vector<float>>();
@@ -43,9 +43,10 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   renderer_->LoadStates(scene_states, 0);
 
   // set
-  H = height_ / param.resize_factor;
-  W = width_ / param.resize_factor;
-  std::cout << "H = " << H << ", W = " << W << ", factor = " << param.resize_factor << std::endl;
+  infer_height_ = train_height_ / param.resize_factor;
+  infer_width_ = train_width_ / param.resize_factor;
+  std::cout << "infer_height_ = " << infer_height_ << ", infer_width_ = " << infer_width_
+            << ", factor = " << param.resize_factor << std::endl;
   intrinsic_ /= param.resize_factor;
   intrinsic_[2][2] = 1.0;
   std::cout << "intrinsic_ = \n" << intrinsic_ << std::endl;
@@ -126,11 +127,11 @@ Tensor LocalizerCore::optimize_pose(Tensor initial_pose, Tensor image_tensor, in
     auto [rays_o, rays_d, bounds] = rays_from_pose(initial_pose);
     auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays_grad(rays_o, rays_d, bounds);
 
-    Tensor pred_img = pred_colors.view({H, W, 3});
+    Tensor pred_img = pred_colors.view({infer_height_, infer_width_, 3});
     pred_img = pred_img.clip(0.f, 1.f);
     pred_img = pred_img.to(image_tensor.device());
 
-    Tensor diff = pred_img - image_tensor.view({H, W, 3});
+    Tensor diff = pred_img - image_tensor.view({infer_height_, infer_width_, 3});
     Tensor loss = (diff * diff).mean(-1).sum();
     optimizer.zero_grad();
     loss.backward();
@@ -233,13 +234,13 @@ std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
   timer.reset();
   auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
 
-  Tensor pred_img = pred_colors.view({H, W, 3});
+  Tensor pred_img = pred_colors.view({infer_height_, infer_width_, 3});
   pred_img = pred_img.clip(0.f, 1.f);
   pred_img = pred_img.to(image.device());
 
-  Tensor diff = pred_img - image.view({H, W, 3});
+  Tensor diff = pred_img - image.view({infer_height_, infer_width_, 3});
   Tensor loss = (diff * diff).mean(-1).sum();
-  Tensor score = (H * W) / (loss + 1e-6f);
+  Tensor score = (infer_height_ * infer_width_) / (loss + 1e-6f);
   return {score.mean().item<float>(), pred_img};
 }
 
@@ -281,15 +282,15 @@ std::vector<float> LocalizerCore::evaluate_poses(
   // const Tensor j = torch::tensor(j_vec, CUDALong);
 
   // Pick rays by random sampling without replacement
-  std::vector<int> indices(H * W);
+  std::vector<int> indices(infer_height_ * infer_width_);
   std::iota(indices.begin(), indices.end(), 0);
   std::mt19937 engine(std::random_device{}());
   std::shuffle(indices.begin(), indices.end(), engine);
   std::vector<int64_t> i_vec, j_vec;
   for (int k = 0; k < pixel_num; k++) {
     const int v = indices[k];
-    const int64_t i = v / W;
-    const int64_t j = v % W;
+    const int64_t i = v / infer_width_;
+    const int64_t j = v % infer_width_;
     i_vec.push_back(i);
     j_vec.push_back(j);
   }
@@ -298,7 +299,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
 
   // Pick rays by random sampling with replacement
   // const Tensor i = torch::randint(0, H, pixel_num, CUDALong);
-  // const Tensor j = torch::randint(0, W, pixel_num, CUDALong);
+  // const Tensor j = torch::randint(0, infer_width_, pixel_num, CUDALong);
 
   const Tensor ij = torch::stack({i, j}, -1).to(torch::kFloat32);
   std::vector<Tensor> rays_o_vec;
@@ -399,18 +400,19 @@ Tensor LocalizerCore::calc_average_pose(const std::vector<Particle> & particles)
 
 BoundedRays LocalizerCore::rays_from_pose(const Tensor & pose)
 {
-  Tensor ii = torch::linspace(0.f, H - 1.f, H, CUDAFloat);
-  Tensor jj = torch::linspace(0.f, W - 1.f, W, CUDAFloat);
+  Tensor ii = torch::linspace(0.f, infer_height_ - 1.f, infer_height_, CUDAFloat);
+  Tensor jj = torch::linspace(0.f, infer_width_ - 1.f, infer_width_, CUDAFloat);
   auto ij = torch::meshgrid({ii, jj}, "ij");
   Tensor i = ij[0].reshape({-1});
   Tensor j = ij[1].reshape({-1});
 
   auto [rays_o, rays_d] = Dataset::Img2WorldRay(pose, intrinsic_, torch::stack({i, j}, -1));
 
-  Tensor bounds =
-    torch::stack(
-      {torch::full({H * W}, near_, CUDAFloat), torch::full({H * W}, far_, CUDAFloat)}, -1)
-      .contiguous();
+  Tensor bounds = torch::stack(
+                    {torch::full({infer_height_ * infer_width_}, near_, CUDAFloat),
+                     torch::full({infer_height_ * infer_width_}, far_, CUDAFloat)},
+                    -1)
+                    .contiguous();
 
   return {rays_o, rays_d, bounds};
 }
@@ -419,7 +421,7 @@ Tensor LocalizerCore::resize_image(Tensor image)
 {
   const int height = image.size(0);
   const int width = image.size(0);
-  if (height == H && width == W) {
+  if (height == infer_height_ && width == infer_width_) {
     return image;
   }
 
@@ -428,7 +430,7 @@ Tensor LocalizerCore::resize_image(Tensor image)
   image = image.unsqueeze(0);  // add batch dim
 
   // Resize
-  std::vector<int64_t> size = {H, W};
+  std::vector<int64_t> size = {infer_height_, infer_width_};
   image = torch::nn::functional::interpolate(
     image, torch::nn::functional::InterpolateFuncOptions().size(size));
 

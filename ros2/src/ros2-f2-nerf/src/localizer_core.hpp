@@ -46,8 +46,8 @@ public:
 
   static Tensor calc_average_pose(const std::vector<Particle> & particles);
 
-  int H;
-  int W;
+  int infer_height_;
+  int infer_width_;
 
 private:
   std::tuple<Tensor, Tensor, Tensor> render_all_rays(
@@ -62,7 +62,7 @@ private:
   std::unique_ptr<Renderer> renderer_;
 
   int n_images_;
-  int height_, width_;
+  int train_height_, train_width_;
   Tensor intrinsic_;
   float near_, far_;
   Tensor center_;
