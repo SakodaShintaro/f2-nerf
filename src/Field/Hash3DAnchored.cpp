@@ -33,7 +33,7 @@ Hash3DAnchored::Hash3DAnchored(GlobalDataPool* global_data_pool) {
   feat_pool_.requires_grad_(true);
   CHECK(feat_pool_.is_contiguous());
 
-  n_volumes_ = global_data_pool->n_volumes_;
+  n_volumes_ = 1;
   // Get prime numbers
   auto is_prim = [](int x) {
     for (int i = 2; i * i <= x; i++) {

@@ -14,7 +14,6 @@ public:
   YAML::Node config_;
   RunningMode mode_;
 
-  int n_volumes_ = 1;
   float learning_rate_ = 1.f;
 };
 
