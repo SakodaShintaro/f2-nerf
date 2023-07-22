@@ -50,6 +50,19 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   intrinsic_ /= param.resize_factor;
   intrinsic_[2][2] = 1.0;
   std::cout << "intrinsic_ = \n" << intrinsic_ << std::endl;
+
+  /*
+  [[ 0,  0, -1,  0 ],
+  [ -1,  0,  0,  0 ],
+  [  0, +1,  0,  0 ],
+  [  0,  0,  0, +1 ]]
+*/
+  axis_convert_mat1_ = torch::zeros({4, 4});
+  axis_convert_mat1_[0][2] = -1;
+  axis_convert_mat1_[1][0] = -1;
+  axis_convert_mat1_[2][1] = 1;
+  axis_convert_mat1_[3][3] = 1;
+  axis_convert_mat1_ = axis_convert_mat1_.to(torch::kCUDA);
 }
 
 std::vector<Particle> LocalizerCore::random_search(
@@ -438,4 +451,24 @@ Tensor LocalizerCore::resize_image(Tensor image)
   image = image.squeeze(0);  // remove batch dim
   image = image.permute({1, 2, 0});
   return image;
+}
+
+torch::Tensor LocalizerCore::world2camera(const torch::Tensor & pose_in_world)
+{
+  torch::Tensor x = pose_in_world;
+  x = torch::mm(x, axis_convert_mat1_);
+  x = torch::mm(axis_convert_mat1_.t(), x);
+  x = normalize_position(x);
+  x = x.index({Slc(0, 3), Slc(0, 4)});
+  return x;
+}
+
+torch::Tensor LocalizerCore::camera2world(const torch::Tensor & pose_in_camera)
+{
+  torch::Tensor x = pose_in_camera;
+  x = torch::cat({x, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
+  x = inverse_normalize_position(x);
+  x = torch::mm(x, axis_convert_mat1_.t());
+  x = torch::mm(axis_convert_mat1_, x);
+  return x;
 }

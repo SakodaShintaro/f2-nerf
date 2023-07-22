@@ -61,19 +61,6 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   nerf_score_publisher_ = this->create_publisher<std_msgs::msg::Float32>("nerf_score", 10);
   nerf_image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("nerf_image", 10);
 
-  /*
-    [[0, 0, -1, 0],
-    [-1, 0, 0, 0],
-    [0, -1, 0, 0],
-    [0, 0, 0, 1]]
-  */
-  axis_convert_mat1_ = torch::zeros({4, 4});
-  axis_convert_mat1_[0][2] = -1;
-  axis_convert_mat1_[1][0] = -1;
-  axis_convert_mat1_[2][1] = 1;
-  axis_convert_mat1_[3][3] = 1;
-  axis_convert_mat1_ = axis_convert_mat1_.to(torch::kCUDA);
-
   previous_score_ = this->get_parameter("base_score").as_double();
 
   service_ = this->create_service<tier4_localization_msgs::srv::PoseWithCovarianceStamped>(
@@ -278,7 +265,7 @@ NerfBasedLocalizer::localize(
   initial_pose = initial_pose.to(torch::kFloat32);
   RCLCPP_INFO_STREAM(this->get_logger(), "world_before:\n" << initial_pose);
 
-  initial_pose = world2camera(initial_pose);
+  initial_pose = localizer_core_.world2camera(initial_pose);
 
   // run NeRF
   Timer timer2;
@@ -347,7 +334,7 @@ NerfBasedLocalizer::localize(
   }
 
   // Convert pose to base_link
-  optimized_pose = camera2world(optimized_pose);
+  optimized_pose = localizer_core_.camera2world(optimized_pose);
 
   RCLCPP_INFO_STREAM(this->get_logger(), "world_after:\n" << optimized_pose);
 
@@ -424,24 +411,4 @@ void NerfBasedLocalizer::service_trigger_node(
     image_msg_ptr_array_.clear();
   }
   res->success = true;
-}
-
-torch::Tensor NerfBasedLocalizer::world2camera(const torch::Tensor & pose_in_world)
-{
-  torch::Tensor x = pose_in_world;
-  x = torch::mm(x, axis_convert_mat1_);
-  x = torch::mm(axis_convert_mat1_.t(), x);
-  x = localizer_core_.normalize_position(x);
-  x = x.index({Slc(0, 3), Slc(0, 4)});
-  return x;
-}
-
-torch::Tensor NerfBasedLocalizer::camera2world(const torch::Tensor & pose_in_camera)
-{
-  torch::Tensor x = pose_in_camera;
-  x = torch::cat({x, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
-  x = localizer_core_.inverse_normalize_position(x);
-  x = torch::mm(x, axis_convert_mat1_.t());
-  x = torch::mm(axis_convert_mat1_, x);
-  return x;
 }

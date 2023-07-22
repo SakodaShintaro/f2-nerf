@@ -39,8 +39,13 @@ public:
     Tensor initial_pose, Tensor image_tensor, int64_t particle_num, float noise_coeff);
   Tensor optimize_pose(Tensor initial_pose, Tensor image_tensor, int64_t iteration_num);
 
+  torch::Tensor world2camera(const torch::Tensor & pose_in_world);
+  torch::Tensor camera2world(const torch::Tensor & pose_in_camera);
+
   Tensor normalize_position(Tensor pose);
   Tensor inverse_normalize_position(Tensor pose);
+
+  float radius() const { return radius_; }
 
   Tensor resize_image(Tensor image);
 
@@ -60,6 +65,9 @@ private:
   LocalizerCoreParam param_;
 
   std::unique_ptr<Renderer> renderer_;
+
+  // Convert mat
+  torch::Tensor axis_convert_mat1_;
 
   int n_images_;
   int train_height_, train_width_;
