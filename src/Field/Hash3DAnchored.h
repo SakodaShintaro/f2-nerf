@@ -9,7 +9,6 @@
 #include <torch/torch.h>
 
 #include "TCNNWP.h"
-#include "../Utils/GlobalDataPool.h"
 #include "Field.h"
 
 #define N_CHANNELS 2
@@ -22,7 +21,7 @@
 class Hash3DAnchored : public Field  {
   using Tensor = torch::Tensor;
 public:
-  Hash3DAnchored(GlobalDataPool* global_data_pool_);
+  Hash3DAnchored(const YAML::Node & config);
 
   Tensor AnchoredQuery(const Tensor& points,           // [ n_points, 3 ]
                        const Tensor& anchors           // [ n_points, 3 ]
@@ -47,6 +46,8 @@ public:
   int n_volumes_;
 
   Tensor query_points_, query_volume_idx_;
+
+  const YAML::Node config_;
 };
 
 class Hash3DAnchoredInfo : public torch::CustomClassHolder {

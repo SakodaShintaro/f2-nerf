@@ -76,8 +76,7 @@ TORCH_LIBRARY(tcnn_wp, m)
   m.class_<TCNNWPInfo>("TCNNWPInfo").def(torch::init());
 }
 
-TCNNWP::TCNNWP(GlobalDataPool* global_data_pool, int d_in, int d_out, int d_hidden, int n_hidden_layers) {
-  global_data_pool_ = global_data_pool;
+TCNNWP::TCNNWP(const YAML::Node & yaml_config, int d_in, int d_out, int d_hidden, int n_hidden_layers) {
   d_in_ = d_in;
   d_out_ = d_out;
   d_hidden_ = d_hidden;

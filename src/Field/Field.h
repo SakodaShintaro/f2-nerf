@@ -2,29 +2,33 @@
 // Created by ppwang on 2022/9/16.
 //
 #pragma once
-#include <torch/torch.h>
 #include "../Utils/Pipe.h"
-#include "../Utils/GlobalDataPool.h"
 
+#include <torch/torch.h>
+#include <yaml-cpp/yaml.h>
 
-class Field : public Pipe {
-using Tensor = torch::Tensor;
+class Field : public Pipe
+{
+  using Tensor = torch::Tensor;
 
 public:
-  virtual Tensor Query(const Tensor& coords) {
+  virtual Tensor Query(const Tensor & coords)
+  {
     CHECK(false) << "Not implemented";
     return Tensor();
   }
 
-  virtual Tensor Query(const Tensor& coords, const Tensor& anchors) {
+  virtual Tensor Query(const Tensor & coords, const Tensor & anchors)
+  {
     CHECK(false) << "Not implemented";
     return Tensor();
   }
 
-  virtual Tensor AnchoredQuery(const Tensor& coords, const Tensor& anchors) {
+  virtual Tensor AnchoredQuery(const Tensor & coords, const Tensor & anchors)
+  {
     CHECK(false) << "Not implemented";
     return Tensor();
   }
 
-  GlobalDataPool* global_data_pool_;
+  const YAML::Node config_;
 };

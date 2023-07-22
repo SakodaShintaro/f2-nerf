@@ -13,11 +13,10 @@
 
 using Tensor = torch::Tensor;
 
-PtsSampler::PtsSampler(GlobalDataPool * global_data_pool)
+PtsSampler::PtsSampler(const YAML::Node & root_config)
 {
   ScopeWatch watch("PtsSampler::PtsSampler");
-  global_data_pool_ = global_data_pool;
-  auto config = global_data_pool->config_["pts_sampler"];
+  const YAML::Node & config = root_config["pts_sampler"];
 
   float split_dist_thres = config["split_dist_thres"].as<float>();
   compact_freq_ = config["compact_freq"].as<int>();

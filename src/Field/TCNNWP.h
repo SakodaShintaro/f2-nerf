@@ -11,7 +11,7 @@
 class TCNNWP : public Field {
   using Tensor = torch::Tensor;
 public:
-  TCNNWP(GlobalDataPool* global_data_pool, int d_in, int d_out, int d_hidden, int n_hidden_layers);
+  TCNNWP(const YAML::Node & config, int d_in, int d_out, int d_hidden, int n_hidden_layers);
 
   Tensor Query(const Tensor& pts) override;
 

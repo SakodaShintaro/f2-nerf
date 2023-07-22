@@ -3,20 +3,23 @@
 //
 
 #pragma once
-#include <torch/torch.h>
 #include "../Utils/Pipe.h"
-#include "../Utils/GlobalDataPool.h"
 
+#include <torch/torch.h>
+#include <yaml-cpp/yaml.h>
 
-class Shader : public Pipe {
+class Shader : public Pipe
+{
   using Tensor = torch::Tensor;
+
 public:
-  virtual Tensor Query(const Tensor& feats, const Tensor& dirs) {
+  virtual Tensor Query(const Tensor & feats, const Tensor & dirs)
+  {
     CHECK(false) << "Not implemented";
     return Tensor();
   }
 
-  GlobalDataPool* global_data_pool_;
+  const YAML::Node config;
 
   int d_in_, d_out_;
 };

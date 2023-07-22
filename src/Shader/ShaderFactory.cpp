@@ -3,14 +3,15 @@
 //
 
 #include "ShaderFactory.h"
+
 #include "SHShader.h"
 
-std::unique_ptr<Shader> ConstructShader(GlobalDataPool* global_data_pool) {
-  auto type = global_data_pool->config_["shader"]["type"].as<std::string>();
+std::unique_ptr<Shader> ConstructShader(const YAML::Node & config)
+{
+  auto type = config["shader"]["type"].as<std::string>();
   if (type == "SHShader") {
-    return std::make_unique<SHShader>(global_data_pool);
-  }
-  else {
+    return std::make_unique<SHShader>(config);
+  } else {
     CHECK(false) << "There is no such shader type.";
     return {};
   }

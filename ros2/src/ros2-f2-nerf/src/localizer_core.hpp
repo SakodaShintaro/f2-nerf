@@ -58,7 +58,6 @@ private:
 
   LocalizerCoreParam param_;
 
-  std::unique_ptr<GlobalDataPool> global_data_pool_;
   std::unique_ptr<Renderer> renderer_;
 };
 

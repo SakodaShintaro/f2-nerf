@@ -1,6 +1,5 @@
 set(CUR_DIR ${PROJECT_SOURCE_DIR}/src/Utils)
 list(APPEND SRC_UTILS
-        ${CUR_DIR}/GlobalDataPool.cpp
         ${CUR_DIR}/StopWatch.cpp
         ${CUR_DIR}/Utils.cpp
         ${CUR_DIR}/ImageIO.cpp

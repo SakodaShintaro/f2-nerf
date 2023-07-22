@@ -15,12 +15,10 @@ TORCH_LIBRARY(dec_hash3d_anchored, m)
   m.class_<Hash3DAnchoredInfo>("Hash3DAnchoredInfo").def(torch::init());
 }
 
-
-Hash3DAnchored::Hash3DAnchored(GlobalDataPool* global_data_pool) {
+Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_config)
+{
   ScopeWatch dataset_watch("Hash3DAnchored::Hash3DAnchored");
-  global_data_pool_ = global_data_pool;
-
-  const auto& config = global_data_pool->config_["field"];
+  const YAML::Node & config = root_config["field"];
 
   pool_size_ = (1 << config["log2_table_size"].as<int>()) * N_LEVELS;
 
@@ -77,7 +75,7 @@ Hash3DAnchored::Hash3DAnchored(GlobalDataPool* global_data_pool) {
   }
 
   // MLP
-  mlp_ = std::make_unique<TCNNWP>(global_data_pool_, N_LEVELS * N_CHANNELS, mlp_out_dim_, mlp_hidden_dim_, n_hidden_layers_);
+  mlp_ = std::make_unique<TCNNWP>(config, N_LEVELS * N_CHANNELS, mlp_out_dim_, mlp_hidden_dim_, n_hidden_layers_);
 }
 
 Tensor Hash3DAnchored::AnchoredQuery(const Tensor& points, const Tensor& anchors) {

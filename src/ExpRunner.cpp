@@ -15,8 +15,8 @@ using Tensor = torch::Tensor;
 
 
 ExpRunner::ExpRunner(const std::string& conf_path) {
-  global_data_pool_ = std::make_unique<GlobalDataPool>(conf_path);
-  const auto& config = global_data_pool_->config_;
+  const YAML::Node & config = YAML::LoadFile(conf_path);
+  config_ = config;
   case_name_ = config["case_name"].as<std::string>();
   base_dir_ = config["base_dir"].as<std::string>();
 
@@ -42,10 +42,10 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   var_loss_end_ = config["train"]["var_loss_end"].as<int>();
 
   // Dataset
-  dataset_ = std::make_unique<Dataset>(global_data_pool_.get());
+  dataset_ = std::make_unique<Dataset>(config);
 
   // Renderer
-  renderer_ = std::make_unique<Renderer>(global_data_pool_.get(), dataset_->n_images_);
+  renderer_ = std::make_unique<Renderer>(config, dataset_->n_images_);
 
   // Optimizer
   optimizer_ = std::make_unique<torch::optim::Adam>(renderer_->OptimParamGroups(learning_rate_));
@@ -357,7 +357,7 @@ void ExpRunner::TestImages() {
 }
 
 void ExpRunner::Execute() {
-  std::string mode = global_data_pool_->config_["mode"].as<std::string>();
+  std::string mode = config_["mode"].as<std::string>();
   if (mode == "train") {
     Train();
   }

@@ -9,7 +9,6 @@
 #include <torch/torch.h>
 #include "Dataset/Dataset.h"
 #include "Renderer/Renderer.h"
-#include "Utils/GlobalDataPool.h"
 
 class ExpRunner {
   using Tensor = torch::Tensor;
@@ -44,7 +43,8 @@ public:
   float gradient_door_end_iter_;
   float var_loss_weight_, tv_loss_weight_, disp_loss_weight_;
 
-  std::unique_ptr<GlobalDataPool> global_data_pool_;
+  YAML::Node config_;
+
   std::unique_ptr<Dataset> dataset_;
   std::unique_ptr<Renderer> renderer_;
   std::unique_ptr<torch::optim::Adam> optimizer_;

@@ -19,17 +19,16 @@ TORCH_LIBRARY(volume_render, m)
   m.class_<VolumeRenderInfo>("VolumeRenderInfo").def(torch::init());
 }
 
-Renderer::Renderer(GlobalDataPool* global_data_pool, int n_images) {
-  global_data_pool_ = global_data_pool;
-  auto conf = global_data_pool->config_["renderer"];
+Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_config) {
+  const YAML::Node conf = root_config["renderer"];
 
-  pts_sampler_ = std::make_unique<PtsSampler>(global_data_pool);
+  pts_sampler_ = std::make_unique<PtsSampler>(root_config);
   RegisterSubPipe(pts_sampler_.get());
 
-  scene_field_ = ConstructField(global_data_pool);
+  scene_field_ = ConstructField(root_config);
   RegisterSubPipe(scene_field_.get());
 
-  shader_ = ConstructShader(global_data_pool);
+  shader_ = ConstructShader(root_config);
   RegisterSubPipe(shader_.get());
 
 

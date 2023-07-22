@@ -14,17 +14,16 @@ using Tensor = torch::Tensor;
 LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreParam & param)
 : param_(param)
 {
-  global_data_pool_ = std::make_unique<GlobalDataPool>(conf_path);
-  dataset_ = std::make_unique<Dataset>(global_data_pool_.get());
-  renderer_ = std::make_unique<Renderer>(global_data_pool_.get(), dataset_->n_images_);
+  const YAML::Node & config = YAML::LoadFile(conf_path);
+  dataset_ = std::make_unique<Dataset>(config);
+  renderer_ = std::make_unique<Renderer>(config, dataset_->n_images_);
 
-  const auto & config = global_data_pool_->config_;
   const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
   std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
   load_checkpoint(base_exp_dir + "/checkpoints/latest");
 
   // set
-  const float factor = global_data_pool_->config_["dataset"]["factor_to_infer"].as<float>();
+  const float factor = config["dataset"]["factor_to_infer"].as<float>();
   if (param_.is_awsim) {
     H = 460 / factor;
     W = 1280 / factor;

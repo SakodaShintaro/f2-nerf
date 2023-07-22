@@ -13,11 +13,11 @@ using Tensor = torch::Tensor;
 
 namespace fs = std::experimental::filesystem::v1;
 
-Dataset::Dataset(GlobalDataPool* global_data_pool) {
+Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
+{
   ScopeWatch dataset_watch("Dataset::Dataset");
-  global_data_pool_ = global_data_pool;
+  const YAML::Node config = root_config["dataset"];
 
-  const auto& config = global_data_pool_->config_["dataset"];
   const auto data_path = config["data_path"].as<std::string>();
   std::cout << "data_path = " << data_path << std::endl;
   const auto factor = config["factor"].as<float>();
@@ -125,7 +125,7 @@ Dataset::Dataset(GlobalDataPool* global_data_pool) {
 
 void Dataset::NormalizeScene() {
   // Given poses_ & bounds_, Gen new poses_, c2w_, w2c_, bounds_.
-  const auto& config = global_data_pool_->config_["dataset"];
+  const auto& config = config_["dataset"];
   Tensor cam_pos = poses_.index({Slc(), Slc(0, 3), 3}).clone();
   center_ = cam_pos.mean(0, false);
   Tensor bias = cam_pos - center_.unsqueeze(0);

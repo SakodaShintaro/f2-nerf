@@ -11,7 +11,7 @@
 class SHShader : public Shader {
   using Tensor = torch::Tensor;
 public:
-  SHShader(GlobalDataPool* global_data_pool);
+  SHShader(const YAML::Node & config);
   Tensor Query(const Tensor& feats, const Tensor& dirs) override;
   std::vector<Tensor> States() override;
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;

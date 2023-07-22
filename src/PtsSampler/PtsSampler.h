@@ -4,7 +4,6 @@
 
 #pragma once
 #include "../Common.h"
-#include "../Utils/GlobalDataPool.h"
 #include "../Utils/Pipe.h"
 #include "Eigen/Eigen"
 
@@ -25,15 +24,17 @@ struct SampleResultFlex
   Tensor first_oct_dis;   // [ n_rays, 1 ]
 };
 
+enum RunningMode { TRAIN, VALIDATE };
+
 class PtsSampler : public Pipe
 {
   using Tensor = torch::Tensor;
 
 public:
-  PtsSampler(GlobalDataPool * global_data_pool);
+  PtsSampler(const YAML::Node & config);
   SampleResultFlex GetSamples(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds, RunningMode mode);
-  GlobalDataPool * global_data_pool_ = nullptr;
+  const YAML::Node config_;
 
   int compact_freq_;
   int max_oct_intersect_per_ray_;

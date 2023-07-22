@@ -3,8 +3,8 @@
 //
 
 #pragma once
-#include <memory>
 #include "Field.h"
-#include "../Utils/GlobalDataPool.h"
 
-std::unique_ptr<Field> ConstructField(GlobalDataPool* global_data_pool);
+#include <memory>
+
+std::unique_ptr<Field> ConstructField(const YAML::Node & config);

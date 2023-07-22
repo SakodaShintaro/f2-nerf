@@ -7,9 +7,9 @@
 
 using Tensor = torch::Tensor;
 
-SHShader::SHShader(GlobalDataPool *global_data_pool) {
-  global_data_pool_ = global_data_pool;
-  auto config = global_data_pool_->config_["shader"];
+SHShader::SHShader(const YAML::Node & root_config)
+{
+  const YAML::Node config = root_config["shader"];
   d_in_ = config["d_in"].as<int>();
   d_out_ = config["d_out"].as<int>();
   degree_ = config["degree"].as<int>();
@@ -17,7 +17,7 @@ SHShader::SHShader(GlobalDataPool *global_data_pool) {
   n_hiddens_ = config["n_hiddens"].as<int>();
 
   // MLP
-  mlp_ = std::make_unique<TCNNWP>(global_data_pool_, d_in_, d_out_, d_hidden_, n_hiddens_);
+  mlp_ = std::make_unique<TCNNWP>(root_config, d_in_, d_out_, d_hidden_, n_hiddens_);
 }
 
 Tensor SHShader::Query(const Tensor &feats, const Tensor &dirs) {

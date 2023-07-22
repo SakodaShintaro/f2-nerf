@@ -4,4 +4,4 @@
 
 #include "Shader.h"
 
-std::unique_ptr<Shader> ConstructShader(GlobalDataPool* global_data_pool);
+std::unique_ptr<Shader> ConstructShader(const YAML::Node & config);
