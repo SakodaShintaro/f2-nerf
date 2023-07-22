@@ -43,6 +43,7 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
 
   // Dataset
   dataset_ = std::make_unique<Dataset>(config);
+  dataset_->SaveInferenceParams();
 
   // Renderer
   renderer_ = std::make_unique<Renderer>(config, dataset_->n_images_);

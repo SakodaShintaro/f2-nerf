@@ -32,7 +32,7 @@ public:
   Dataset(const YAML::Node & config);
 
   void NormalizeScene();
-  void PrepareTrainData(float factor);
+  void SaveInferenceParams() const;
 
   const YAML::Node config_;
 

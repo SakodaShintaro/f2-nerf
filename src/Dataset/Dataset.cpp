@@ -121,35 +121,6 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
   height_ = images[0].size(0);
   width_  = images[0].size(1);
   image_tensors_ = torch::stack(images, 0).contiguous();
-
-  // Save Params
-  const std::string base_exp_dir = config_["base_exp_dir"].as<std::string>();
-  std::ofstream ofs(base_exp_dir + "/inference_params.yaml");
-  ofs << std::fixed;
-  ofs << "n_images: " << n_images_ << std::endl;
-  ofs << "height: " << height_ << std::endl;
-  ofs << "width: " << width_ << std::endl;
-
-  ofs << "intrinsic: [";
-  ofs << intri_[0][0][0].item() << ", ";
-  ofs << intri_[0][0][1].item() << ", ";
-  ofs << intri_[0][0][2].item() << "," << std::endl;
-  ofs << "            ";
-  ofs << intri_[0][1][0].item() << ", ";
-  ofs << intri_[0][1][1].item() << ", ";
-  ofs << intri_[0][1][2].item() << "," << std::endl;
-  ofs << "            ";
-  ofs << intri_[0][2][0].item() << ", ";
-  ofs << intri_[0][2][1].item() << ", ";
-  ofs << intri_[0][2][2].item() << "]" << std::endl;
-
-  ofs << "bounds: [" << bounds_[0][0].item();
-  ofs << ", " << bounds_[0][1].item() << "]" << std::endl;
-
-  ofs << "normalizing_center: [" << center_[0].item();
-  ofs << ", " << center_[1].item();
-  ofs << ", " << center_[2].item() << "]" << std::endl;
-  ofs << "normalizing_radius: " << radius_ << std::endl;
 }
 
 void Dataset::NormalizeScene() {
@@ -329,4 +300,35 @@ std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysDataOfTrainSet(int batc
   else {
     return RandRaysData(batch_size, DATA_TRAIN_SET);
   }
+}
+
+void Dataset::SaveInferenceParams() const
+{
+  const std::string base_exp_dir = config_["base_exp_dir"].as<std::string>();
+  std::ofstream ofs(base_exp_dir + "/inference_params.yaml");
+  ofs << std::fixed;
+  ofs << "n_images: " << n_images_ << std::endl;
+  ofs << "height: " << height_ << std::endl;
+  ofs << "width: " << width_ << std::endl;
+
+  ofs << "intrinsic: [";
+  ofs << intri_[0][0][0].item() << ", ";
+  ofs << intri_[0][0][1].item() << ", ";
+  ofs << intri_[0][0][2].item() << "," << std::endl;
+  ofs << "            ";
+  ofs << intri_[0][1][0].item() << ", ";
+  ofs << intri_[0][1][1].item() << ", ";
+  ofs << intri_[0][1][2].item() << "," << std::endl;
+  ofs << "            ";
+  ofs << intri_[0][2][0].item() << ", ";
+  ofs << intri_[0][2][1].item() << ", ";
+  ofs << intri_[0][2][2].item() << "]" << std::endl;
+
+  ofs << "bounds: [" << bounds_[0][0].item();
+  ofs << ", " << bounds_[0][1].item() << "]" << std::endl;
+
+  ofs << "normalizing_center: [" << center_[0].item();
+  ofs << ", " << center_[1].item();
+  ofs << ", " << center_[2].item() << "]" << std::endl;
+  ofs << "normalizing_radius: " << radius_ << std::endl;
 }
