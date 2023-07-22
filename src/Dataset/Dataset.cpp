@@ -141,7 +141,12 @@ void Dataset::NormalizeScene() {
   w2c_ = w2c_.index({Slc(), Slc(0, 3), Slc()}).contiguous();
   bounds_ = (bounds_ / radius_).contiguous();
 
-  // Utils::TensorExportPCD(global_data_pool_->base_exp_dir_ + "/cam_pos.ply", poses_.index({Slc(), Slc(0, 3), 3}));
+  const std::string base_exp_dir = config_["base_exp_dir"].as<std::string>();
+  std::ofstream ofs(base_exp_dir + "/normalize_params.yaml");
+  ofs << "center: [" << center_[0].item();
+  ofs << ", " << center_[1].item();
+  ofs << ", " << center_[2].item() << "]" << std::endl;
+  ofs << "radius: " << radius_ << std::endl;
 }
 
 Rays Dataset::Img2WorldRay(int cam_idx, const Tensor &ij) {

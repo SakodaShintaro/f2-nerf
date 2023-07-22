@@ -15,11 +15,16 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
 : param_(param)
 {
   const YAML::Node & config = YAML::LoadFile(conf_path);
+  const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
+  std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
+
+  const YAML::Node normalize_params = YAML::LoadFile(base_exp_dir + "/normalize_params.yaml");
+  center_ = torch::tensor(normalize_params["center"].as<std::vector<float>>(), CUDAFloat);
+  radius_ = normalize_params["radius"].as<float>();
+
   dataset_ = std::make_unique<Dataset>(config);
   renderer_ = std::make_unique<Renderer>(config, dataset_->n_images_);
 
-  const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
-  std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
   load_checkpoint(base_exp_dir + "/checkpoints/latest");
 
   // set

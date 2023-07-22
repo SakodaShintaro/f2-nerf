@@ -59,6 +59,9 @@ private:
   LocalizerCoreParam param_;
 
   std::unique_ptr<Renderer> renderer_;
+
+  Tensor center_;
+  float radius_;
 };
 
 #endif  // LOCALIZER_CORE_HPP_
