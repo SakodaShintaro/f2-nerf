@@ -4,7 +4,8 @@
 TEST(LocalizerCoreTest, TestMonteCarloLocalize)
 {
   LocalizerCoreParam param;
-  LocalizerCore localizer_core("./runtime_config.yaml", param);
+  param.runtime_config_path = "./runtime_config.yaml";
+  LocalizerCore localizer_core(param);
   EXPECT_EQ(1, 1);
 }
 

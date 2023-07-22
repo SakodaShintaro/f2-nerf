@@ -15,6 +15,7 @@ struct Particle
 
 struct LocalizerCoreParam
 {
+  std::string runtime_config_path;
   int32_t render_pixel_num = 256;
   float noise_position_x = 0.025f;
   float noise_position_y = 0.025f;
@@ -31,7 +32,7 @@ class LocalizerCore
 
 public:
   LocalizerCore() = default;
-  LocalizerCore(const std::string & conf_path, const LocalizerCoreParam & param);
+  LocalizerCore(const LocalizerCoreParam & param);
 
   std::tuple<float, Tensor> pred_image_and_calc_score(const Tensor & pose, const Tensor & image);
   std::vector<Particle> random_search(

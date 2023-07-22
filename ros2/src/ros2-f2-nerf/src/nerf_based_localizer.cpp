@@ -26,12 +26,10 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   this->declare_parameter("particle_num", 100);
   this->declare_parameter("output_covariance", 0.1);
   this->declare_parameter("base_score", 40.0f);
-  is_awsim_ = this->declare_parameter<bool>("is_awsim", false);
-  const std::string runtime_config_path =
-    this->declare_parameter<std::string>("runtime_config_path");
   target_frame_ = this->declare_parameter<std::string>("target_frame");
 
   LocalizerCoreParam param;
+  param.runtime_config_path = this->declare_parameter<std::string>("runtime_config_path");
   param.render_pixel_num = this->declare_parameter<int>("render_pixel_num");
   param.noise_position_x = this->declare_parameter<float>("noise_position_x");
   param.noise_position_y = this->declare_parameter<float>("noise_position_y");
@@ -40,7 +38,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   param.noise_rotation_y = this->declare_parameter<float>("noise_rotation_y");
   param.noise_rotation_z = this->declare_parameter<float>("noise_rotation_z");
   param.resize_factor = this->declare_parameter<int>("resize_factor");
-  localizer_core_ = LocalizerCore(runtime_config_path, param);
+  localizer_core_ = LocalizerCore(param);
 
   initial_pose_with_covariance_subscriber_ =
     this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(

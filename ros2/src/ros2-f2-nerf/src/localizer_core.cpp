@@ -11,10 +11,9 @@
 
 using Tensor = torch::Tensor;
 
-LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreParam & param)
-: param_(param)
+LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
 {
-  const YAML::Node & config = YAML::LoadFile(conf_path);
+  const YAML::Node & config = YAML::LoadFile(param.runtime_config_path);
 
   const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
   std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
