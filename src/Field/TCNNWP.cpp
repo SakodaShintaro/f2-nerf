@@ -235,8 +235,9 @@ variable_list TCNNWPFunction::backward(AutogradContext *ctx, variable_list grad_
       !torch::all(torch::isfinite(dL_dparams)).item<bool>()) {
     // dL_dinput = torch::zeros_like(dL_dinput);
     // dL_dparams = torch::zeros_like(dL_dparams);
-    tcnn_wp->global_data_pool_->backward_nan_ = true;
     tcnn_wp->loss_scale_ = std::max(tcnn_wp->loss_scale_ / 2.f, 1.f);
+    std::cout << "Nan!" << std::endl;
+    std::exit(1);
   }
 
   return { dL_dinput, dL_dparams, Tensor() };

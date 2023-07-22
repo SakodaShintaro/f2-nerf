@@ -79,10 +79,6 @@ void ExpRunner::Train() {
     StopWatch watch;
     global_data_pool_->iter_step_ = iter_step_;
     for (; iter_step_ < end_iter_;) {
-      global_data_pool_->backward_nan_ = false;
-      // global_data_pool_->drop_out_prob_ = 1.f - std::min(1.f, float(iter_step_) / 1000.f);
-      // global_data_pool_->drop_out_prob_ = 0.f;
-
       int cur_batch_size = int(pts_batch_size_ / global_data_pool_->sampled_pts_per_ray_) >> 4 << 4;
       auto [train_rays, gt_colors, emb_idx] = dataset_->RandRaysData(cur_batch_size, DATA_TRAIN_SET);
 
@@ -124,13 +120,7 @@ void ExpRunner::Train() {
       if (loss.requires_grad()) {
         optimizer_->zero_grad();
         loss.backward();
-        if (global_data_pool_->backward_nan_) {
-          std::cout << "Nan!" << std::endl;
-          continue;
-        }
-        else {
-          optimizer_->step();
-        }
+        optimizer_->step();
       }
 
       mse_records.push_back(mse);

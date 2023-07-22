@@ -20,6 +20,5 @@ public:
   float learning_rate_ = 1.f;
   float ray_march_fineness_ = 1.f;
   float near_ = 0.1f;
-  bool backward_nan_ = false;
 };
 
