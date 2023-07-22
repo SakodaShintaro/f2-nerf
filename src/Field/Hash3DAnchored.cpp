@@ -19,7 +19,6 @@ TORCH_LIBRARY(dec_hash3d_anchored, m)
 Hash3DAnchored::Hash3DAnchored(GlobalDataPool* global_data_pool) {
   ScopeWatch dataset_watch("Hash3DAnchored::Hash3DAnchored");
   global_data_pool_ = global_data_pool;
-  global_data_pool_->scene_field_ = reinterpret_cast<void*>(this);
 
   const auto& config = global_data_pool->config_["field"];
 

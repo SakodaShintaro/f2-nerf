@@ -16,7 +16,6 @@ namespace fs = std::experimental::filesystem::v1;
 Dataset::Dataset(GlobalDataPool* global_data_pool) {
   ScopeWatch dataset_watch("Dataset::Dataset");
   global_data_pool_ = global_data_pool;
-  global_data_pool_->dataset_ = reinterpret_cast<void*>(this);
 
   const auto& config = global_data_pool_->config_["dataset"];
   const auto data_path = config["data_path"].as<std::string>();

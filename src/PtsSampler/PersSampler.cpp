@@ -15,7 +15,6 @@ PersSampler::PersSampler(GlobalDataPool* global_data_pool) {
   ScopeWatch watch("PersSampler::PersSampler");
   global_data_pool_ = global_data_pool;
   auto config = global_data_pool->config_["pts_sampler"];
-  auto dataset = RE_INTER(Dataset*, global_data_pool_->dataset_);
 
   float split_dist_thres = config["split_dist_thres"].as<float>();
   compact_freq_ = config["compact_freq"].as<int>();

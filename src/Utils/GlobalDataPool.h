@@ -16,8 +16,6 @@ public:
 
   std::string base_exp_dir_;
 
-  void *dataset_, *renderer_, *scene_field_, *shader_, *pts_sampler_;
-
   int n_volumes_ = 1;
   int iter_step_;
   float sampled_oct_per_ray_ = 16.f;

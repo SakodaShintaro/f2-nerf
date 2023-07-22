@@ -21,8 +21,6 @@ TORCH_LIBRARY(volume_render, m)
 
 Renderer::Renderer(GlobalDataPool* global_data_pool, int n_images) {
   global_data_pool_ = global_data_pool;
-  // global_data_pool_->renderer_ = std::reinterpret_cast<void*>(this);
-  global_data_pool_->renderer_ = reinterpret_cast<void*>(this);
   auto conf = global_data_pool->config_["renderer"];
 
   pts_sampler_ = ConstructPtsSampler(global_data_pool);
