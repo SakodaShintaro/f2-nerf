@@ -13,9 +13,9 @@ int main(int argc, char * argv[])
   const std::string runtime_config_path = argv[1];
 
   LocalizerCoreParam param{};
-  param.is_awsim = true;
   param.resize_factor = 5;
-  LocalizerCore core(runtime_config_path, param);
+  param.runtime_config_path = runtime_config_path;
+  LocalizerCore core(param);
 
   constexpr int32_t iteration_num = 1;
 
