@@ -1,22 +1,12 @@
 {
     "configurations": [
         {
-            "name": "Linux",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "/opt/ros/humble/include/**",
-                "${workspaceFolder}/install/tier4_localization_msgs/include/tier4_localization_msgs",
-                "${workspaceFolder}/../External/libtorch/include",
-                "${workspaceFolder}/../External/libtorch/include/torch/csrc/api/include",
-                "${workspaceFolder}/../External/eigen-3.4.0",
-                "${workspaceFolder}/src",
-                "${workspaceFolder}/src/ros2-f2-nerf/src"
-            ],
-            "defines": [],
+            "name": "f2-nerf-ros2",
+            "intelliSenseMode": "gcc-x64",
             "compilerPath": "/usr/bin/gcc",
-            "cStandard": "c99",
+            "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "gcc-x64"
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
         }
     ],
     "version": 4
