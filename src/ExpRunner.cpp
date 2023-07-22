@@ -89,7 +89,7 @@ void ExpRunner::Train() {
       Tensor& rays_d = train_rays.dirs;
       Tensor& bounds = train_rays.bounds;
 
-      auto render_result = renderer_->Render(rays_o, rays_d, bounds, emb_idx);
+      auto render_result = renderer_->Render(rays_o, rays_d, bounds, emb_idx, false);
       Tensor pred_colors = render_result.colors.index({Slc(0, cur_batch_size)});
       Tensor disparity = render_result.disparity;
       Tensor color_loss = torch::sqrt((pred_colors - gt_colors).square() + 1e-4f).mean();
@@ -257,7 +257,7 @@ std::tuple<Tensor, Tensor, Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Te
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
     Tensor cur_bounds = bounds.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
 
-    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor());
+    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor(), false);
     Tensor colors = render_result.colors.detach().to(torch::kCPU);
     Tensor disp = render_result.disparity.detach().to(torch::kCPU).squeeze();
 

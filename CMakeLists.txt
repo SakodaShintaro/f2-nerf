@@ -78,9 +78,3 @@ set_property(TARGET main PROPERTY CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
 
 # Install scripts
 configure_file(scripts/run.py ${CMAKE_BINARY_DIR}/run.py COPYONLY)
-
-# ------------------------------------ Add executables ---------------------------------------
-add_executable(localization main_localization.cpp ${SRC_ALL} src/localization_executer.cpp)
-target_link_libraries(localization ${ALL_LIBS})
-set_property(TARGET localization PROPERTY CXX_STANDARD 17)
-set_property(TARGET localization PROPERTY CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
