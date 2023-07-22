@@ -18,6 +18,5 @@ public:
   int iter_step_;
   float sampled_pts_per_ray_ = 512.f;
   float learning_rate_ = 1.f;
-  float ray_march_fineness_ = 1.f;
 };
 
