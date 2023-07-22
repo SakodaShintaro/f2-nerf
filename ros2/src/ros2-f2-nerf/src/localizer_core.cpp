@@ -23,7 +23,7 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   height_ = inference_params["height"].as<int>();
   width_ = inference_params["width"].as<int>();
   intrinsic_ = torch::tensor(inference_params["intrinsic"].as<std::vector<float>>(), CUDAFloat)
-                 .view({1, 3, 3});
+                 .view({3, 3});
   std::vector<float> bounds = inference_params["bounds"].as<std::vector<float>>();
   near_ = bounds[0];
   far_ = bounds[1];
@@ -31,8 +31,7 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
     torch::tensor(inference_params["normalizing_center"].as<std::vector<float>>(), CUDAFloat);
   radius_ = inference_params["normalizing_radius"].as<float>();
 
-  dataset_ = std::make_unique<Dataset>(config);
-  renderer_ = std::make_unique<Renderer>(config, dataset_->n_images_);
+  renderer_ = std::make_unique<Renderer>(config, n_images_);
 
   const std::string checkpoint_path = base_exp_dir + "/checkpoints/latest";
   Tensor scalars;
@@ -43,17 +42,11 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   renderer_->LoadStates(scene_states, 0);
 
   // set
-  const float factor = config["dataset"]["factor_to_infer"].as<float>();
-  if (param_.is_awsim) {
-    H = 460 / factor;
-    W = 1280 / factor;
-  } else {
-    H = 1280 / factor;
-    W = 1920 / factor;
-  }
-  std::cout << "H = " << H << ", W = " << W << ", factor = " << factor << std::endl;
-  dataset_->intri_[0] /= factor;
-  dataset_->intri_[0][2][2] = 1.0;
+  H = height_ / param.resize_factor;
+  W = width_ / param.resize_factor;
+  std::cout << "H = " << H << ", W = " << W << ", factor = " << param.resize_factor << std::endl;
+  intrinsic_ /= param.resize_factor;
+  intrinsic_[2][2] = 1.0;
 }
 
 std::vector<Particle> LocalizerCore::random_search(
@@ -128,7 +121,7 @@ Tensor LocalizerCore::optimize_pose(Tensor initial_pose, Tensor image_tensor, in
   for (int64_t i = 0; i < iteration_num; i++) {
     initial_pose = initial_pose.requires_grad_(true);
     torch::optim::SGD optimizer({initial_pose}, 1e2);
-    auto [rays_o, rays_d, bounds] = dataset_->RaysFromPose(initial_pose);
+    auto [rays_o, rays_d, bounds] = rays_from_pose(initial_pose);
     auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays_grad(rays_o, rays_d, bounds);
 
     Tensor pred_img = pred_colors.view({H, W, 3});
@@ -234,7 +227,7 @@ std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
 {
   torch::NoGradGuard no_grad_guard;
   Timer timer;
-  auto [rays_o, rays_d, bounds] = dataset_->RaysFromPose(pose);
+  auto [rays_o, rays_d, bounds] = rays_from_pose(pose);
   timer.reset();
   auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
 
@@ -251,7 +244,7 @@ std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
 Tensor LocalizerCore::normalize_position(Tensor pose)
 {
   Tensor cam_pos = pose.index({Slc(0, 3), 3}).clone();
-  cam_pos = (cam_pos - dataset_->center_.unsqueeze(0)) / dataset_->radius_;
+  cam_pos = (cam_pos - center_.unsqueeze(0)) / radius_;
   pose.index_put_({Slc(0, 3), 3}, cam_pos);
   return pose;
 }
@@ -259,7 +252,7 @@ Tensor LocalizerCore::normalize_position(Tensor pose)
 Tensor LocalizerCore::inverse_normalize_position(Tensor pose)
 {
   Tensor cam_pos = pose.index({Slc(0, 3), 3}).clone();
-  cam_pos = cam_pos * dataset_->radius_ + dataset_->center_.unsqueeze(0);
+  cam_pos = cam_pos * radius_ + center_.unsqueeze(0);
   pose.index_put_({Slc(0, 3), 3}, cam_pos);
   return pose;
 }
@@ -270,8 +263,6 @@ std::vector<float> LocalizerCore::evaluate_poses(
   torch::NoGradGuard no_grad_guard;
   Timer timer;
 
-  const int H = dataset_->height_;
-  const int W = dataset_->width_;
   const int pixel_num = param_.render_pixel_num;
 
   // Pick rays by constant interval
@@ -311,12 +302,10 @@ std::vector<float> LocalizerCore::evaluate_poses(
   std::vector<Tensor> rays_o_vec;
   std::vector<Tensor> rays_d_vec;
   for (const Tensor & pose : poses) {
-    auto [rays_o, rays_d] = Dataset::Img2WorldRay(pose, dataset_->intri_[0], ij);
+    auto [rays_o, rays_d] = Dataset::Img2WorldRay(pose, intrinsic_, ij);
     rays_o_vec.push_back(rays_o);
     rays_d_vec.push_back(rays_d);
   }
-  const float near = dataset_->bounds_.index({Slc(), 0}).min().item<float>();
-  const float far = dataset_->bounds_.index({Slc(), 1}).max().item<float>();
 
   const int64_t pose_num = poses.size();
   const int64_t numel = pixel_num * pose_num;
@@ -324,7 +313,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
   Tensor rays_o = torch::cat(rays_o_vec);  // (numel, 3)
   Tensor rays_d = torch::cat(rays_d_vec);  // (numel, 3)
   Tensor bounds =
-    torch::stack({torch::full({numel}, near, CUDAFloat), torch::full({numel}, far, CUDAFloat)}, -1)
+    torch::stack({torch::full({numel}, near_, CUDAFloat), torch::full({numel}, far_, CUDAFloat)}, -1)
       .contiguous();  // (numel, 2)
 
   timer.reset();
@@ -403,4 +392,21 @@ Tensor LocalizerCore::calc_average_pose(const std::vector<Particle> & particles)
   avg_pose.index_put_({Slc(0, 3), Slc(0, 3)}, avg_rotation_tensor);
 
   return avg_pose;
+}
+
+BoundedRays LocalizerCore::rays_from_pose(const Tensor & pose)
+{
+  Tensor ii = torch::linspace(0.f, height_ - 1.f, H, CUDAFloat);
+  Tensor jj = torch::linspace(0.f, width_ - 1.f, W, CUDAFloat);
+  auto ij = torch::meshgrid({ii, jj}, "ij");
+  Tensor i = ij[0].reshape({-1});
+  Tensor j = ij[1].reshape({-1});
+
+  auto [rays_o, rays_d] = Dataset::Img2WorldRay(pose, intrinsic_, torch::stack({i, j}, -1));
+
+  Tensor bounds =
+    torch::stack({torch::full({H * W}, near_, CUDAFloat), torch::full({H * W}, far_, CUDAFloat)}, -1)
+      .contiguous();
+
+  return {rays_o, rays_d, bounds};
 }

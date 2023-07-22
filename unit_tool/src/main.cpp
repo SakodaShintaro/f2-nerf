@@ -11,6 +11,7 @@ int main()
 
   LocalizerCoreParam param{};
   param.is_awsim = true;
+  param.resize_factor = 5;
   LocalizerCore core(runtime_config_path, param);
 
   constexpr int32_t iteration_num = 1;
@@ -20,9 +21,12 @@ int main()
   const std::string save_dir = "./result_images/";
   fs::create_directories(save_dir);
 
-  for (int32_t i = 0; i < core.dataset_->n_images_; i++) {
-    torch::Tensor initial_pose = core.dataset_->poses_[i];
-    torch::Tensor image_tensor = core.dataset_->image_tensors_[i];
+  const YAML::Node & config = YAML::LoadFile(runtime_config_path);
+  Dataset dataset(config);
+
+  for (int32_t i = 0; i < dataset.n_images_; i++) {
+    torch::Tensor initial_pose = dataset.poses_[i];
+    torch::Tensor image_tensor = dataset.image_tensors_[i];
     Utils::WriteImageTensor(save_dir + "image_01_gt.png", image_tensor);
 
     // Before noise

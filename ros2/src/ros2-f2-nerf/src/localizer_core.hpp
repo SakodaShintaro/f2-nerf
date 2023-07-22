@@ -23,6 +23,7 @@ struct LocalizerCoreParam
   float noise_rotation_y = 2.5f;
   float noise_rotation_z = 2.5f;
   bool is_awsim;
+  int32_t resize_factor = 1;
 };
 
 class LocalizerCore
@@ -43,8 +44,6 @@ public:
 
   static Tensor calc_average_pose(const std::vector<Particle> & particles);
 
-  std::unique_ptr<Dataset> dataset_;
-
   int H;
   int W;
 
@@ -54,6 +53,7 @@ private:
   std::tuple<Tensor, Tensor, Tensor> render_all_rays_grad(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
   std::vector<float> evaluate_poses(const std::vector<Tensor> & poses, const Tensor & image);
+  BoundedRays rays_from_pose(const Tensor & pose);
 
   LocalizerCoreParam param_;
 
