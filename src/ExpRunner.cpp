@@ -21,8 +21,7 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   base_dir_ = config["base_dir"].as<std::string>();
 
   base_exp_dir_ = config["base_exp_dir"].as<std::string>();
-  global_data_pool_->base_exp_dir_ = base_exp_dir_;
-  
+
   fs::create_directories(base_exp_dir_);
 
   pts_batch_size_ = config["train"]["pts_batch_size"].as<int>();

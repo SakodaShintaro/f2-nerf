@@ -14,8 +14,6 @@ public:
   YAML::Node config_;
   RunningMode mode_;
 
-  std::string base_exp_dir_;
-
   int n_volumes_ = 1;
   int iter_step_;
   float sampled_pts_per_ray_ = 512.f;
