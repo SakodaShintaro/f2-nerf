@@ -33,7 +33,7 @@ PtsSampler::PtsSampler(GlobalDataPool * global_data_pool)
 }
 
 SampleResultFlex PtsSampler::GetSamples(
-  const Tensor & rays_o_raw, const Tensor & rays_d_raw, const Tensor & bounds_raw)
+  const Tensor & rays_o_raw, const Tensor & rays_d_raw, const Tensor & bounds_raw, RunningMode mode)
 {
   Tensor rays_o = rays_o_raw.contiguous();
   Tensor rays_d = (rays_d_raw / torch::linalg_norm(rays_d_raw, 2, -1, true)).contiguous();
@@ -49,7 +49,7 @@ SampleResultFlex PtsSampler::GetSamples(
   const int n_all_pts = n_rays * MAX_SAMPLE_PER_RAY;
 
   Tensor rays_noise;
-  if (global_data_pool_->mode_ == RunningMode::VALIDATE) {
+  if (mode == RunningMode::VALIDATE) {
     rays_noise = torch::ones({n_all_pts}, CUDAFloat);
   } else {
     rays_noise = ((torch::rand({n_all_pts}, CUDAFloat) - .5f) + 1.f).contiguous();

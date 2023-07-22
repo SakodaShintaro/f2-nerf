@@ -15,7 +15,6 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
 : param_(param)
 {
   global_data_pool_ = std::make_unique<GlobalDataPool>(conf_path);
-  global_data_pool_->mode_ = RunningMode::VALIDATE;
   dataset_ = std::make_unique<Dataset>(global_data_pool_.get());
   renderer_ = std::make_unique<Renderer>(global_data_pool_.get(), dataset_->n_images_);
 
@@ -162,7 +161,8 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays(
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
     Tensor cur_bounds = bounds.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
 
-    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor(), false);
+    auto render_result =
+      renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor(), RunningMode::VALIDATE);
     Tensor colors = render_result.colors.to(torch::kCPU);
     Tensor disp = render_result.disparity.to(torch::kCPU).squeeze();
 
@@ -198,7 +198,8 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays_grad(
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).contiguous();
     Tensor cur_bounds = bounds.index({Slc(i, i_high)}).contiguous();
 
-    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor(), true);
+    auto render_result =
+      renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor(), RunningMode::VALIDATE);
     Tensor colors = render_result.colors;
     Tensor disp = render_result.disparity.squeeze();
 

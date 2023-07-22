@@ -48,12 +48,12 @@ Renderer::Renderer(GlobalDataPool* global_data_pool, int n_images) {
 }
 
 
-RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& bounds, const Tensor& emb_idx, bool requires_grad) {
+RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& bounds, const Tensor& emb_idx, RunningMode mode) {
 #ifdef PROFILE
   ScopeWatch watch(__func__);
 #endif
   int n_rays = rays_o.sizes()[0];
-  sample_result_ = pts_sampler_->GetSamples(rays_o, rays_d, bounds);
+  sample_result_ = pts_sampler_->GetSamples(rays_o, rays_d, bounds, mode);
   int n_all_pts = sample_result_.pts.sizes()[0];
   float sampled_pts_per_ray = float(n_all_pts) / float(n_rays);
   CHECK(sample_result_.pts_idx_bounds.max().item<int>() <= n_all_pts);
@@ -64,10 +64,9 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     bg_color = torch::ones({n_rays, 3}, CUDAFloat);
   }
   else if (bg_color_type_ == BGColorType::rand_noise) {
-    if (global_data_pool_->mode_ == RunningMode::TRAIN) {
+    if (mode == RunningMode::TRAIN) {
       bg_color = torch::rand({n_rays, 3}, CUDAFloat);
-    }
-    else {
+    } else {
       bg_color = torch::ones({n_rays, 3}, CUDAFloat) * .5f;
     }
   }
@@ -97,7 +96,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   SampleResultFlex sample_result_early_stop;
   {
     std::unique_ptr<torch::NoGradGuard> no_grad_guard;
-    if (!requires_grad) {
+    if (mode == RunningMode::TRAIN) {
       no_grad_guard = std::make_unique<torch::NoGradGuard>();
     }
 
@@ -145,7 +144,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     torch::ones_like(scene_feat.index({Slc(), Slc(0, 1)}), CUDAFloat),
     scene_feat.index({Slc(), Slc(1, None)})}, 1);
 
-  if (global_data_pool_->mode_ == RunningMode::TRAIN && use_app_emb_) {
+  if (mode == RunningMode::TRAIN && use_app_emb_) {
     Tensor all_emb_idx = CustomOps::ScatterIdx(n_all_pts, sample_result_early_stop.pts_idx_bounds, emb_idx);
     shading_feat = CustomOps::ScatterAdd(app_emb_, all_emb_idx, shading_feat);
   }

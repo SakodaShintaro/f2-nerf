@@ -60,8 +60,6 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
 }
 
 void ExpRunner::Train() {
-  global_data_pool_->mode_ = RunningMode::TRAIN;
-
   std::string log_dir = base_exp_dir_ + "/logs";
   fs::create_directories(log_dir);
   std::ofstream ofs_log(log_dir + "/log.txt");
@@ -86,7 +84,7 @@ void ExpRunner::Train() {
       Tensor& rays_d = train_rays.dirs;
       Tensor& bounds = train_rays.bounds;
 
-      auto render_result = renderer_->Render(rays_o, rays_d, bounds, emb_idx, false);
+      auto render_result = renderer_->Render(rays_o, rays_d, bounds, emb_idx, RunningMode::TRAIN);
       Tensor pred_colors = render_result.colors.index({Slc(0, cur_batch_size)});
       Tensor disparity = render_result.disparity;
       Tensor color_loss = torch::sqrt((pred_colors - gt_colors).square() + 1e-4f).mean();
@@ -231,7 +229,7 @@ void ExpRunner::UpdateAdaParams() {
   }
 }
 
-std::tuple<Tensor, Tensor, Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Tensor rays_d, Tensor bounds) {
+std::tuple<Tensor, Tensor, Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode) {
   torch::NoGradGuard no_grad_guard;
   rays_o = rays_o.to(torch::kCPU);
   rays_d = rays_d.to(torch::kCPU);
@@ -249,7 +247,7 @@ std::tuple<Tensor, Tensor, Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Te
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
     Tensor cur_bounds = bounds.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
 
-    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor(), false);
+    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, cur_bounds, Tensor(), mode);
     Tensor colors = render_result.colors.detach().to(torch::kCPU);
     Tensor disp = render_result.disparity.detach().to(torch::kCPU).squeeze();
 
@@ -277,11 +275,9 @@ void ExpRunner::RenderAllImages() {
 
 void ExpRunner::VisualizeImage(int idx) {
   torch::NoGradGuard no_grad_guard;
-  auto prev_mode = global_data_pool_->mode_;
-  global_data_pool_->mode_ = RunningMode::VALIDATE;
 
   auto [ rays_o, rays_d, bounds ] = dataset_->RaysOfCamera(idx);
-  auto [ pred_colors, first_oct_dis, pred_disps ] = RenderWholeImage(rays_o, rays_d, bounds);
+  auto [ pred_colors, first_oct_dis, pred_disps ] = RenderWholeImage(rays_o, rays_d, bounds, RunningMode::VALIDATE);
 
   int H = dataset_->height_;
   int W = dataset_->width_;
@@ -292,19 +288,16 @@ void ExpRunner::VisualizeImage(int idx) {
                                   pred_disps.reshape({H, W, 1}).repeat({1, 1, 3})}, 1);
   fs::create_directories(base_exp_dir_ + "/images");
   Utils::WriteImageTensor(base_exp_dir_ + "/images/" + fmt::format("{}_{}.png", iter_step_, idx), img_tensor);
-
-  global_data_pool_->mode_ = prev_mode;
 }
 
 void ExpRunner::RenderPath() {
   torch::NoGradGuard no_grad_guard;
   int n_images = dataset_->render_poses_.size(0);
-  global_data_pool_->mode_ = RunningMode::VALIDATE;
   int res_level = 1;
   for (int i = 0; i < n_images; i++) {
     std::cout << i << std::endl;
     auto [ rays_o, rays_d, bounds ] = dataset_->RaysFromPose(dataset_->render_poses_[i], res_level);
-    auto [pred_colors, first_oct_dis, pred_disps] = RenderWholeImage(rays_o, rays_d, bounds);
+    auto [pred_colors, first_oct_dis, pred_disps] = RenderWholeImage(rays_o, rays_d, bounds, RunningMode::VALIDATE);
     int H = dataset_->height_ / res_level;
     int W = dataset_->width_ / res_level;
 
@@ -319,8 +312,6 @@ void ExpRunner::RenderPath() {
 
 void ExpRunner::TestImages() {
   torch::NoGradGuard no_grad_guard;
-  auto prev_mode = global_data_pool_->mode_;
-  global_data_pool_->mode_ = RunningMode::VALIDATE;
 
   float psnr_sum = 0.f;
   float cnt = 0.f;
@@ -329,7 +320,7 @@ void ExpRunner::TestImages() {
     fs::create_directories(base_exp_dir_ + "/test_images");
     for (int i: dataset_->test_set_) {
       auto [rays_o, rays_d, bounds] = dataset_->RaysOfCamera(i);
-      auto [pred_colors, first_oct_dis, pred_disps] = RenderWholeImage(rays_o, rays_d, bounds);  // At this stage, the returned number is
+      auto [pred_colors, first_oct_dis, pred_disps] = RenderWholeImage(rays_o, rays_d, bounds, RunningMode::VALIDATE);
 
       int H = dataset_->height_;
       int W = dataset_->width_;
@@ -363,8 +354,6 @@ void ExpRunner::TestImages() {
 
   std::ofstream info_fout(base_exp_dir_ + "/test_images/info.yaml");
   info_fout << out_info;
-
-  global_data_pool_->mode_ = prev_mode;
 }
 
 void ExpRunner::Execute() {

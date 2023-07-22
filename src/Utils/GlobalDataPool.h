@@ -12,6 +12,5 @@ public:
   GlobalDataPool(const std::string& config_path);
 
   YAML::Node config_;
-  RunningMode mode_;
 };
 

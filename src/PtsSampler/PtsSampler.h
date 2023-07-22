@@ -31,7 +31,8 @@ class PtsSampler : public Pipe
 
 public:
   PtsSampler(GlobalDataPool * global_data_pool);
-  SampleResultFlex GetSamples(const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
+  SampleResultFlex GetSamples(
+    const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds, RunningMode mode);
   GlobalDataPool * global_data_pool_ = nullptr;
 
   int compact_freq_;
