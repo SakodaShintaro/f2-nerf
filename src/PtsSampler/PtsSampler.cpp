@@ -7,12 +7,12 @@
 #include "../Utils/Utils.h"
 #include "../Utils/StopWatch.h"
 #include "../Dataset/Dataset.h"
-#include "PersSampler.h"
+#include "PtsSampler.h"
 
 using Tensor = torch::Tensor;
 
-PersSampler::PersSampler(GlobalDataPool* global_data_pool) {
-  ScopeWatch watch("PersSampler::PersSampler");
+PtsSampler::PtsSampler(GlobalDataPool* global_data_pool) {
+  ScopeWatch watch("PtsSampler::PtsSampler");
   global_data_pool_ = global_data_pool;
   auto config = global_data_pool->config_["pts_sampler"];
 
@@ -29,7 +29,7 @@ PersSampler::PersSampler(GlobalDataPool* global_data_pool) {
   int max_level = config["max_level"].as<int>();
 }
 
-SampleResultFlex PersSampler::GetSamples(
+SampleResultFlex PtsSampler::GetSamples(
   const Tensor & rays_o_raw, const Tensor & rays_d_raw, const Tensor & bounds_raw)
 {
   Tensor rays_o = rays_o_raw.contiguous();

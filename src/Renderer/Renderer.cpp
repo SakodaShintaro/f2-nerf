@@ -23,7 +23,7 @@ Renderer::Renderer(GlobalDataPool* global_data_pool, int n_images) {
   global_data_pool_ = global_data_pool;
   auto conf = global_data_pool->config_["renderer"];
 
-  pts_sampler_ = ConstructPtsSampler(global_data_pool);
+  pts_sampler_ = std::make_unique<PtsSampler>(global_data_pool);
   RegisterSubPipe(pts_sampler_.get());
 
   scene_field_ = ConstructField(global_data_pool);

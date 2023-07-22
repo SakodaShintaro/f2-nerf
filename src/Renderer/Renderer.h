@@ -13,7 +13,7 @@
 #include "../Utils/GlobalDataPool.h"
 #include "../Field/FieldFactory.h"
 #include "../Shader/ShaderFactory.h"
-#include "../PtsSampler/PtsSamplerFactory.h"
+#include "../PtsSampler/PtsSampler.h"
 
 struct RenderResult {
   using Tensor = torch::Tensor;
