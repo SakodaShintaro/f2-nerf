@@ -22,7 +22,6 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   const auto & config = global_data_pool_->config_;
   const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
   std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
-  global_data_pool_->base_exp_dir_ = base_exp_dir;
   load_checkpoint(base_exp_dir + "/checkpoints/latest");
 
   // set
