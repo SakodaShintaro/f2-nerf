@@ -145,12 +145,11 @@ void Dataset::NormalizeScene() {
 }
 
 Rays Dataset::Img2WorldRay(int cam_idx, const Tensor &ij) {
-  return Img2WorldRay(poses_[cam_idx], intri_[cam_idx], dist_params_[cam_idx], ij);
+  return Img2WorldRay(poses_[cam_idx], intri_[cam_idx], ij);
 }
 
 Rays Dataset::Img2WorldRay(const Tensor& pose,
                            const Tensor& intri,
-                           const Tensor& dist_param,
                            const Tensor& ij) {
   int n_pts = ij.sizes()[0];
   Tensor i = ij.index({"...", 0}).to(torch::kFloat32) + .5f;
@@ -162,7 +161,6 @@ Rays Dataset::Img2WorldRay(const Tensor& pose,
   float fy = intri.index({ 1, 1 }).item<float>();
 
   Tensor uv = torch::stack( { (j - cx) / fx, -(i - cy) / fy }, -1);
-  Tensor params = dist_param.unsqueeze(0).repeat({ n_pts, 1 }).contiguous();
   Tensor dirs = torch::cat({ uv, -torch::ones({n_pts, 1}, CUDAFloat)}, -1);
   Tensor rays_d = torch::matmul(pose.index({ None, Slc(0, 3), Slc(0, 3)}), dirs.index({"...", None}));
 
@@ -202,7 +200,7 @@ BoundedRays Dataset::RaysFromPose(const Tensor &pose, int reso_level) {
   Tensor i = ij[0].reshape({-1});
   Tensor j = ij[1].reshape({-1});
 
-  auto [ rays_o, rays_d ] = Img2WorldRay(pose, intri_[0], dist_params_[0], torch::stack({ i, j }, -1));
+  auto [ rays_o, rays_d ] = Img2WorldRay(pose, intri_[0], torch::stack({ i, j }, -1));
   // TODO....
   float near = bounds_.index({Slc(), 0}).min().item<float>();
   float far  = bounds_.index({Slc(), 1}).max().item<float>();
@@ -220,7 +218,7 @@ BoundedRays Dataset::RandRaysFromPose(int batch_size, const Tensor& pose) {
   int W = width_;
   Tensor i = torch::randint(0, H, batch_size, CUDALong);
   Tensor j = torch::randint(0, W, batch_size, CUDALong);
-  auto [ rays_o, rays_d ] = Img2WorldRay(pose, intri_[0], dist_params_[0], torch::stack({ i, j }, -1).to(torch::kFloat32));
+  auto [ rays_o, rays_d ] = Img2WorldRay(pose, intri_[0], torch::stack({ i, j }, -1).to(torch::kFloat32));
   float near = bounds_.index({Slc(), 0}).min().item<float>();
   float far  = bounds_.index({Slc(), 1}).max().item<float>();
 

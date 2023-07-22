@@ -48,8 +48,7 @@ public:
 
   // Others
   Rays Img2WorldRay(int cam_idx, const Tensor & ij);
-  static Rays Img2WorldRay(
-    const Tensor & pose, const Tensor & intri, const Tensor & dist_params, const Tensor & ij);
+  static Rays Img2WorldRay(const Tensor & pose, const Tensor & intri, const Tensor & ij);
   Rays Img2WorldRayFlex(const Tensor & cam_indices, const Tensor & ij);
 
   int n_images_ = 0;
