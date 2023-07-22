@@ -13,11 +13,6 @@
 
 #include <memory>
 
-#define INIT_NODE_STAT 1000
-#define N_PROS 12
-#define PersMatType Eigen::Matrix<float, 2, 4, Eigen::RowMajor>
-#define TransWetType Eigen::Matrix<float, 3, N_PROS, Eigen::RowMajor>
-
 struct SampleResultFlex
 {
   using Tensor = torch::Tensor;
@@ -28,33 +23,6 @@ struct SampleResultFlex
   Tensor anchors;         // [ n_all_pts, 3 ]
   Tensor pts_idx_bounds;  // [ n_rays, 2 ] // start, end
   Tensor first_oct_dis;   // [ n_rays, 1 ]
-};
-
-struct alignas(32) TransInfo
-{
-  PersMatType w2xz[N_PROS];
-  TransWetType weight;
-  Wec3f center;
-  float dis_summary;
-};
-
-struct alignas(32) TreeNode
-{
-  Wec3f center;
-  float side_len;
-  int parent;
-  int childs[8];
-  bool is_leaf_node;
-  int trans_idx;
-};
-
-struct alignas(32) EdgePool
-{
-  int t_idx_a;
-  int t_idx_b;
-  Wec3f center;
-  Wec3f dir_0;
-  Wec3f dir_1;
 };
 
 class PtsSampler : public Pipe

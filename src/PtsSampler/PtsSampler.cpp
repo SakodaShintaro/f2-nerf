@@ -2,16 +2,19 @@
 // Created by ppwang on 2022/9/26.
 //
 
-#include <random>
-#include <algorithm>
-#include "../Utils/Utils.h"
-#include "../Utils/StopWatch.h"
-#include "../Dataset/Dataset.h"
 #include "PtsSampler.h"
+
+#include "../Dataset/Dataset.h"
+#include "../Utils/StopWatch.h"
+#include "../Utils/Utils.h"
+
+#include <algorithm>
+#include <random>
 
 using Tensor = torch::Tensor;
 
-PtsSampler::PtsSampler(GlobalDataPool* global_data_pool) {
+PtsSampler::PtsSampler(GlobalDataPool * global_data_pool)
+{
   ScopeWatch watch("PtsSampler::PtsSampler");
   global_data_pool_ = global_data_pool;
   auto config = global_data_pool->config_["pts_sampler"];
