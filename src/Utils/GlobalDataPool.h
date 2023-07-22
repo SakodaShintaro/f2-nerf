@@ -19,6 +19,5 @@ public:
   float sampled_pts_per_ray_ = 512.f;
   float learning_rate_ = 1.f;
   float ray_march_fineness_ = 1.f;
-  float near_ = 0.1f;
 };
 

@@ -75,7 +75,6 @@ Dataset::Dataset(GlobalDataPool* global_data_pool) {
                                  { bounds_.index({"...", 1}) * bounds_factor[1]}}, -1).contiguous();
   bounds_.clamp_(1e-2f, 1e9f);
 
-  global_data_pool_->near_ = bounds_.min().item<float>();
   std::vector<Tensor> images;
   // Load images
   {
