@@ -1,7 +1,6 @@
 nerf_based_localizer:
   ros__parameters:
     runtime_config_path: /root/f2-nerf/ros2/runtime_config1.yaml
-    is_awsim: false
     target_frame: velodyne_front
     particle_num: 50
     render_pixel_num: 128

@@ -39,7 +39,6 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   param.noise_rotation_x = this->declare_parameter<float>("noise_rotation_x");
   param.noise_rotation_y = this->declare_parameter<float>("noise_rotation_y");
   param.noise_rotation_z = this->declare_parameter<float>("noise_rotation_z");
-  param.is_awsim = is_awsim_;
   param.resize_factor = 5;
   localizer_core_ = LocalizerCore(runtime_config_path, param);
 
