@@ -15,7 +15,6 @@ public:
   RunningMode mode_;
 
   int n_volumes_ = 1;
-  int iter_step_;
   float learning_rate_ = 1.f;
 };
 

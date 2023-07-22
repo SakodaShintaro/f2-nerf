@@ -77,7 +77,6 @@ void ExpRunner::Train() {
 
   {
     StopWatch watch;
-    global_data_pool_->iter_step_ = iter_step_;
     for (; iter_step_ < end_iter_;) {
       constexpr float sampled_pts_per_ray_ = 512.f;
       int cur_batch_size = int(pts_batch_size_ / sampled_pts_per_ray_) >> 4 << 4;
@@ -127,7 +126,6 @@ void ExpRunner::Train() {
       mse_records.push_back(mse);
 
       iter_step_++;
-      global_data_pool_->iter_step_ = iter_step_;
 
       if (iter_step_ % stats_freq_ == 0) {
         cnpy::npy_save(base_exp_dir_ + "/stats.npy", mse_records.data(), {mse_records.size()});
