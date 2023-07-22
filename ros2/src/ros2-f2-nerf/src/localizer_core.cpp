@@ -34,7 +34,13 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   dataset_ = std::make_unique<Dataset>(config);
   renderer_ = std::make_unique<Renderer>(config, dataset_->n_images_);
 
-  load_checkpoint(base_exp_dir + "/checkpoints/latest");
+  const std::string checkpoint_path = base_exp_dir + "/checkpoints/latest";
+  Tensor scalars;
+  torch::load(scalars, checkpoint_path + "/scalars.pt");
+
+  std::vector<Tensor> scene_states;
+  torch::load(scene_states, checkpoint_path + "/renderer.pt");
+  renderer_->LoadStates(scene_states, 0);
 
   // set
   const float factor = config["dataset"]["factor_to_infer"].as<float>();
@@ -142,20 +148,6 @@ Tensor LocalizerCore::optimize_pose(Tensor initial_pose, Tensor image_tensor, in
     initial_pose.index_put_({Slc(0, 3), Slc(0, 3)}, rotation);
   }
   return initial_pose;
-}
-
-void LocalizerCore::load_checkpoint(const std::string & checkpoint_path)
-{
-  {
-    Tensor scalars;
-    torch::load(scalars, checkpoint_path + "/scalars.pt");
-  }
-
-  {
-    std::vector<Tensor> scene_states;
-    torch::load(scene_states, checkpoint_path + "/renderer.pt");
-    renderer_->LoadStates(scene_states, 0);
-  }
 }
 
 std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays(

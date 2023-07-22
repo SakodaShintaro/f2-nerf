@@ -49,7 +49,6 @@ public:
   int W;
 
 private:
-  void load_checkpoint(const std::string & checkpoint_path);
   std::tuple<Tensor, Tensor, Tensor> render_all_rays(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
   std::tuple<Tensor, Tensor, Tensor> render_all_rays_grad(
