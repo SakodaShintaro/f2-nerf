@@ -3,6 +3,8 @@
 //
 #pragma once
 
+#include <torch/torch.h>
+
 #define None torch::indexing::None
 #define Slc torch::indexing::Slice
 
