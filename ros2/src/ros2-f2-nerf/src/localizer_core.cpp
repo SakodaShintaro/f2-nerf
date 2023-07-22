@@ -15,6 +15,7 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
 : param_(param)
 {
   const YAML::Node & config = YAML::LoadFile(conf_path);
+
   const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
   std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
 
@@ -47,6 +48,7 @@ LocalizerCore::LocalizerCore(const std::string & conf_path, const LocalizerCoreP
   std::cout << "H = " << H << ", W = " << W << ", factor = " << param.resize_factor << std::endl;
   intrinsic_ /= param.resize_factor;
   intrinsic_[2][2] = 1.0;
+  std::cout << "intrinsic_ = \n" << intrinsic_ << std::endl;
 }
 
 std::vector<Particle> LocalizerCore::random_search(
@@ -397,8 +399,8 @@ Tensor LocalizerCore::calc_average_pose(const std::vector<Particle> & particles)
 
 BoundedRays LocalizerCore::rays_from_pose(const Tensor & pose)
 {
-  Tensor ii = torch::linspace(0.f, height_ - 1.f, H, CUDAFloat);
-  Tensor jj = torch::linspace(0.f, width_ - 1.f, W, CUDAFloat);
+  Tensor ii = torch::linspace(0.f, H - 1.f, H, CUDAFloat);
+  Tensor jj = torch::linspace(0.f, W - 1.f, W, CUDAFloat);
   auto ij = torch::meshgrid({ii, jj}, "ij");
   Tensor i = ij[0].reshape({-1});
   Tensor j = ij[1].reshape({-1});
