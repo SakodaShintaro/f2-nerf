@@ -1,6 +1,5 @@
 nerf_based_localizer:
   ros__parameters:
-    runtime_config_path: ./runtime_config_awsim.yaml
     target_frame: camera0/camera_link
     particle_num: 50
     render_pixel_num: 128
