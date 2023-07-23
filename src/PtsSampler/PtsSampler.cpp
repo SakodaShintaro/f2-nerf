@@ -17,18 +17,7 @@ PtsSampler::PtsSampler(const YAML::Node & root_config)
 {
   ScopeWatch watch("PtsSampler::PtsSampler");
   const YAML::Node & config = root_config["pts_sampler"];
-
-  float split_dist_thres = config["split_dist_thres"].as<float>();
-  compact_freq_ = config["compact_freq"].as<int>();
-  max_oct_intersect_per_ray_ = config["max_oct_intersect_per_ray"].as<int>();
-
-  global_near_ = config["near"].as<float>();
-  scale_by_dis_ = config["scale_by_dis"].as<bool>();
-  int bbox_levels = config["bbox_levels"].as<int>();
-  float bbox_side_len = (1 << (bbox_levels - 1));
-
   sample_l_ = config["sample_l"].as<float>();
-  int max_level = config["max_level"].as<int>();
 }
 
 SampleResultFlex PtsSampler::GetSamples(
@@ -38,10 +27,6 @@ SampleResultFlex PtsSampler::GetSamples(
   Tensor rays_d = (rays_d_raw / torch::linalg_norm(rays_d_raw, 2, -1, true)).contiguous();
 
   int n_rays = rays_o.sizes()[0];
-  Tensor bounds =
-    torch::stack(
-      {torch::full({n_rays}, global_near_, CUDAFloat), torch::full({n_rays}, 1e8f, CUDAFloat)}, -1)
-      .contiguous();
 
   // do ray marching
   constexpr int MAX_SAMPLE_PER_RAY = 1024;

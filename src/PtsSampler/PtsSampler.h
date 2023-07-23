@@ -36,10 +36,6 @@ public:
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds, RunningMode mode);
   const YAML::Node config_;
 
-  int compact_freq_;
-  int max_oct_intersect_per_ray_;
-  float global_near_;
   float sample_l_;
-  bool scale_by_dis_;
   float ray_march_fineness_ = 1.f;
 };
