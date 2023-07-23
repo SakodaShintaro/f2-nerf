@@ -50,6 +50,13 @@ include_directories(External/yaml-cpp/include)
 # eigen
 include_directories(External/eigen-3.4.0)
 
+# OpenCV
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+# GTSAM
+find_package(GTSAM REQUIRED)
+
 include(src/Field/field.cmake)
 include(src/Dataset/dataset.cmake)
 include(src/PtsSampler/pts_sampler.cmake)
@@ -66,17 +73,29 @@ list(APPEND SRC_ALL
         ${SRC_SHADER}
         ${SRC_UTILS})
 
-list(APPEND SRC_ALL src/ExpRunner.cpp)
-
-
-set(ALL_LIBS ${TORCH_LIBRARIES} ${TORCH_CUDA_LIBRARIES} ${ZLIB_LIBRARIES} yaml-cpp fmt::fmt)
-set(ALL_LIBS ${ALL_LIBS} tiny-cuda-nn stdc++fs)
+set(ALL_LIBS ${TORCH_LIBRARIES}
+        ${TORCH_CUDA_LIBRARIES}
+        ${ZLIB_LIBRARIES}
+        ${OpenCV_LIBS}
+        yaml-cpp
+        fmt::fmt
+        tiny-cuda-nn
+        stdc++fs
+        gtsam)
 
 # ------------------------------------ Add executables ---------------------------------------
-add_executable(main main.cpp ${SRC_ALL})
+add_executable(main main.cpp src/ExpRunner.cpp ${SRC_ALL})
 target_link_libraries(main ${ALL_LIBS})
 set_property(TARGET main PROPERTY CXX_STANDARD 17)
 set_property(TARGET main PROPERTY CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
 
 # Install scripts
 configure_file(scripts/run.py ${CMAKE_BINARY_DIR}/run.py COPYONLY)
+
+##################
+# Inference tool #
+##################
+add_executable(inference_tool main_inference.cpp
+        ros2/src/ros2-f2-nerf/src/localizer_core.cpp
+        ${SRC_ALL})
+target_link_libraries(inference_tool ${ALL_LIBS})

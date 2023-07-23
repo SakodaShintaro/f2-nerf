@@ -10,6 +10,6 @@ make -j $(nproc)
 
 rm -rf result_images movie.mp4
 
-./f2-nerf_unit_tool ${CONFIG_PATH}
+./inference_tool ${CONFIG_PATH}
 
-python3 ../python/make_movie.py ./result_images/
+python3 ../scripts/make_movie_inference.py ./result_images/
