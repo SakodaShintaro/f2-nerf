@@ -1,4 +1,5 @@
 #include "../../ros2/src/ros2-f2-nerf/src/localizer_core.hpp"
+#include "../../src/Utils/StopWatch.h"
 #include "../../src/Utils/Utils.h"
 
 #include <experimental/filesystem>
@@ -27,6 +28,11 @@ int main(int argc, char * argv[])
   const YAML::Node & config = YAML::LoadFile(runtime_config_path);
   Dataset dataset(config);
 
+  Timer timer;
+  timer.start();
+
+  constexpr int32_t outer_iteration_num = 50;
+
   for (int32_t i = 0; i < dataset.n_images_; i++) {
     torch::Tensor initial_pose = dataset.poses_[i];
     torch::Tensor image_tensor = dataset.image_tensors_[i];
@@ -53,7 +59,7 @@ int main(int argc, char * argv[])
 
     // Optimized
     torch::Tensor optimized_pose = initial_pose;
-    for (int32_t j = 0; j < 100; j++) {
+    for (int32_t j = 0; j < outer_iteration_num; j++) {
       optimized_pose = core.optimize_pose(optimized_pose, image_tensor, iteration_num);
       auto [score_after, nerf_image_after] =
         core.pred_image_and_calc_score(optimized_pose, image_tensor);
@@ -70,4 +76,8 @@ int main(int argc, char * argv[])
 
     break;
   }
+
+  const double seconds = timer.elapsed_seconds();
+  const double average = seconds / outer_iteration_num;
+  std::cout << "average = " << average << " [s]" << std::endl;
 }
