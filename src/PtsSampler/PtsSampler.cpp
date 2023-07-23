@@ -48,10 +48,11 @@ SampleResultFlex PtsSampler::GetSamples(
   cum_noise = cum_noise.unsqueeze(-1).contiguous();
   Tensor sampled_pts = rays_o + rays_d * cum_noise;
 
-  Tensor sampled_dists = torch::diff(sampled_pts, 1, 1).norm(2, -1).contiguous();
-  sampled_dists = torch::cat({torch::zeros({n_rays, 1}, CUDAFloat), sampled_dists}, 1).contiguous();
+  Tensor sampled_distances = torch::diff(sampled_pts, 1, 1).norm(2, -1).contiguous();
+  sampled_distances =
+    torch::cat({torch::zeros({n_rays, 1}, CUDAFloat), sampled_distances}, 1).contiguous();
   sampled_pts = sampled_pts.view({n_all_pts, 3});
-  sampled_dists = sampled_dists.view({n_all_pts}).contiguous();
+  sampled_distances = sampled_distances.view({n_all_pts}).contiguous();
 
   Tensor pts_idx_start_end = torch::ones({n_rays, 2}, CUDAInt) * MAX_SAMPLE_PER_RAY;
   Tensor pts_num = pts_idx_start_end.index({Slc(), 0});
@@ -65,7 +66,7 @@ SampleResultFlex PtsSampler::GetSamples(
   Tensor first_oct_dis = torch::full({n_rays, 1}, 1e9f, CUDAFloat).contiguous();
 
   return {
-    sampled_pts,     sampled_dirs,      sampled_dists, sampled_t,
+    sampled_pts,     sampled_dirs,      sampled_distances, sampled_t,
     sampled_anchors, pts_idx_start_end, first_oct_dis,
   };
 }
