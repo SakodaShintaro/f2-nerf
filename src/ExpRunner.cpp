@@ -167,8 +167,10 @@ void ExpRunner::Train() {
     info_fout.close();
   }
 
-  std::cout << "Train done, test." << std::endl;
-  TestImages();
+  std::cout << "Train done" << std::endl;
+  if (config_["do_test_after_train"].as<bool>()) {
+    TestImages();
+  }
 }
 
 void ExpRunner::LoadCheckpoint(const std::string& path) {

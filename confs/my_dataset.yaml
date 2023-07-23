@@ -29,3 +29,5 @@ dataset:
 
 train:
   ray_march_init_fineness: 16
+
+do_test_after_train: false
