@@ -353,7 +353,7 @@ Rays Dataset::Img2WorldRayFlex(const Tensor & cam_indices, const Tensor & ij)
   Tensor fx_tensor = selected_intri.index({Slc(), 0, 0});
   Tensor fy_tensor = selected_intri.index({Slc(), 1, 1});
   Tensor u_tensor = ((j_tensor - cx_tensor) / fx_tensor).unsqueeze(-1);
-  Tensor v_tensor = ((i_tensor - cy_tensor) / fy_tensor).unsqueeze(-1);
+  Tensor v_tensor = -((i_tensor - cy_tensor) / fy_tensor).unsqueeze(-1);
   Tensor w_tensor = -torch::ones_like(u_tensor);
   Tensor dir_tensor = torch::cat({u_tensor, v_tensor, w_tensor}, 1).unsqueeze(-1);
   Tensor ori_tensor = selected_poses.index({Slc(), Slc(0, 3), Slc(0, 3)});
