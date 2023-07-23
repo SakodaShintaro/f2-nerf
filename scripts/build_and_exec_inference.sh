@@ -12,6 +12,4 @@ rm -rf result_images movie.mp4
 
 ./inference_tool ${CONFIG_PATH}
 
-python3 ../scripts/make_movie_inference.py ./result_images/
-
-readlink -f ./concat_movie.mp4
+python3 ../scripts/analyze_inference_result.py ./inference_result/
