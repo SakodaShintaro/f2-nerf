@@ -9,7 +9,6 @@ defaults:
 
 dataset_name: AWSIM
 case_name: 20230717_loop
-exp_name: test
 
 is_continue: false
 
