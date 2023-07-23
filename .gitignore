@@ -85,7 +85,7 @@ External-past
 exp
 outputs
 libtorch
-build
+build*
 
 .idea
 
