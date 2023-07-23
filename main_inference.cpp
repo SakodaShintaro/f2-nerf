@@ -33,7 +33,7 @@ int main(int argc, char * argv[])
   Timer timer;
   timer.start();
 
-  const float noise = 0.25f / core.radius();
+  const float noise = 0.5f / core.radius();
   std::cout << "noise = " << noise << std::endl;
 
   for (int32_t i = 0; i < dataset.n_images_; i++) {
@@ -87,7 +87,5 @@ int main(int argc, char * argv[])
         curr_dir + "image_04_after" + std::to_string(d) + ".png", nerf_image_after);
       output("optimized_" + std::to_string(d), optimized_pose, score_after);
     }
-
-    break;
   }
 }
