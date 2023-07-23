@@ -146,7 +146,12 @@ Tensor LocalizerCore::optimize_pose(Tensor initial_pose, Tensor image_tensor, in
     Tensor diff = pred_img - image_tensor.view({infer_height_, infer_width_, 3});
     Tensor loss = (diff * diff).mean(-1).sum();
     optimizer.zero_grad();
-    loss.backward();
+    // For some reason, backward may fail, so check here
+    try {
+      loss.backward();
+    } catch (const std::runtime_error & e) {
+      return initial_pose;
+    }
     optimizer.step();
 
     // orthogonalize
