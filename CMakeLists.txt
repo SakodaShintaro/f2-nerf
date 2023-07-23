@@ -8,7 +8,7 @@ add_compile_options(-w)
 include(CheckLanguage)
 check_language(CUDA)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 ###############################################################################
 # CUDA compiler setup
