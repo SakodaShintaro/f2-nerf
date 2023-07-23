@@ -28,25 +28,25 @@ if __name__ == "__main__":
         max_score = df['score'].max()
 
         original = df[df['name'] == 'original']
-        plt.scatter(original['x'], original['z'], c=original['score'],
+        plt.scatter(original['x'], original['y'], c=original['score'],
                     cmap='viridis', vmin=min_score, vmax=max_score, label='Original')
 
         for i in range(8):
             noised = df[df['name'] == f'noised_{i}']
             optimized = df[df['name'] == f'optimized_{i}']
 
-            plt.scatter(noised['x'], noised['z'], c=noised['score'],
+            plt.scatter(noised['x'], noised['y'], c=noised['score'],
                         cmap='viridis', vmin=min_score, vmax=max_score, label=f'Noised_{i}')
-            plt.scatter(optimized['x'], optimized['z'],
+            plt.scatter(optimized['x'], optimized['y'],
                         c=optimized['score'], cmap='viridis', vmin=min_score, vmax=max_score, label=f'Optimized_{i}')
 
             # Draw an arrow from the noised position to the optimized position
-            plt.annotate('', xy=(optimized['x'].values[0], optimized['z'].values[0]),
-                         xytext=(noised['x'].values[0], noised['z'].values[0]),
+            plt.annotate('', xy=(optimized['x'].values[0], optimized['y'].values[0]),
+                         xytext=(noised['x'].values[0], noised['y'].values[0]),
                          arrowprops=dict(facecolor='gray', shrink=0.05))
 
         plt.xlabel('x')
-        plt.ylabel('z')
+        plt.ylabel('y')
         plt.colorbar(label='Score')
         plt.savefig(f"{frame_dir}/plot_result.png",
                     bbox_inches="tight", pad_inches=0.05)

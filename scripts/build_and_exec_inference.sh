@@ -8,7 +8,7 @@ cd $(dirname $0)/../build/
 
 make -j $(nproc)
 
-rm -rf result_images movie.mp4
+rm -rf inference_result result_images movie.mp4
 
 ./inference_tool ${CONFIG_PATH}
 
