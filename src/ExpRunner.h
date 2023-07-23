@@ -33,7 +33,7 @@ public:
 
   unsigned iter_step_ = 0;
   unsigned end_iter_;
-  unsigned report_freq_, vis_freq_, stats_freq_, save_freq_;
+  unsigned report_freq_, vis_freq_, save_freq_;
   unsigned pts_batch_size_;
 
   float ray_march_init_fineness_;

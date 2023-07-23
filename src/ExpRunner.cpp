@@ -28,7 +28,6 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   end_iter_ = config["train"]["end_iter"].as<int>();
   vis_freq_ = config["train"]["vis_freq"].as<int>();
   report_freq_ = config["train"]["report_freq"].as<int>();
-  stats_freq_ = config["train"]["stats_freq"].as<int>();
   save_freq_ = config["train"]["save_freq"].as<int>();
   learning_rate_ = config["train"]["learning_rate"].as<float>();
   learning_rate_alpha_ = config["train"]["learning_rate_alpha"].as<float>();
@@ -65,7 +64,6 @@ void ExpRunner::Train() {
   fs::create_directories(log_dir);
   std::ofstream ofs_log(log_dir + "/log.txt");
 
-  std::vector<float> mse_records;
   float time_per_iter = 0.f;
   StopWatch clock;
   Timer timer;
@@ -122,13 +120,7 @@ void ExpRunner::Train() {
         optimizer_->step();
       }
 
-      mse_records.push_back(mse);
-
       iter_step_++;
-
-      if (iter_step_ % stats_freq_ == 0) {
-        cnpy::npy_save(base_exp_dir_ + "/stats.npy", mse_records.data(), {mse_records.size()});
-      }
 
       if (iter_step_ % vis_freq_ == 0) {
         int t = iter_step_ / vis_freq_;
