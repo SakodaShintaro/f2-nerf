@@ -235,8 +235,7 @@ variable_list TCNNWPFunction::backward(AutogradContext *ctx, variable_list grad_
     // dL_dinput = torch::zeros_like(dL_dinput);
     // dL_dparams = torch::zeros_like(dL_dparams);
     tcnn_wp->loss_scale_ = std::max(tcnn_wp->loss_scale_ / 2.f, 1.f);
-    std::cout << "Nan!" << std::endl;
-    std::exit(1);
+    throw std::runtime_error("Non-finite value detected in input or parameters");
   }
 
   return { dL_dinput, dL_dparams, Tensor() };
