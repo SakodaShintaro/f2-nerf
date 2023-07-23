@@ -60,9 +60,7 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
 }
 
 void ExpRunner::Train() {
-  std::string log_dir = base_exp_dir_ + "/logs";
-  fs::create_directories(log_dir);
-  std::ofstream ofs_log(log_dir + "/log.txt");
+  std::ofstream ofs_log(base_exp_dir_ + "/train_log.txt");
 
   float time_per_iter = 0.f;
   StopWatch clock;
@@ -152,11 +150,6 @@ void ExpRunner::Train() {
       }
       UpdateAdaParams();
     }
-    YAML::Node info_data;
-
-    std::ofstream info_fout(base_exp_dir_ + "/train_info.txt");
-    info_fout << watch.TimeDuration() << std::endl;
-    info_fout.close();
   }
 
   std::cout << "Train done" << std::endl;
