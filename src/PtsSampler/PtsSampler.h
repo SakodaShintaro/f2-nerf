@@ -32,8 +32,7 @@ class PtsSampler : public Pipe
 
 public:
   PtsSampler(const YAML::Node & config);
-  SampleResultFlex GetSamples(
-    const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds, RunningMode mode);
+  SampleResultFlex GetSamples(const Tensor & rays_o, const Tensor & rays_d, RunningMode mode);
   const YAML::Node config_;
 
   float sample_l_;

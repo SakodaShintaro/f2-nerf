@@ -47,7 +47,7 @@ class Renderer : public Pipe {
   enum BGColorType { white, black, rand_noise };
 public:
   Renderer(const YAML::Node & config, int n_images);
-  RenderResult Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& bounds, const Tensor& emb_idx, RunningMode mode);
+  RenderResult Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode);
 
   int LoadStates(const std::vector<Tensor>& states, int idx) override;
   std::vector<Tensor> States() override ;

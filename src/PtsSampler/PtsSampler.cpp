@@ -21,7 +21,7 @@ PtsSampler::PtsSampler(const YAML::Node & root_config)
 }
 
 SampleResultFlex PtsSampler::GetSamples(
-  const Tensor & rays_o_raw, const Tensor & rays_d_raw, const Tensor & bounds_raw, RunningMode mode)
+  const Tensor & rays_o_raw, const Tensor & rays_d_raw, RunningMode mode)
 {
   Tensor rays_o = rays_o_raw.contiguous();
   Tensor rays_d = (rays_d_raw / torch::linalg_norm(rays_d_raw, 2, -1, true)).contiguous();

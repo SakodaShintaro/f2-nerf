@@ -47,12 +47,12 @@ Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_
 }
 
 
-RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& bounds, const Tensor& emb_idx, RunningMode mode) {
+RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode) {
 #ifdef PROFILE
   ScopeWatch watch(__func__);
 #endif
   int n_rays = rays_o.sizes()[0];
-  sample_result_ = pts_sampler_->GetSamples(rays_o, rays_d, bounds, mode);
+  sample_result_ = pts_sampler_->GetSamples(rays_o, rays_d, mode);
   int n_all_pts = sample_result_.pts.sizes()[0];
   float sampled_pts_per_ray = float(n_all_pts) / float(n_rays);
   CHECK(sample_result_.pts_idx_bounds.max().item<int>() <= n_all_pts);
