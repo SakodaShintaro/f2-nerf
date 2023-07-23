@@ -94,11 +94,6 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   // First, inference without gradients - early stop
   SampleResultFlex sample_result_early_stop;
   {
-    std::unique_ptr<torch::NoGradGuard> no_grad_guard;
-    if (mode == RunningMode::TRAIN) {
-      no_grad_guard = std::make_unique<torch::NoGradGuard>();
-    }
-
     Tensor pts  = sample_result_.pts;
     Tensor dirs = sample_result_.dirs;
     Tensor anchors = sample_result_.anchors.index({"...", 0}).contiguous();

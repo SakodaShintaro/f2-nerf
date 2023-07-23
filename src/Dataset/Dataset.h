@@ -62,6 +62,8 @@ public:
   std::vector<int> train_set_, test_set_, val_set_, split_info_;
   Tensor image_tensors_;
   RaySampleMode ray_sample_mode_;
+
+  Tensor pose_delta_;
 };
 
 #endif  // SANR_DATASET_H

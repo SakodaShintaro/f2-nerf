@@ -54,6 +54,9 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
 
   NormalizeScene();
 
+  pose_delta_ = torch::zeros_like(poses_);
+  pose_delta_.requires_grad_(true);
+
   // Load render camera poses
   if (fs::exists(data_path + "/poses_render.npy")) {
     cnpy::NpyArray arr = cnpy::npy_load(data_path + "/poses_render.npy");
@@ -347,6 +350,8 @@ Rays Dataset::Img2WorldRayFlex(const Tensor & cam_indices, const Tensor & ij)
   Tensor i_tensor = ij_shift.index({Slc(), 0});
   Tensor j_tensor = ij_shift.index({Slc(), 1});
   Tensor selected_poses = torch::index_select(poses_, 0, cam_indices);
+  Tensor selected_delta = torch::index_select(pose_delta_, 0, cam_indices);
+  Tensor merged_poses = selected_poses + selected_delta;
   Tensor selected_intri = torch::index_select(intri_, 0, cam_indices);
   Tensor cx_tensor = selected_intri.index({Slc(), 0, 2});
   Tensor cy_tensor = selected_intri.index({Slc(), 1, 2});
@@ -356,8 +361,8 @@ Rays Dataset::Img2WorldRayFlex(const Tensor & cam_indices, const Tensor & ij)
   Tensor v_tensor = ((i_tensor - cy_tensor) / fy_tensor).unsqueeze(-1);
   Tensor w_tensor = -torch::ones_like(u_tensor);
   Tensor dir_tensor = torch::cat({u_tensor, v_tensor, w_tensor}, 1).unsqueeze(-1);
-  Tensor ori_tensor = selected_poses.index({Slc(), Slc(0, 3), Slc(0, 3)});
-  Tensor pos_tensor = selected_poses.index({Slc(), Slc(0, 3), 3});
+  Tensor ori_tensor = merged_poses.index({Slc(), Slc(0, 3), Slc(0, 3)});
+  Tensor pos_tensor = merged_poses.index({Slc(), Slc(0, 3), 3});
   Tensor rays_d = torch::bmm(ori_tensor, dir_tensor).squeeze();
   Tensor rays_o = pos_tensor;
 

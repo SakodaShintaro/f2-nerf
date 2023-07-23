@@ -46,9 +46,24 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
 
   // Renderer
   renderer_ = std::make_unique<Renderer>(config, dataset_->n_images_);
+  std::vector<torch::optim::OptimizerParamGroup> param_groups =
+    renderer_->OptimParamGroups(learning_rate_);
+
+  // add pose_delta_ to param groups
+  std::unique_ptr<torch::optim::AdamOptions> opt =
+    std::make_unique<torch::optim::AdamOptions>(learning_rate_);
+  opt->betas() = {0.9, 0.99};
+  opt->eps() = 1e-15;
+  opt->weight_decay() = 1.0f;
+  std::vector<Tensor> params;
+  params.push_back(dataset_->pose_delta_);
+  torch::optim::OptimizerParamGroup pose_delta_group(std::move(params), std::move(opt));
+
+  // Add pose_delta_group to param_groups
+  param_groups.push_back(pose_delta_group);
 
   // Optimizer
-  optimizer_ = std::make_unique<torch::optim::Adam>(renderer_->OptimParamGroups(learning_rate_));
+  optimizer_ = std::make_unique<torch::optim::Adam>(param_groups);
 
   if (config["is_continue"].as<bool>()) {
     LoadCheckpoint(base_exp_dir_ + "/checkpoints/latest");
@@ -152,6 +167,12 @@ void ExpRunner::Train() {
   std::cout << "Train done" << std::endl;
   if (config_["do_test_after_train"].as<bool>()) {
     TestImages();
+  }
+
+  // Save dataset_->pose_delta_
+  std::ofstream ofs_pose_delta(base_exp_dir_ + "/pose_delta.txt");
+  for (int i = 0; i < dataset_->n_images_; i++) {
+    ofs_pose_delta << dataset_->pose_delta_[i] << std::endl;
   }
 }
 
