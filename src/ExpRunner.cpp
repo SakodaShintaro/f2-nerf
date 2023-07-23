@@ -70,86 +70,83 @@ void ExpRunner::Train() {
   float psnr_smooth = -1.0;
   UpdateAdaParams();
 
-  {
-    StopWatch watch;
-    for (; iter_step_ < end_iter_;) {
-      constexpr float sampled_pts_per_ray_ = 512.f;
-      int cur_batch_size = int(pts_batch_size_ / sampled_pts_per_ray_) >> 4 << 4;
-      auto [train_rays, gt_colors, emb_idx] = dataset_->RandRaysData(cur_batch_size, DATA_TRAIN_SET);
+  for (; iter_step_ < end_iter_;) {
+    constexpr float sampled_pts_per_ray_ = 512.f;
+    int cur_batch_size = int(pts_batch_size_ / sampled_pts_per_ray_) >> 4 << 4;
+    auto [train_rays, gt_colors, emb_idx] = dataset_->RandRaysData(cur_batch_size, DATA_TRAIN_SET);
 
-      Tensor& rays_o = train_rays.origins;
-      Tensor& rays_d = train_rays.dirs;
-      Tensor& bounds = train_rays.bounds;
+    Tensor& rays_o = train_rays.origins;
+    Tensor& rays_d = train_rays.dirs;
+    Tensor& bounds = train_rays.bounds;
 
-      auto render_result = renderer_->Render(rays_o, rays_d, emb_idx, RunningMode::TRAIN);
-      Tensor pred_colors = render_result.colors.index({Slc(0, cur_batch_size)});
-      Tensor disparity = render_result.disparity;
-      Tensor color_loss = torch::sqrt((pred_colors - gt_colors).square() + 1e-4f).mean();
+    auto render_result = renderer_->Render(rays_o, rays_d, emb_idx, RunningMode::TRAIN);
+    Tensor pred_colors = render_result.colors.index({Slc(0, cur_batch_size)});
+    Tensor disparity = render_result.disparity;
+    Tensor color_loss = torch::sqrt((pred_colors - gt_colors).square() + 1e-4f).mean();
 
-      Tensor disparity_loss = disparity.square().mean();
+    Tensor disparity_loss = disparity.square().mean();
 
-      Tensor sampled_weights = render_result.weights;
-      Tensor idx_start_end = render_result.idx_start_end;
-      Tensor sampled_var = CustomOps::WeightVar(sampled_weights, idx_start_end);
-      Tensor var_loss = (sampled_var + 1e-2).sqrt().mean();
+    Tensor sampled_weights = render_result.weights;
+    Tensor idx_start_end = render_result.idx_start_end;
+    Tensor sampled_var = CustomOps::WeightVar(sampled_weights, idx_start_end);
+    Tensor var_loss = (sampled_var + 1e-2).sqrt().mean();
 
-      float var_loss_weight = 0.f;
-      if (iter_step_ > var_loss_end_) {
-        var_loss_weight = var_loss_weight_;
-      }
-      else if (iter_step_ > var_loss_start_) {
-        var_loss_weight = float(iter_step_ - var_loss_start_) / float(var_loss_end_ - var_loss_start_) * var_loss_weight_;
-      }
-
-      Tensor loss = color_loss + var_loss * var_loss_weight +
-                    disparity_loss * disp_loss_weight_;
-
-      float mse = (pred_colors - gt_colors).square().mean().item<float>();
-      float psnr = 20.f * std::log10(1 / std::sqrt(mse));
-      psnr_smooth = psnr_smooth < 0.f ? psnr : psnr * .1f + psnr_smooth * .9f;
-      CHECK(!std::isnan(pred_colors.mean().item<float>()));
-      CHECK(!std::isnan(gt_colors.mean().item<float>()));
-      CHECK(!std::isnan(mse));
-
-      // There can be some cases that the output colors have no grad due to the occupancy grid.
-      if (loss.requires_grad()) {
-        optimizer_->zero_grad();
-        loss.backward();
-        optimizer_->step();
-      }
-
-      iter_step_++;
-
-      if (iter_step_ % vis_freq_ == 0) {
-        int t = iter_step_ / vis_freq_;
-        int vis_idx;
-        vis_idx = (iter_step_ / vis_freq_) % dataset_->test_set_.size();
-        vis_idx = dataset_->test_set_[vis_idx];
-        VisualizeImage(vis_idx);
-      }
-
-      if (iter_step_ % save_freq_ == 0) {
-        SaveCheckpoint();
-      }
-      time_per_iter = time_per_iter * 0.6f + clock.TimeDuration() * 0.4f;
-      const int64_t total_sec = timer.elapsed_seconds();
-      const int64_t total_m = total_sec / 60;
-      const int64_t total_s = total_sec % 60;
-
-      if (iter_step_ % report_freq_ == 0) {
-        const std::string log_str = fmt::format(
-            "Time: {:>02d}:{:>02d} Iter: {:>6d} PSNR: {:.2f} IPS: {:.1f} LR: {:.4f}",
-            total_m,
-            total_s,
-            iter_step_,
-            psnr_smooth,
-            1.f / time_per_iter,
-            optimizer_->param_groups()[0].options().get_lr());
-        std::cout << log_str << std::endl;
-        ofs_log << log_str << std::endl;
-      }
-      UpdateAdaParams();
+    float var_loss_weight = 0.f;
+    if (iter_step_ > var_loss_end_) {
+      var_loss_weight = var_loss_weight_;
     }
+    else if (iter_step_ > var_loss_start_) {
+      var_loss_weight = float(iter_step_ - var_loss_start_) / float(var_loss_end_ - var_loss_start_) * var_loss_weight_;
+    }
+
+    Tensor loss = color_loss + var_loss * var_loss_weight +
+                  disparity_loss * disp_loss_weight_;
+
+    float mse = (pred_colors - gt_colors).square().mean().item<float>();
+    float psnr = 20.f * std::log10(1 / std::sqrt(mse));
+    psnr_smooth = psnr_smooth < 0.f ? psnr : psnr * .1f + psnr_smooth * .9f;
+    CHECK(!std::isnan(pred_colors.mean().item<float>()));
+    CHECK(!std::isnan(gt_colors.mean().item<float>()));
+    CHECK(!std::isnan(mse));
+
+    // There can be some cases that the output colors have no grad due to the occupancy grid.
+    if (loss.requires_grad()) {
+      optimizer_->zero_grad();
+      loss.backward();
+      optimizer_->step();
+    }
+
+    iter_step_++;
+
+    if (iter_step_ % vis_freq_ == 0) {
+      int t = iter_step_ / vis_freq_;
+      int vis_idx;
+      vis_idx = (iter_step_ / vis_freq_) % dataset_->test_set_.size();
+      vis_idx = dataset_->test_set_[vis_idx];
+      VisualizeImage(vis_idx);
+    }
+
+    if (iter_step_ % save_freq_ == 0) {
+      SaveCheckpoint();
+    }
+    time_per_iter = time_per_iter * 0.6f + clock.TimeDuration() * 0.4f;
+    const int64_t total_sec = timer.elapsed_seconds();
+    const int64_t total_m = total_sec / 60;
+    const int64_t total_s = total_sec % 60;
+
+    if (iter_step_ % report_freq_ == 0) {
+      const std::string log_str = fmt::format(
+          "Time: {:>02d}:{:>02d} Iter: {:>6d} PSNR: {:.2f} IPS: {:.1f} LR: {:.4f}",
+          total_m,
+          total_s,
+          iter_step_,
+          psnr_smooth,
+          1.f / time_per_iter,
+          optimizer_->param_groups()[0].options().get_lr());
+      std::cout << log_str << std::endl;
+      ofs_log << log_str << std::endl;
+    }
+    UpdateAdaParams();
   }
 
   std::cout << "Train done" << std::endl;
