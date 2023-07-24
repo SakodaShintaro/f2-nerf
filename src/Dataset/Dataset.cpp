@@ -110,13 +110,6 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
   std::cout << fmt::format("Number of train/test/val images: {}/{}/{}",
                            train_set_.size(), test_set_.size(), val_set_.size()) << std::endl;
 
-  // Get training camera poses
-  Tensor train_idx_ts = torch::from_blob(train_set_.data(), { int(train_set_.size()) }, CPUInt).to(torch::kCUDA).to(torch::kLong);
-  c2w_train_ = c2w_.index({train_idx_ts}).contiguous();
-  w2c_train_ = w2c_.index({train_idx_ts}).contiguous();
-  intri_train_ = intri_.index({train_idx_ts}).contiguous();
-  bounds_train_ = bounds_.index({train_idx_ts}).contiguous();
-
   // Prepare training images
   height_ = images[0].size(0);
   width_  = images[0].size(1);
