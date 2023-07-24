@@ -25,10 +25,6 @@ class Dataset
   using Tensor = torch::Tensor;
 
 public:
-  enum RaySampleMode {
-    SINGLE_IMAGE,
-    ALL_IMAGES,
-  };
   Dataset(const YAML::Node & config);
 
   void NormalizeScene();
@@ -55,7 +51,6 @@ public:
   int height_, width_;
   std::vector<int> train_set_, test_set_, val_set_, split_info_;
   Tensor image_tensors_;
-  RaySampleMode ray_sample_mode_;
 };
 
 #endif  // SANR_DATASET_H

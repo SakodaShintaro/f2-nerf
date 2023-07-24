@@ -21,13 +21,6 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
   const auto data_path = config["data_path"].as<std::string>();
   std::cout << "data_path = " << data_path << std::endl;
   const auto factor = config["factor"].as<float>();
-  const auto ray_sample_mode = config["ray_sample_mode"].as<std::string>();
-  if (ray_sample_mode == "single_image") {
-    ray_sample_mode_ = RaySampleMode::SINGLE_IMAGE;
-  }
-  else {
-    ray_sample_mode_ = RaySampleMode::ALL_IMAGES;
-  }
 
   // Load camera pose
   CHECK(fs::exists(data_path + "/cams_meta.npy"));
