@@ -160,37 +160,6 @@ Rays Dataset::Img2WorldRay(const Tensor& pose,
   return { rays_o, rays_d };
 }
 
-Rays Dataset::Img2WorldRayFlex(const Tensor & cam_indices, const Tensor & ij)
-{
-  Tensor ij_shift = (ij + .5f).contiguous();
-  CK_CONT(cam_indices);
-  CK_CONT(ij_shift);
-  CK_CONT(poses_);
-  CK_CONT(intri_);
-  CK_CONT(dist_params_);
-  CHECK_EQ(poses_.sizes()[0], intri_.sizes()[0]);
-  CHECK_EQ(cam_indices.sizes()[0], ij.sizes()[0]);
-
-  Tensor i_tensor = ij_shift.index({Slc(), 0});
-  Tensor j_tensor = ij_shift.index({Slc(), 1});
-  Tensor selected_poses = torch::index_select(poses_, 0, cam_indices);
-  Tensor selected_intri = torch::index_select(intri_, 0, cam_indices);
-  Tensor cx_tensor = selected_intri.index({Slc(), 0, 2});
-  Tensor cy_tensor = selected_intri.index({Slc(), 1, 2});
-  Tensor fx_tensor = selected_intri.index({Slc(), 0, 0});
-  Tensor fy_tensor = selected_intri.index({Slc(), 1, 1});
-  Tensor u_tensor = ((j_tensor - cx_tensor) / fx_tensor).unsqueeze(-1);
-  Tensor v_tensor = -((i_tensor - cy_tensor) / fy_tensor).unsqueeze(-1);
-  Tensor w_tensor = -torch::ones_like(u_tensor);
-  Tensor dir_tensor = torch::cat({u_tensor, v_tensor, w_tensor}, 1).unsqueeze(-1);
-  Tensor ori_tensor = selected_poses.index({Slc(), Slc(0, 3), Slc(0, 3)});
-  Tensor pos_tensor = selected_poses.index({Slc(), Slc(0, 3), 3});
-  Tensor rays_d = torch::bmm(ori_tensor, dir_tensor).squeeze();
-  Tensor rays_o = pos_tensor;
-
-  return {rays_o, rays_d};
-}
-
 BoundedRays Dataset::RaysOfCamera(int idx, int reso_level) {
   int H = height_;
   int W = width_;
@@ -232,7 +201,35 @@ std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size, in
 
   Tensor gt_colors = image_tensors_.view({-1, 3}).index({ (cam_indices * height_ * width_ + i * width_ + j).to(torch::kLong) }).to(torch::kCUDA).contiguous();
   cam_indices = cam_indices.to(torch::kCUDA);
-  auto [ rays_o, rays_d ] = Img2WorldRayFlex(cam_indices.to(torch::kInt32), ij.to(torch::kInt32));
+  cam_indices = cam_indices.to(torch::kInt32);
+  ij = ij.to(torch::kInt32);
+
+  Tensor ij_shift = (ij + .5f).contiguous();
+  CK_CONT(cam_indices);
+  CK_CONT(ij_shift);
+  CK_CONT(poses_);
+  CK_CONT(intri_);
+  CK_CONT(dist_params_);
+  CHECK_EQ(poses_.sizes()[0], intri_.sizes()[0]);
+  CHECK_EQ(cam_indices.sizes()[0], ij.sizes()[0]);
+
+  Tensor i_tensor = ij_shift.index({Slc(), 0});
+  Tensor j_tensor = ij_shift.index({Slc(), 1});
+  Tensor selected_poses = torch::index_select(poses_, 0, cam_indices);
+  Tensor selected_intri = torch::index_select(intri_, 0, cam_indices);
+  Tensor cx_tensor = selected_intri.index({Slc(), 0, 2});
+  Tensor cy_tensor = selected_intri.index({Slc(), 1, 2});
+  Tensor fx_tensor = selected_intri.index({Slc(), 0, 0});
+  Tensor fy_tensor = selected_intri.index({Slc(), 1, 1});
+  Tensor u_tensor = ((j_tensor - cx_tensor) / fx_tensor).unsqueeze(-1);
+  Tensor v_tensor = -((i_tensor - cy_tensor) / fy_tensor).unsqueeze(-1);
+  Tensor w_tensor = -torch::ones_like(u_tensor);
+  Tensor dir_tensor = torch::cat({u_tensor, v_tensor, w_tensor}, 1).unsqueeze(-1);
+  Tensor ori_tensor = selected_poses.index({Slc(), Slc(0, 3), Slc(0, 3)});
+  Tensor pos_tensor = selected_poses.index({Slc(), Slc(0, 3), 3});
+  Tensor rays_d = torch::bmm(ori_tensor, dir_tensor).squeeze();
+  Tensor rays_o = pos_tensor;
+
   Tensor bounds = bounds_.index({cam_indices.to(torch::kLong)}).contiguous();
   return { { rays_o, rays_d, bounds }, gt_colors, cam_indices.to(torch::kInt32).contiguous() };
 }

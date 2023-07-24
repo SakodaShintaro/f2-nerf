@@ -34,7 +34,6 @@ public:
 
   // Img2WorldRay
   static Rays Img2WorldRay(const Tensor & pose, const Tensor & intri, const Tensor & ij);
-  Rays Img2WorldRayFlex(const Tensor & cam_indices, const Tensor & ij);
 
   // Rays
   BoundedRays RaysOfCamera(int idx, int reso_level = 1);
