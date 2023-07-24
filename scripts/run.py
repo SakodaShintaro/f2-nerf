@@ -27,7 +27,7 @@ def main(conf: DictConfig) -> None:
 
     data_path = os.path.join(
         base_dir, 'data', conf['dataset_name'], conf['case_name'])
-    assert os.path.exists(data_path)
+    assert os.path.exists(data_path), data_path
     make_image_list(data_path)
 
     base_exp_dir = os.path.join(base_dir, 'exp', conf['case_name'])
