@@ -128,6 +128,37 @@ void Dataset::NormalizeScene() {
   bounds_ = (bounds_ / radius_).contiguous();
 }
 
+void Dataset::SaveInferenceParams() const
+{
+  const std::string base_exp_dir = config_["base_exp_dir"].as<std::string>();
+  std::ofstream ofs(base_exp_dir + "/inference_params.yaml");
+  ofs << std::fixed;
+  ofs << "n_images: " << n_images_ << std::endl;
+  ofs << "height: " << height_ << std::endl;
+  ofs << "width: " << width_ << std::endl;
+
+  ofs << "intrinsic: [";
+  ofs << intri_[0][0][0].item() << ", ";
+  ofs << intri_[0][0][1].item() << ", ";
+  ofs << intri_[0][0][2].item() << "," << std::endl;
+  ofs << "            ";
+  ofs << intri_[0][1][0].item() << ", ";
+  ofs << intri_[0][1][1].item() << ", ";
+  ofs << intri_[0][1][2].item() << "," << std::endl;
+  ofs << "            ";
+  ofs << intri_[0][2][0].item() << ", ";
+  ofs << intri_[0][2][1].item() << ", ";
+  ofs << intri_[0][2][2].item() << "]" << std::endl;
+
+  ofs << "bounds: [" << bounds_[0][0].item();
+  ofs << ", " << bounds_[0][1].item() << "]" << std::endl;
+
+  ofs << "normalizing_center: [" << center_[0].item();
+  ofs << ", " << center_[1].item();
+  ofs << ", " << center_[2].item() << "]" << std::endl;
+  ofs << "normalizing_radius: " << radius_ << std::endl;
+}
+
 Rays Dataset::Img2WorldRay(int cam_idx, const Tensor &ij) {
   return Img2WorldRay(poses_[cam_idx], intri_[cam_idx], ij);
 }
@@ -152,6 +183,37 @@ Rays Dataset::Img2WorldRay(const Tensor& pose,
   Tensor rays_o = pose.index({ None, Slc(0, 3), 3}).repeat({ n_pts, 1 });
 
   return { rays_o, rays_d };
+}
+
+Rays Dataset::Img2WorldRayFlex(const Tensor & cam_indices, const Tensor & ij)
+{
+  Tensor ij_shift = (ij + .5f).contiguous();
+  CK_CONT(cam_indices);
+  CK_CONT(ij_shift);
+  CK_CONT(poses_);
+  CK_CONT(intri_);
+  CK_CONT(dist_params_);
+  CHECK_EQ(poses_.sizes()[0], intri_.sizes()[0]);
+  CHECK_EQ(cam_indices.sizes()[0], ij.sizes()[0]);
+
+  Tensor i_tensor = ij_shift.index({Slc(), 0});
+  Tensor j_tensor = ij_shift.index({Slc(), 1});
+  Tensor selected_poses = torch::index_select(poses_, 0, cam_indices);
+  Tensor selected_intri = torch::index_select(intri_, 0, cam_indices);
+  Tensor cx_tensor = selected_intri.index({Slc(), 0, 2});
+  Tensor cy_tensor = selected_intri.index({Slc(), 1, 2});
+  Tensor fx_tensor = selected_intri.index({Slc(), 0, 0});
+  Tensor fy_tensor = selected_intri.index({Slc(), 1, 1});
+  Tensor u_tensor = ((j_tensor - cx_tensor) / fx_tensor).unsqueeze(-1);
+  Tensor v_tensor = -((i_tensor - cy_tensor) / fy_tensor).unsqueeze(-1);
+  Tensor w_tensor = -torch::ones_like(u_tensor);
+  Tensor dir_tensor = torch::cat({u_tensor, v_tensor, w_tensor}, 1).unsqueeze(-1);
+  Tensor ori_tensor = selected_poses.index({Slc(), Slc(0, 3), Slc(0, 3)});
+  Tensor pos_tensor = selected_poses.index({Slc(), Slc(0, 3), 3});
+  Tensor rays_d = torch::bmm(ori_tensor, dir_tensor).squeeze();
+  Tensor rays_o = pos_tensor;
+
+  return {rays_o, rays_d};
 }
 
 BoundedRays Dataset::RaysOfCamera(int idx, int reso_level) {
@@ -220,66 +282,4 @@ std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size, in
   auto [ rays_o, rays_d ] = Img2WorldRayFlex(cam_indices.to(torch::kInt32), ij.to(torch::kInt32));
   Tensor bounds = bounds_.index({cam_indices.to(torch::kLong)}).contiguous();
   return { { rays_o, rays_d, bounds }, gt_colors, cam_indices.to(torch::kInt32).contiguous() };
-}
-
-void Dataset::SaveInferenceParams() const
-{
-  const std::string base_exp_dir = config_["base_exp_dir"].as<std::string>();
-  std::ofstream ofs(base_exp_dir + "/inference_params.yaml");
-  ofs << std::fixed;
-  ofs << "n_images: " << n_images_ << std::endl;
-  ofs << "height: " << height_ << std::endl;
-  ofs << "width: " << width_ << std::endl;
-
-  ofs << "intrinsic: [";
-  ofs << intri_[0][0][0].item() << ", ";
-  ofs << intri_[0][0][1].item() << ", ";
-  ofs << intri_[0][0][2].item() << "," << std::endl;
-  ofs << "            ";
-  ofs << intri_[0][1][0].item() << ", ";
-  ofs << intri_[0][1][1].item() << ", ";
-  ofs << intri_[0][1][2].item() << "," << std::endl;
-  ofs << "            ";
-  ofs << intri_[0][2][0].item() << ", ";
-  ofs << intri_[0][2][1].item() << ", ";
-  ofs << intri_[0][2][2].item() << "]" << std::endl;
-
-  ofs << "bounds: [" << bounds_[0][0].item();
-  ofs << ", " << bounds_[0][1].item() << "]" << std::endl;
-
-  ofs << "normalizing_center: [" << center_[0].item();
-  ofs << ", " << center_[1].item();
-  ofs << ", " << center_[2].item() << "]" << std::endl;
-  ofs << "normalizing_radius: " << radius_ << std::endl;
-}
-
-Rays Dataset::Img2WorldRayFlex(const Tensor & cam_indices, const Tensor & ij)
-{
-  Tensor ij_shift = (ij + .5f).contiguous();
-  CK_CONT(cam_indices);
-  CK_CONT(ij_shift);
-  CK_CONT(poses_);
-  CK_CONT(intri_);
-  CK_CONT(dist_params_);
-  CHECK_EQ(poses_.sizes()[0], intri_.sizes()[0]);
-  CHECK_EQ(cam_indices.sizes()[0], ij.sizes()[0]);
-
-  Tensor i_tensor = ij_shift.index({Slc(), 0});
-  Tensor j_tensor = ij_shift.index({Slc(), 1});
-  Tensor selected_poses = torch::index_select(poses_, 0, cam_indices);
-  Tensor selected_intri = torch::index_select(intri_, 0, cam_indices);
-  Tensor cx_tensor = selected_intri.index({Slc(), 0, 2});
-  Tensor cy_tensor = selected_intri.index({Slc(), 1, 2});
-  Tensor fx_tensor = selected_intri.index({Slc(), 0, 0});
-  Tensor fy_tensor = selected_intri.index({Slc(), 1, 1});
-  Tensor u_tensor = ((j_tensor - cx_tensor) / fx_tensor).unsqueeze(-1);
-  Tensor v_tensor = -((i_tensor - cy_tensor) / fy_tensor).unsqueeze(-1);
-  Tensor w_tensor = -torch::ones_like(u_tensor);
-  Tensor dir_tensor = torch::cat({u_tensor, v_tensor, w_tensor}, 1).unsqueeze(-1);
-  Tensor ori_tensor = selected_poses.index({Slc(), Slc(0, 3), Slc(0, 3)});
-  Tensor pos_tensor = selected_poses.index({Slc(), Slc(0, 3), 3});
-  Tensor rays_d = torch::bmm(ori_tensor, dir_tensor).squeeze();
-  Tensor rays_o = pos_tensor;
-
-  return {rays_o, rays_d};
 }
