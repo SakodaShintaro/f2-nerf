@@ -211,61 +211,6 @@ BoundedRays Dataset::RaysFromPose(const Tensor &pose, int reso_level) {
   return { rays_o, rays_d, bounds };
 }
 
-BoundedRays Dataset::RandRaysFromPose(int batch_size, const Tensor& pose) {
-  int H = height_;
-  int W = width_;
-  Tensor i = torch::randint(0, H, batch_size, CUDALong);
-  Tensor j = torch::randint(0, W, batch_size, CUDALong);
-  auto [ rays_o, rays_d ] = Img2WorldRay(pose, intri_[0], torch::stack({ i, j }, -1).to(torch::kFloat32));
-  float near = bounds_.index({Slc(), 0}).min().item<float>();
-  float far  = bounds_.index({Slc(), 1}).max().item<float>();
-
-  Tensor bounds = torch::stack({
-                                   torch::full({ batch_size }, near, CUDAFloat),
-                                   torch::full({ batch_size }, far,  CUDAFloat)
-                               }, -1).contiguous();
-  return { rays_o, rays_d, bounds };
-}
-
-
-BoundedRays Dataset::RaysInterpolate(int idx_0, int idx_1, float alpha, int reso_level) {
-  Tensor pose_0 = poses_[idx_0];
-  Tensor pose_1 = poses_[idx_1];
-  Tensor pose = PoseInterpolate(pose_0, pose_1, alpha);
-
-  return RaysFromPose(pose, reso_level);
-}
-
-BoundedRays Dataset::RandRaysWholeSpace(int batch_size) {
-  const int window_size = 10;
-  Tensor weights = torch::rand({3}, CPUFloat) + 1e-7f;
-  Tensor indices = torch::randint(0, window_size, {3}, CPUInt) + torch::randint(0, n_images_ - window_size, {1}, CPUInt);
-  int a = indices[0].item<int>(), b = indices[1].item<int>(), c = indices[2].item<int>();
-  float wa = weights[0].item<float>(), wb = weights[1].item<float>(), wc = weights[2].item<float>();
-  Tensor pose = PoseInterpolate(poses_[a], poses_[b], wb / (wb + wa));
-  pose = PoseInterpolate(pose, poses_[c], wc / (wa + wb + wc));
-
-  return RandRaysFromPose(batch_size, pose);
-}
-
-std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysDataOfCamera(int idx, int batch_size) {
-  int H = height_;
-  int W = width_;
-  Tensor i = torch::randint(0, H, batch_size, CUDALong);
-  Tensor j = torch::randint(0, W, batch_size, CUDALong);
-  auto [ rays_o, rays_d ] = Img2WorldRay(idx, torch::stack({ i, j }, -1).to(torch::kFloat32));
-  Tensor gt_colors = image_tensors_[idx].view({-1, 3}).index({ (i * W + j) }).to(torch::kCUDA).contiguous();
-  float near = bounds_.index({idx, 0}).item<float>();
-  float far  = bounds_.index({idx, 1}).item<float>();
-
-  Tensor bounds = torch::stack({
-    torch::full({ H * W }, near, CUDAFloat),
-    torch::full({ H * W }, far,  CUDAFloat)
-  }, -1).contiguous();
-  return { { rays_o, rays_d, bounds }, gt_colors, torch::full({ batch_size }, idx, CUDAInt) };
-}
-
-
 std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size, int sets) {
   std::vector<int> img_idx;
   if ((sets & DATA_TRAIN_SET) != 0) {

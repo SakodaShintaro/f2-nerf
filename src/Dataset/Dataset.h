@@ -39,10 +39,6 @@ public:
   // Rays
   BoundedRays RaysOfCamera(int idx, int reso_level = 1);
   BoundedRays RaysFromPose(const Tensor & pose, int reso_level = 1);
-  BoundedRays RandRaysFromPose(int batch_size, const Tensor & pose);
-  BoundedRays RaysInterpolate(int idx_0, int idx_1, float alpha, int reso_level = 1);
-  BoundedRays RandRaysWholeSpace(int batch_size);
-  std::tuple<BoundedRays, Tensor, Tensor> RandRaysDataOfCamera(int idx, int batch_size);
   std::tuple<BoundedRays, Tensor, Tensor> RandRaysData(int batch_size, int sets);
 
   // Others
