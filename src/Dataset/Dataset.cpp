@@ -291,17 +291,6 @@ std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size, in
   return { { rays_o, rays_d, bounds }, gt_colors, cam_indices.to(torch::kInt32).contiguous() };
 }
 
-std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysDataOfTrainSet(int batch_size) {
-  if (ray_sample_mode_ == RaySampleMode::SINGLE_IMAGE) {
-    int idx = torch::randint(int(train_set_.size()), {1}).item<int>();
-    idx = train_set_[idx];
-    return RandRaysDataOfCamera(idx, batch_size);
-  }
-  else {
-    return RandRaysData(batch_size, DATA_TRAIN_SET);
-  }
-}
-
 void Dataset::SaveInferenceParams() const
 {
   const std::string base_exp_dir = config_["base_exp_dir"].as<std::string>();

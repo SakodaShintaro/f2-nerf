@@ -43,7 +43,6 @@ public:
   BoundedRays RaysInterpolate(int idx_0, int idx_1, float alpha, int reso_level = 1);
   BoundedRays RandRaysWholeSpace(int batch_size);
   std::tuple<BoundedRays, Tensor, Tensor> RandRaysDataOfCamera(int idx, int batch_size);
-  std::tuple<BoundedRays, Tensor, Tensor> RandRaysDataOfTrainSet(int batch_size);  // Deprecated.
   std::tuple<BoundedRays, Tensor, Tensor> RandRaysData(int batch_size, int sets);
 
   // Others
