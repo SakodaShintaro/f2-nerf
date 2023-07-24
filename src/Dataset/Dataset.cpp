@@ -95,7 +95,7 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
 }
 
 void Dataset::NormalizeScene() {
-  // Given poses_ & bounds_, Gen new poses_, c2w_, w2c_, bounds_.
+  // Given poses_ & bounds_, Gen new poses_, bounds_.
   const auto& config = config_["dataset"];
   Tensor cam_pos = poses_.index({Slc(), Slc(0, 3), 3}).clone();
   center_ = cam_pos.mean(0, false);
@@ -103,13 +103,7 @@ void Dataset::NormalizeScene() {
   radius_ = torch::linalg_norm(bias, 2, -1, false).max().item<float>();
   cam_pos = (cam_pos - center_.unsqueeze(0)) / radius_;
   poses_.index_put_({Slc(), Slc(0, 3), 3}, cam_pos);
-
   poses_ = poses_.contiguous();
-  c2w_ = poses_.clone();
-  w2c_ = torch::eye(4, CUDAFloat).unsqueeze(0).repeat({n_images_, 1, 1}).contiguous();
-  w2c_.index_put_({Slc(), Slc(0, 3), Slc()}, c2w_.clone());
-  w2c_ = torch::linalg_inv(w2c_);
-  w2c_ = w2c_.index({Slc(), Slc(0, 3), Slc()}).contiguous();
   bounds_ = (bounds_ / radius_).contiguous();
 }
 

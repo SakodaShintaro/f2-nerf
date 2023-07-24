@@ -42,7 +42,7 @@ public:
 
   // variables
   int n_images_ = 0;
-  Tensor poses_, c2w_, w2c_, intri_, dist_params_, bounds_;
+  Tensor poses_, intri_, dist_params_, bounds_;
   Tensor center_;
   float radius_;
   int height_, width_;
