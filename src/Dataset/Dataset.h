@@ -33,7 +33,6 @@ public:
   const YAML::Node config_;
 
   // Img2WorldRay
-  Rays Img2WorldRay(int cam_idx, const Tensor & ij);
   static Rays Img2WorldRay(const Tensor & pose, const Tensor & intri, const Tensor & ij);
   Rays Img2WorldRayFlex(const Tensor & cam_indices, const Tensor & ij);
 

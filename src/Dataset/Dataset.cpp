@@ -159,10 +159,6 @@ void Dataset::SaveInferenceParams() const
   ofs << "normalizing_radius: " << radius_ << std::endl;
 }
 
-Rays Dataset::Img2WorldRay(int cam_idx, const Tensor &ij) {
-  return Img2WorldRay(poses_[cam_idx], intri_[cam_idx], ij);
-}
-
 Rays Dataset::Img2WorldRay(const Tensor& pose,
                            const Tensor& intri,
                            const Tensor& ij) {
@@ -233,7 +229,7 @@ BoundedRays Dataset::RaysOfCamera(int idx, int reso_level) {
                                    torch::full({ H * W }, far,  CUDAFloat)
                                }, -1).contiguous();
 
-  auto [ rays_o, rays_d ] = Img2WorldRay(idx, torch::stack({ i, j }, -1));
+  auto [ rays_o, rays_d ] = Img2WorldRay(poses_[idx], intri_[idx], torch::stack({ i, j }, -1));
   return { rays_o, rays_d, bounds };
 }
 
