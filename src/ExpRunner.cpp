@@ -275,26 +275,6 @@ void ExpRunner::VisualizeImage(int idx) {
   Utils::WriteImageTensor(base_exp_dir_ + "/images/" + fmt::format("{}_{}.png", iter_step_, idx), img_tensor);
 }
 
-void ExpRunner::RenderPath() {
-  torch::NoGradGuard no_grad_guard;
-  int n_images = dataset_->render_poses_.size(0);
-  int res_level = 1;
-  for (int i = 0; i < n_images; i++) {
-    std::cout << i << std::endl;
-    auto [ rays_o, rays_d, bounds ] = dataset_->RaysFromPose(dataset_->render_poses_[i], res_level);
-    auto [pred_colors, first_oct_dis, pred_disps] = RenderWholeImage(rays_o, rays_d, bounds, RunningMode::VALIDATE);
-    int H = dataset_->height_ / res_level;
-    int W = dataset_->width_ / res_level;
-
-    Tensor img_tensor = torch::cat({pred_colors.reshape({H, W, 3}),
-                                    first_oct_dis.reshape({H, W, 1}).repeat({1, 1, 3}),
-                                    pred_disps.reshape({H, W, 1}).repeat({1, 1, 3})}, 1);
-
-    fs::create_directories(base_exp_dir_ + "/novel_images");
-    Utils::WriteImageTensor(base_exp_dir_ + "/novel_images/" + fmt::format("{}_{:0>3d}.png", iter_step_, i), img_tensor);
-  }
-}
-
 void ExpRunner::TestImages() {
   torch::NoGradGuard no_grad_guard;
 
@@ -345,9 +325,6 @@ void ExpRunner::Execute() {
   std::string mode = config_["mode"].as<std::string>();
   if (mode == "train") {
     Train();
-  }
-  else if (mode == "render_path") {
-    RenderPath();
   }
   else if (mode == "test") {
     TestImages();

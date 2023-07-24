@@ -38,13 +38,11 @@ public:
 
   // Rays
   BoundedRays RaysOfCamera(int idx, int reso_level = 1);
-  BoundedRays RaysFromPose(const Tensor & pose, int reso_level = 1);
   std::tuple<BoundedRays, Tensor, Tensor> RandRaysData(int batch_size, int sets);
 
   // variables
   int n_images_ = 0;
   Tensor poses_, c2w_, w2c_, intri_, dist_params_, bounds_;
-  Tensor render_poses_;
   Tensor center_;
   float radius_;
   int height_, width_;

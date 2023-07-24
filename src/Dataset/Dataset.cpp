@@ -47,21 +47,6 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
 
   NormalizeScene();
 
-  // Load render camera poses
-  if (fs::exists(data_path + "/poses_render.npy")) {
-    cnpy::NpyArray arr = cnpy::npy_load(data_path + "/poses_render.npy");
-    auto options = torch::TensorOptions().dtype(torch::kFloat64);  // WARN: Float64 Here!!!!!
-    Tensor cam_data = torch::from_blob(arr.data<double>(), arr.num_vals, options).to(torch::kFloat32).to(torch::kCUDA);
-
-    int n_render_poses = arr.shape[0];
-    cam_data = cam_data.reshape({-1, 3, 4});
-    cam_data = cam_data.index({Slc(0, n_render_poses)});
-    Tensor poses = cam_data;
-    render_poses_ = poses;   // [n, 3, 4]
-    render_poses_.index_put_({Slc(), Slc(0, 3), 3}, (render_poses_.index({Slc(), Slc(0, 3), 3}) - center_.unsqueeze(0)) / radius_);
-    std::cout << "Load render poses" << std::endl;
-  }
-
   // Relax bounds
   auto bounds_factor = config["bounds_factor"].as<std::vector<float>>();
   bounds_ = torch::stack( { bounds_.index({"...", 0}) * bounds_factor[0],
@@ -230,28 +215,6 @@ BoundedRays Dataset::RaysOfCamera(int idx, int reso_level) {
                                }, -1).contiguous();
 
   auto [ rays_o, rays_d ] = Img2WorldRay(poses_[idx], intri_[idx], torch::stack({ i, j }, -1));
-  return { rays_o, rays_d, bounds };
-}
-
-BoundedRays Dataset::RaysFromPose(const Tensor &pose, int reso_level) {
-  int H = height_ / reso_level;
-  int W = width_ / reso_level;
-  Tensor ii = torch::linspace(0.f, height_ - 1.f, H, CUDAFloat);
-  Tensor jj = torch::linspace(0.f, width_ - 1.f, W, CUDAFloat);
-  auto ij = torch::meshgrid({ ii, jj }, "ij");
-  Tensor i = ij[0].reshape({-1});
-  Tensor j = ij[1].reshape({-1});
-
-  auto [ rays_o, rays_d ] = Img2WorldRay(pose, intri_[0], torch::stack({ i, j }, -1));
-  // TODO....
-  float near = bounds_.index({Slc(), 0}).min().item<float>();
-  float far  = bounds_.index({Slc(), 1}).max().item<float>();
-
-  Tensor bounds = torch::stack({
-                                   torch::full({ H * W }, near, CUDAFloat),
-                                   torch::full({ H * W }, far,  CUDAFloat)
-                               }, -1).contiguous();
-
   return { rays_o, rays_d, bounds };
 }
 
