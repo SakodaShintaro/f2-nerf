@@ -421,7 +421,8 @@ BoundedRays LocalizerCore::rays_from_pose(const Tensor & pose)
   Tensor i = ij[0].reshape({-1});
   Tensor j = ij[1].reshape({-1});
 
-  auto [rays_o, rays_d] = Dataset::Img2WorldRay(pose, intrinsic_, torch::stack({i, j}, -1));
+  auto [rays_o, rays_d] =
+    Dataset::Img2WorldRay(pose.unsqueeze(0), intrinsic_.unsqueeze(0), torch::stack({i, j}, -1));
 
   Tensor bounds = torch::stack(
                     {torch::full({infer_height_ * infer_width_}, near_, CUDAFloat),
