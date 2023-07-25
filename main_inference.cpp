@@ -18,11 +18,11 @@ int main(int argc, char * argv[])
   const std::string runtime_config_path = argv[1];
 
   LocalizerCoreParam param{};
-  param.resize_factor = 5;
+  param.resize_factor = 16;
   param.runtime_config_path = runtime_config_path;
   LocalizerCore core(param);
 
-  constexpr int32_t iteration_num = 1;
+  constexpr int32_t iteration_num = 100;
 
   const std::string save_dir = "./inference_result/";
   fs::create_directories(save_dir);
@@ -33,7 +33,7 @@ int main(int argc, char * argv[])
   Timer timer;
   timer.start();
 
-  const float noise = 0.5f / core.radius();
+  const float noise = 1.0f / core.radius();
   std::cout << "noise = " << noise << std::endl;
 
   for (int32_t i = 0; i < dataset.n_images_; i++) {
