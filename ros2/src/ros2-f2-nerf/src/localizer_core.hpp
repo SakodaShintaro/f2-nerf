@@ -37,7 +37,7 @@ public:
   std::tuple<float, Tensor> pred_image_and_calc_score(const Tensor & pose, const Tensor & image);
   std::vector<Particle> random_search(
     Tensor initial_pose, Tensor image_tensor, int64_t particle_num, float noise_coeff);
-  Tensor optimize_pose(Tensor initial_pose, Tensor image_tensor, int64_t iteration_num);
+  std::vector<Tensor> optimize_pose(Tensor initial_pose, Tensor image_tensor, int64_t iteration_num);
 
   torch::Tensor world2camera(const torch::Tensor & pose_in_world);
   torch::Tensor camera2world(const torch::Tensor & pose_in_camera);

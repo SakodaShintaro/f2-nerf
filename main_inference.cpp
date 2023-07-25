@@ -79,13 +79,19 @@ int main(int argc, char * argv[])
         curr_dir + "image_03_noised" + std::to_string(d) + ".png", nerf_image_noised);
       output("noised_" + std::to_string(d), curr_pose, score_noised);
 
-      // Optimized
-      torch::Tensor optimized_pose = core.optimize_pose(curr_pose, image_tensor, iteration_num);
-      auto [score_after, nerf_image_after] =
-        core.pred_image_and_calc_score(optimized_pose, image_tensor);
-      Utils::WriteImageTensor(
-        curr_dir + "image_04_after" + std::to_string(d) + ".png", nerf_image_after);
-      output("optimized_" + std::to_string(d), optimized_pose, score_after);
+      // Optimize
+      std::vector<torch::Tensor> optimized_poses = core.optimize_pose(curr_pose, image_tensor, iteration_num);
+      for (int32_t itr = 0; itr < optimized_poses.size(); itr++) {
+        torch::Tensor optimized_pose = optimized_poses[itr];
+        auto [score_after, nerf_image_after] =
+          core.pred_image_and_calc_score(optimized_pose, image_tensor);
+        const std::string suffix =
+          (std::stringstream() << d << "_" << std::setfill('0') << std::setw(2) << itr).str();
+        Utils::WriteImageTensor(curr_dir + "image_04_after_" + suffix + ".png", nerf_image_after);
+        output("optimized_" + suffix, optimized_pose, score_after);
+      }
     }
   }
+
+  std::cout << "\nTime = " << timer.elapsed_seconds() << std::endl;
 }
