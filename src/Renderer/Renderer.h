@@ -62,8 +62,6 @@ public:
   Tensor app_emb_;
 
   BGColorType bg_color_type_ = BGColorType::rand_noise;
-
-  SampleResultFlex sample_result_;
 };
 
 torch::Tensor FilterIdxBounds(const torch::Tensor& idx_bounds,
