@@ -136,7 +136,7 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
 {
   std::vector<Tensor> results;
   initial_pose = initial_pose.requires_grad_(true);
-  torch::optim::SGD optimizer({initial_pose}, torch::optim::SGDOptions(1e3));
+  torch::optim::Adam optimizer({initial_pose}, 4 * 1e-2);
   for (int64_t i = 0; i < iteration_num; i++) {
     Tensor prev = initial_pose.detach();
     auto [rays_o, rays_d, bounds] = rays_from_pose(initial_pose);
@@ -146,8 +146,9 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
     pred_img = pred_img.clip(0.f, 1.f);
     pred_img = pred_img.to(image_tensor.device());
 
-    Tensor diff = pred_img - image_tensor.view({infer_height_, infer_width_, 3});
-    Tensor loss = (diff * diff).mean(-1).sum();
+    image_tensor = image_tensor.view({infer_height_, infer_width_, 3});
+
+    Tensor loss = torch::nn::functional::mse_loss(pred_img, image_tensor);
     optimizer.zero_grad();
     // For some reason, backward may fail, so check here
     try {
