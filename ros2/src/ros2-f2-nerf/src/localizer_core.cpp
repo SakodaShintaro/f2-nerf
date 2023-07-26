@@ -244,6 +244,17 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays_grad(
   return {pred_colors_ts, first_oct_disp_ts, pred_disp_ts};
 }
 
+Tensor LocalizerCore::render_image(const Tensor & pose)
+{
+  torch::NoGradGuard no_grad_guard;
+  auto [rays_o, rays_d, bounds] = rays_from_pose(pose);
+  auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
+  Tensor pred_img = pred_colors.view({infer_height_, infer_width_, 3});
+  pred_img = pred_img.clip(0.f, 1.f);
+  pred_img = pred_img.cpu();
+  return pred_img;
+}
+
 std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
   const Tensor & pose, const Tensor & image)
 {

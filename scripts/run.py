@@ -48,7 +48,7 @@ def main(conf: DictConfig) -> None:
 
     binary_path = f"{base_dir}/build/main"
     assert os.path.exists(binary_path) and os.path.isfile(binary_path)
-    subprocess.run(f"{binary_path} {save_config_path}", shell=True, check=True)
+    subprocess.run(f"{binary_path} train {save_config_path}", shell=True, check=True)
 
 
 if __name__ == '__main__':

@@ -84,7 +84,11 @@ set(ALL_LIBS ${TORCH_LIBRARIES}
         gtsam)
 
 # ------------------------------------ Add executables ---------------------------------------
-add_executable(main main.cpp src/ExpRunner.cpp ${SRC_ALL})
+add_executable(main main.cpp
+        src/ExpRunner.cpp
+        src/Walk.cpp
+        ros2/src/ros2-f2-nerf/src/localizer_core.cpp
+        ${SRC_ALL})
 target_link_libraries(main ${ALL_LIBS})
 set_property(TARGET main PROPERTY CXX_STANDARD 17)
 set_property(TARGET main PROPERTY CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
