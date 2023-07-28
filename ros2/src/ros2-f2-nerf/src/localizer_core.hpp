@@ -52,13 +52,18 @@ public:
 
   static Tensor calc_average_pose(const std::vector<Particle> & particles);
 
-private:
+  BoundedRays rays_from_pose(const Tensor & pose);
+
   std::tuple<Tensor, Tensor, Tensor> render_all_rays(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
   std::tuple<Tensor, Tensor, Tensor> render_all_rays_grad(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
+
+  int infer_height() const { return infer_height_; }
+  int infer_width() const { return infer_width_; }
+
+private:
   std::vector<float> evaluate_poses(const std::vector<Tensor> & poses, const Tensor & image);
-  BoundedRays rays_from_pose(const Tensor & pose);
 
   LocalizerCoreParam param_;
 
