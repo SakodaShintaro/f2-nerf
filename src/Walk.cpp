@@ -44,7 +44,9 @@ torch::Tensor calc_rotation_tensor(float degree, Eigen::Vector3f axis)
   return result;
 }
 
-torch::Tensor render(LocalizerCore& localizer, torch::Tensor pose) {
+void render(LocalizerCore & localizer, torch::Tensor pose)
+{
+  std::cout << "pose:\n" << pose << std::endl;
   torch::Tensor pose_camera = localizer.world2camera(pose);
   BoundedRays rays = localizer.rays_from_pose(pose_camera);
   const int ray_num = rays.origins.size(0);
@@ -59,7 +61,9 @@ torch::Tensor render(LocalizerCore& localizer, torch::Tensor pose) {
   torch::Tensor pred_colors = torch::cat(pred_colors_list, 0);
   pred_colors = pred_colors.clip(0.0f, 1.0f);
   torch::Tensor image = pred_colors.view({localizer.infer_height(), localizer.infer_width(), 3});
-  return image;
+  Utils::WriteImageTensor("image.png", image);
+  std::cout << "WASDで移動, E:上昇, Q下降, J:左回転, K:下回転, L:右回転, I:上回転, O:ROll+, U:ROll-"
+            << std::endl;
 }
 
 void walk(const std::string & config_path)
@@ -70,17 +74,14 @@ void walk(const std::string & config_path)
   param.resize_factor = 8;
   LocalizerCore localizer(param);
   torch::Tensor pose = torch::eye(4).cuda();
-  constexpr float step = 0.2;
+  float step = 0.2;
   constexpr float degree = 10.0;
 
   // Poseは世界座標系で考える
   // つまりXが前方
   // Yが左方
   // Zが上方
-  std::cout << "pose:\n" << pose << std::endl;
-  std::cout << "WASDで移動, E:上昇, Q下降, J:左回転, K:下回転, L:右回転, I:上回転, O:ROll+, U:ROll-" << std::endl;
-  torch::Tensor image = render(localizer, pose);
-  Utils::WriteImageTensor("image.png", image);
+  render(localizer, pose);
 
   while (1) {
     if (kbhit()) {
@@ -129,16 +130,17 @@ void walk(const std::string & config_path)
         torch::Tensor rotation_matrix = calc_rotation_tensor(-degree, Eigen::Vector3f::UnitX());
         orientation = torch::matmul(orientation, rotation_matrix);
         pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
+      } else if (pushed_key == 'x') {
+        step += 0.1;
+        std::cout << "step = " << step << std::endl;
+      } else if (pushed_key == 'z') {
+        step -= 0.1;
+        std::cout << "step = " << step << std::endl;
       } else {
         std::cout << "Unknown kye: " << pushed_key << std::endl;
         continue;
       }
-      std::cout << "pose:\n" << pose << std::endl;
-      torch::Tensor image = render(localizer, pose);
-      Utils::WriteImageTensor("image.png", image);
-      std::cout
-        << "WASDで移動, E:上昇, Q下降, J:左回転, K:下回転, L:右回転, I:上回転, O:ROll+, U:ROll-"
-        << std::endl;
+      render(localizer, pose);
     }
   }
 }
