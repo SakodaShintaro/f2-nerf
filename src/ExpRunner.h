@@ -17,7 +17,6 @@ public:
 
   void Execute();
   void Train();
-  void TestImages();
   void RenderAllImages();
 
   void LoadCheckpoint(const std::string& path);

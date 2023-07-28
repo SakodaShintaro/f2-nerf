@@ -150,9 +150,6 @@ void ExpRunner::Train() {
   }
 
   std::cout << "Train done" << std::endl;
-  if (config_["do_test_after_train"].as<bool>()) {
-    TestImages();
-  }
 }
 
 void ExpRunner::LoadCheckpoint(const std::string& path) {
@@ -252,12 +249,6 @@ std::tuple<Tensor, Tensor, Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Te
   return { pred_colors, first_oct_disp, pred_disp };
 }
 
-void ExpRunner::RenderAllImages() {
-  for (int idx = 0; idx < dataset_->n_images_; idx++) {
-    VisualizeImage(idx);
-  }
-}
-
 void ExpRunner::VisualizeImage(int idx) {
   torch::NoGradGuard no_grad_guard;
 
@@ -275,61 +266,6 @@ void ExpRunner::VisualizeImage(int idx) {
   Utils::WriteImageTensor(base_exp_dir_ + "/images/" + fmt::format("{}_{}.png", iter_step_, idx), img_tensor);
 }
 
-void ExpRunner::TestImages() {
-  torch::NoGradGuard no_grad_guard;
-
-  float psnr_sum = 0.f;
-  float cnt = 0.f;
-  YAML::Node out_info;
-  {
-    fs::create_directories(base_exp_dir_ + "/test_images");
-    for (int i: dataset_->test_set_) {
-      auto [rays_o, rays_d, bounds] = dataset_->RaysOfCamera(i);
-      auto [pred_colors, first_oct_dis, pred_disps] = RenderWholeImage(rays_o, rays_d, bounds, RunningMode::VALIDATE);
-
-      int H = dataset_->height_;
-      int W = dataset_->width_;
-
-      auto quantify = [](const Tensor& x) {
-        return (x.clip(0.f, 1.f) * 255.f).to(torch::kUInt8).to(torch::kFloat32) / 255.f;
-      };
-      pred_disps = pred_disps.reshape({H, W, 1});
-      first_oct_dis = first_oct_dis.reshape({H, W, 1});
-      pred_colors = pred_colors.reshape({H, W, 3});
-      pred_colors = quantify(pred_colors);
-      float mse = (pred_colors.reshape({H, W, 3}) -
-                   dataset_->image_tensors_[i].to(torch::kCPU).reshape({H, W, 3})).square().mean().item<float>();
-      float psnr = 20.f * std::log10(1 / std::sqrt(mse));
-      out_info[fmt::format("{}", i)] = psnr;
-      std::cout << fmt::format("{}: {}", i, psnr) << std::endl;
-      psnr_sum += psnr;
-      cnt += 1.f;
-      Utils::WriteImageTensor(base_exp_dir_ + "/test_images/" + fmt::format("color_{}_{:0>3d}.png", iter_step_, i),
-                             pred_colors);
-      Utils::WriteImageTensor(base_exp_dir_ + "/test_images/" + fmt::format("depth_{}_{:0>3d}.png", iter_step_, i),
-                              pred_disps.repeat({1, 1, 3}));
-      Utils::WriteImageTensor(base_exp_dir_ + "/test_images/" + fmt::format("oct_depth_{}_{:0>3d}.png", iter_step_, i),
-                             first_oct_dis.repeat({1, 1, 3}));
-
-    }
-  }
-  float mean_psnr = psnr_sum / cnt;
-  std::cout << fmt::format("Mean psnr: {}", mean_psnr) << std::endl;
-  out_info["mean_psnr"] = mean_psnr;
-
-  std::ofstream info_fout(base_exp_dir_ + "/test_images/info.yaml");
-  info_fout << out_info;
-}
-
 void ExpRunner::Execute() {
-  std::string mode = config_["mode"].as<std::string>();
-  if (mode == "train") {
-    Train();
-  }
-  else if (mode == "test") {
-    TestImages();
-  }
-  else if (mode == "render_all") {
-    RenderAllImages();
-  }
+  Train();
 }

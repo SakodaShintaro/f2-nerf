@@ -11,8 +11,6 @@ case_name: 20230609_base_link_logiee
 
 is_continue: false
 
-mode: train
-
 renderer:
   # Appearance embedding to handling unstable lighting conditions
   use_app_emb: true
@@ -26,5 +24,3 @@ dataset:
 
 train:
   ray_march_init_fineness: 16
-
-do_test_after_train: false
