@@ -87,10 +87,27 @@ void walk(const std::string & config_path)
       } else if (pushed_key == 'k') {
       } else if (pushed_key == 'l') {
       } else if (pushed_key == 'i') {
+      } else {
+        std::cout << "Unknown kye: " << pushed_key << std::endl;
+        continue;
       }
       std::cout << "pose:\n" << pose << std::endl;
       torch::Tensor pose_camera = localizer.world2camera(pose);
-      torch::Tensor image = localizer.render_image(pose_camera);
+      BoundedRays rays = localizer.rays_from_pose(pose_camera);
+      const int ray_num = rays.origins.size(0);
+      std::cout << "rays.origins:\n" << rays.origins.sizes() << std::endl;
+      constexpr int kBatchSize = 6000;
+      std::vector<torch::Tensor> pred_colors_list;
+      for (int i = 0; i < ray_num; i += kBatchSize) {
+        const auto [pred_colors, first_oct_disp, pred_disp] = localizer.render_all_rays_grad(
+          rays.origins.index({Slc(i, i + kBatchSize)}), rays.dirs.index({Slc(i, i + kBatchSize)}),
+          rays.bounds.index({Slc(i, i + kBatchSize)}));
+        pred_colors_list.push_back(pred_colors);
+      }
+      torch::Tensor pred_colors = torch::cat(pred_colors_list, 0);
+      pred_colors = pred_colors.clip(0.0f, 1.0f);
+      torch::Tensor image =
+        pred_colors.view({localizer.infer_height(), localizer.infer_width(), 3});
       Utils::WriteImageTensor("image.png", image);
       std::cout << "WASDで移動, E:上昇, Q下降, J:左回転, K:下回転, L:右回転, I:上回転" << std::endl;
     }
