@@ -39,7 +39,9 @@ torch::Tensor calc_rotation_tensor(float degree, Eigen::Vector3f axis)
   const float theta = degree * M_PI / 180.0;
   Eigen::AngleAxisf a(theta, axis);
   Eigen::Matrix3f rotation_matrix(a);
-  return torch::from_blob(rotation_matrix.data(), {3, 3}).to(torch::kFloat32);
+  torch::Tensor result =
+    torch::from_blob(rotation_matrix.data(), {3, 3}).to(torch::kFloat32).cuda();
+  return result;
 }
 
 void walk(const std::string & config_path)
@@ -84,9 +86,21 @@ void walk(const std::string & config_path)
         torch::Tensor tmp = torch::tensor({0.0f, 0.0f, -step}, torch::kFloat32).view({3, 1}).cuda();
         pose.index({Slc(0, 3), Slc(3, 4)}) += orientation.matmul(tmp);
       } else if (pushed_key == 'j') {
+        torch::Tensor rotation_matrix = calc_rotation_tensor(-degree, Eigen::Vector3f::UnitZ());
+        orientation = rotation_matrix.matmul(orientation);
+        pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
       } else if (pushed_key == 'k') {
+        torch::Tensor rotation_matrix = calc_rotation_tensor(-degree, Eigen::Vector3f::UnitY());
+        orientation = rotation_matrix.matmul(orientation);
+        pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
       } else if (pushed_key == 'l') {
+        torch::Tensor rotation_matrix = calc_rotation_tensor(+degree, Eigen::Vector3f::UnitZ());
+        orientation = rotation_matrix.matmul(orientation);
+        pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
       } else if (pushed_key == 'i') {
+        torch::Tensor rotation_matrix = calc_rotation_tensor(+degree, Eigen::Vector3f::UnitY());
+        orientation = rotation_matrix.matmul(orientation);
+        pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
       } else {
         std::cout << "Unknown kye: " << pushed_key << std::endl;
         continue;
@@ -95,8 +109,7 @@ void walk(const std::string & config_path)
       torch::Tensor pose_camera = localizer.world2camera(pose);
       BoundedRays rays = localizer.rays_from_pose(pose_camera);
       const int ray_num = rays.origins.size(0);
-      std::cout << "rays.origins:\n" << rays.origins.sizes() << std::endl;
-      constexpr int kBatchSize = 6000;
+      constexpr int kBatchSize = 5000;
       std::vector<torch::Tensor> pred_colors_list;
       for (int i = 0; i < ray_num; i += kBatchSize) {
         const auto [pred_colors, first_oct_disp, pred_disp] = localizer.render_all_rays_grad(
