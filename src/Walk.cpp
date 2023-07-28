@@ -78,7 +78,7 @@ void walk(const std::string & config_path)
   // Yが左方
   // Zが上方
   std::cout << "pose:\n" << pose << std::endl;
-  std::cout << "WASDで移動, E:上昇, Q下降, J:左回転, K:下回転, L:右回転, I:上回転" << std::endl;
+  std::cout << "WASDで移動, E:上昇, Q下降, J:左回転, K:下回転, L:右回転, I:上回転, O:ROll+, U:ROll-" << std::endl;
   torch::Tensor image = render(localizer, pose);
   Utils::WriteImageTensor("image.png", image);
 
@@ -121,6 +121,14 @@ void walk(const std::string & config_path)
         torch::Tensor rotation_matrix = calc_rotation_tensor(+degree, Eigen::Vector3f::UnitY());
         orientation = torch::matmul(orientation, rotation_matrix);
         pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
+      } else if (pushed_key == 'o') {
+        torch::Tensor rotation_matrix = calc_rotation_tensor(+degree, Eigen::Vector3f::UnitX());
+        orientation = torch::matmul(orientation, rotation_matrix);
+        pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
+      } else if (pushed_key == 'u') {
+        torch::Tensor rotation_matrix = calc_rotation_tensor(-degree, Eigen::Vector3f::UnitX());
+        orientation = torch::matmul(orientation, rotation_matrix);
+        pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
       } else {
         std::cout << "Unknown kye: " << pushed_key << std::endl;
         continue;
@@ -128,7 +136,9 @@ void walk(const std::string & config_path)
       std::cout << "pose:\n" << pose << std::endl;
       torch::Tensor image = render(localizer, pose);
       Utils::WriteImageTensor("image.png", image);
-      std::cout << "WASDで移動, E:上昇, Q下降, J:左回転, K:下回転, L:右回転, I:上回転" << std::endl;
+      std::cout
+        << "WASDで移動, E:上昇, Q下降, J:左回転, K:下回転, L:右回転, I:上回転, O:ROll+, U:ROll-"
+        << std::endl;
     }
   }
 }
