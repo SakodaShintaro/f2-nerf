@@ -44,15 +44,33 @@ torch::Tensor calc_rotation_tensor(float degree, Eigen::Vector3f axis)
   return result;
 }
 
+torch::Tensor render(LocalizerCore& localizer, torch::Tensor pose) {
+  torch::Tensor pose_camera = localizer.world2camera(pose);
+  BoundedRays rays = localizer.rays_from_pose(pose_camera);
+  const int ray_num = rays.origins.size(0);
+  constexpr int kBatchSize = 5000;
+  std::vector<torch::Tensor> pred_colors_list;
+  for (int i = 0; i < ray_num; i += kBatchSize) {
+    const auto [pred_colors, first_oct_disp, pred_disp] = localizer.render_all_rays_grad(
+      rays.origins.index({Slc(i, i + kBatchSize)}), rays.dirs.index({Slc(i, i + kBatchSize)}),
+      rays.bounds.index({Slc(i, i + kBatchSize)}));
+    pred_colors_list.push_back(pred_colors);
+  }
+  torch::Tensor pred_colors = torch::cat(pred_colors_list, 0);
+  pred_colors = pred_colors.clip(0.0f, 1.0f);
+  torch::Tensor image = pred_colors.view({localizer.infer_height(), localizer.infer_width(), 3});
+  return image;
+}
+
 void walk(const std::string & config_path)
 {
   torch::NoGradGuard no_grad_guard;
   LocalizerCoreParam param;
   param.runtime_config_path = config_path;
-  param.resize_factor = 16;
+  param.resize_factor = 8;
   LocalizerCore localizer(param);
   torch::Tensor pose = torch::eye(4).cuda();
-  constexpr float step = 0.1;
+  constexpr float step = 0.2;
   constexpr float degree = 10.0;
 
   // Poseは世界座標系で考える
@@ -61,6 +79,8 @@ void walk(const std::string & config_path)
   // Zが上方
   std::cout << "pose:\n" << pose << std::endl;
   std::cout << "WASDで移動, E:上昇, Q下降, J:左回転, K:下回転, L:右回転, I:上回転" << std::endl;
+  torch::Tensor image = render(localizer, pose);
+  Utils::WriteImageTensor("image.png", image);
 
   while (1) {
     if (kbhit()) {
@@ -106,21 +126,7 @@ void walk(const std::string & config_path)
         continue;
       }
       std::cout << "pose:\n" << pose << std::endl;
-      torch::Tensor pose_camera = localizer.world2camera(pose);
-      BoundedRays rays = localizer.rays_from_pose(pose_camera);
-      const int ray_num = rays.origins.size(0);
-      constexpr int kBatchSize = 5000;
-      std::vector<torch::Tensor> pred_colors_list;
-      for (int i = 0; i < ray_num; i += kBatchSize) {
-        const auto [pred_colors, first_oct_disp, pred_disp] = localizer.render_all_rays_grad(
-          rays.origins.index({Slc(i, i + kBatchSize)}), rays.dirs.index({Slc(i, i + kBatchSize)}),
-          rays.bounds.index({Slc(i, i + kBatchSize)}));
-        pred_colors_list.push_back(pred_colors);
-      }
-      torch::Tensor pred_colors = torch::cat(pred_colors_list, 0);
-      pred_colors = pred_colors.clip(0.0f, 1.0f);
-      torch::Tensor image =
-        pred_colors.view({localizer.infer_height(), localizer.infer_width(), 3});
+      torch::Tensor image = render(localizer, pose);
       Utils::WriteImageTensor("image.png", image);
       std::cout << "WASDで移動, E:上昇, Q下降, J:左回転, K:下回転, L:右回転, I:上回転" << std::endl;
     }
