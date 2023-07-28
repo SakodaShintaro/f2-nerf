@@ -107,19 +107,19 @@ void walk(const std::string & config_path)
         pose.index({Slc(0, 3), Slc(3, 4)}) += orientation.matmul(tmp);
       } else if (pushed_key == 'j') {
         torch::Tensor rotation_matrix = calc_rotation_tensor(-degree, Eigen::Vector3f::UnitZ());
-        orientation = rotation_matrix.matmul(orientation);
+        orientation = torch::matmul(orientation, rotation_matrix);
         pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
       } else if (pushed_key == 'k') {
         torch::Tensor rotation_matrix = calc_rotation_tensor(-degree, Eigen::Vector3f::UnitY());
-        orientation = rotation_matrix.matmul(orientation);
+        orientation = torch::matmul(orientation, rotation_matrix);
         pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
       } else if (pushed_key == 'l') {
         torch::Tensor rotation_matrix = calc_rotation_tensor(+degree, Eigen::Vector3f::UnitZ());
-        orientation = rotation_matrix.matmul(orientation);
+        orientation = torch::matmul(orientation, rotation_matrix);
         pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
       } else if (pushed_key == 'i') {
         torch::Tensor rotation_matrix = calc_rotation_tensor(+degree, Eigen::Vector3f::UnitY());
-        orientation = rotation_matrix.matmul(orientation);
+        orientation = torch::matmul(orientation, rotation_matrix);
         pose.index({Slc(0, 3), Slc(0, 3)}) = orientation;
       } else {
         std::cout << "Unknown kye: " << pushed_key << std::endl;
