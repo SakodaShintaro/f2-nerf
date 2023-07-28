@@ -14,6 +14,7 @@ int main(int argc, char * argv[])
 
   if (argc != 3) {
     std::cerr << "Please specify a config file path as command line argument." << std::endl;
+    std::cerr << "argc = " << argc << std::endl;
     return 1;  // Return with error code
   }
 
