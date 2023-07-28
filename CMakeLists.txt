@@ -87,6 +87,7 @@ set(ALL_LIBS ${TORCH_LIBRARIES}
 add_executable(main main.cpp
         src/ExpRunner.cpp
         src/Walk.cpp
+        src/Test.cpp
         ros2/src/ros2-f2-nerf/src/localizer_core.cpp
         ${SRC_ALL})
 target_link_libraries(main ${ALL_LIBS})

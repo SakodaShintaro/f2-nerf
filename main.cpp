@@ -1,4 +1,5 @@
 #include "src/ExpRunner.h"
+#include "src/Test.hpp"
 #include "src/Walk.hpp"
 
 #include <torch/torch.h>
@@ -24,6 +25,8 @@ int main(int argc, char * argv[])
     // TODO
   } else if (command == "walk") {
     walk(conf_path);
+  } else if (command == "test") {
+    test(conf_path);
   } else {
     std::cerr << "Invalid command line argument : " << command << std::endl;
     return 1;
