@@ -36,14 +36,6 @@ Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_
   // WARNING: Hard code here.
   app_emb_ = torch::randn({ n_images, 16 }, CUDAFloat) * .1f;
   app_emb_.requires_grad_(true);
-
-  auto bg_color = conf["bg_color"].as<std::string>();
-  if (bg_color == "white")
-    bg_color_type_ = BGColorType::white;
-  else if (bg_color == "black")
-    bg_color_type_ = BGColorType::black;
-  else
-    bg_color_type_ = BGColorType::rand_noise;
 }
 
 
@@ -58,20 +50,9 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   CHECK(sample_result.pts_idx_bounds.max().item<int>() <= n_all_pts);
   CHECK(sample_result.pts_idx_bounds.min().item<int>() >= 0);
 
-  Tensor bg_color;
-  if (bg_color_type_ == BGColorType::white) {
-    bg_color = torch::ones({n_rays, 3}, CUDAFloat);
-  }
-  else if (bg_color_type_ == BGColorType::rand_noise) {
-    if (mode == RunningMode::TRAIN) {
-      bg_color = torch::rand({n_rays, 3}, CUDAFloat);
-    } else {
-      bg_color = torch::ones({n_rays, 3}, CUDAFloat) * .5f;
-    }
-  }
-  else {
-    bg_color = torch::zeros({n_rays, 3}, CUDAFloat);
-  }
+  Tensor bg_color =
+    ((mode == RunningMode::TRAIN) ? torch::rand({n_rays, 3}, CUDAFloat)
+                                  : torch::ones({n_rays, 3}, CUDAFloat) * .5f);
 
   if (n_all_pts <= 0) {
     Tensor colors = bg_color;

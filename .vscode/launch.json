@@ -7,9 +7,10 @@
             "name": "(gbd) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build-Debug/inference_tool",
+            "program": "${workspaceFolder}/build-Debug/main",
             "args": [
-                "../exp/20230717_loop/runtime_config.yaml"
+                "train",
+                "../exp/20230609_base_link_logiee/runtime_config.yaml"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build-Debug",

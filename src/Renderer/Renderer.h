@@ -23,18 +23,6 @@ struct RenderResult {
   Tensor weights;
   Tensor idx_start_end;
 };
-/*
-struct VolumeRenderInfoPool {
-  using Tensor = torch::Tensor;
-  // Volume renderer input data
-  Tensor sampled_density;
-  Tensor sampled_color;
-  Tensor bg_color;
-  // Volume renderer side product
-  Tensor cum_density;
-  Tensor trans;
-  Tensor weight;
-};*/
 
 class VolumeRenderInfo : public torch::CustomClassHolder {
 public:
@@ -44,7 +32,6 @@ public:
 class Renderer : public Pipe {
   using Tensor = torch::Tensor;
 
-  enum BGColorType { white, black, rand_noise };
 public:
   Renderer(const YAML::Node & config, int n_images);
   RenderResult Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode);
@@ -60,8 +47,6 @@ public:
 
   bool use_app_emb_;
   Tensor app_emb_;
-
-  BGColorType bg_color_type_ = BGColorType::rand_noise;
 };
 
 torch::Tensor FilterIdxBounds(const torch::Tensor& idx_bounds,

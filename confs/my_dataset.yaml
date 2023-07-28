@@ -1,7 +1,6 @@
 defaults:
   - train: 20k
   - dataset: default
-  - renderer: default
   - field: hash3d_anchored
   - shader: sh_shader
   - _self_

@@ -94,6 +94,3 @@ add_executable(main main.cpp
 target_link_libraries(main ${ALL_LIBS})
 set_property(TARGET main PROPERTY CXX_STANDARD 17)
 set_property(TARGET main PROPERTY CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
-
-# Install scripts
-configure_file(scripts/run.py ${CMAKE_BINARY_DIR}/run.py COPYONLY)
