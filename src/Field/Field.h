@@ -18,17 +18,5 @@ public:
     return Tensor();
   }
 
-  virtual Tensor Query(const Tensor & coords, const Tensor & anchors)
-  {
-    CHECK(false) << "Not implemented";
-    return Tensor();
-  }
-
-  virtual Tensor AnchoredQuery(const Tensor & coords, const Tensor & anchors)
-  {
-    CHECK(false) << "Not implemented";
-    return Tensor();
-  }
-
   const YAML::Node config_;
 };

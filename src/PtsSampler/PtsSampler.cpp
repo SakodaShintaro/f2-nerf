@@ -62,11 +62,9 @@ SampleResultFlex PtsSampler::GetSamples(
 
   Tensor sampled_dirs =
     rays_d.expand({-1, MAX_SAMPLE_PER_RAY, -1}).reshape({n_all_pts, 3}).contiguous();
-  Tensor sampled_anchors = torch::zeros({n_all_pts, 3}, CUDAInt);
   Tensor first_oct_dis = torch::full({n_rays, 1}, 1e9f, CUDAFloat).contiguous();
 
   return {
-    sampled_pts,     sampled_dirs,      sampled_distances, sampled_t,
-    sampled_anchors, pts_idx_start_end, first_oct_dis,
+    sampled_pts, sampled_dirs, sampled_distances, sampled_t, pts_idx_start_end, first_oct_dis,
   };
 }

@@ -19,7 +19,6 @@ struct SampleResultFlex
   Tensor dirs;            // [ n_all_pts, 3 ]
   Tensor dt;              // [ n_all_pts, 1 ]
   Tensor t;               // [ n_all_pts, 1 ]
-  Tensor anchors;         // [ n_all_pts, 3 ]
   Tensor pts_idx_bounds;  // [ n_rays, 2 ] // start, end
   Tensor first_oct_dis;   // [ n_rays, 1 ]
 };

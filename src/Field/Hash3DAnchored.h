@@ -23,9 +23,7 @@ class Hash3DAnchored : public Field  {
 public:
   Hash3DAnchored(const YAML::Node & config);
 
-  Tensor AnchoredQuery(const Tensor& points,           // [ n_points, 3 ]
-                       const Tensor& anchors           // [ n_points, 3 ]
-               ) override;
+  Tensor Query(const Tensor& points) override;
 
   int LoadStates(const std::vector<Tensor>& states, int idx) override;
   std::vector<Tensor> States() override;

@@ -96,9 +96,8 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   {
     Tensor pts  = sample_result.pts;
     Tensor dirs = sample_result.dirs;
-    Tensor anchors = sample_result.anchors.index({"...", 0}).contiguous();
 
-    Tensor scene_feat = scene_field_->AnchoredQuery(pts, anchors);
+    Tensor scene_feat = scene_field_->Query(pts);
     Tensor sampled_density = DensityAct(scene_feat.index({ Slc(), Slc(0, 1) }));
 
     Tensor sampled_dt = sample_result.dt;
@@ -116,7 +115,6 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     sample_result_early_stop.dirs = sample_result.dirs.index({mask_idx}).contiguous();
     sample_result_early_stop.dt = sample_result.dt.index({mask_idx}).contiguous();
     sample_result_early_stop.t = sample_result.t.index({mask_idx}).contiguous();
-    sample_result_early_stop.anchors = sample_result.anchors.index({mask_idx}).contiguous();
 
     sample_result_early_stop.first_oct_dis = sample_result.first_oct_dis.clone();
     sample_result_early_stop.pts_idx_bounds = FilterIdxBounds(sample_result.pts_idx_bounds, mask);
@@ -124,13 +122,11 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     CHECK_EQ(sample_result_early_stop.pts_idx_bounds.max().item<int>(), sample_result_early_stop.pts.size(0));
   }
 
-  Tensor scene_feat;
   Tensor pts  = sample_result_early_stop.pts;
   Tensor dirs = sample_result_early_stop.dirs;
-  Tensor anchors = sample_result_early_stop.anchors.index({"...", 0}).contiguous();
   n_all_pts = pts.size(0);
 
-  scene_feat = scene_field_->AnchoredQuery(pts, anchors);  // [n_pts, feat_dim];
+  Tensor scene_feat = scene_field_->Query(pts);
 
   Tensor sampled_density = DensityAct(scene_feat.index({ Slc(), Slc(0, 1) }));
 

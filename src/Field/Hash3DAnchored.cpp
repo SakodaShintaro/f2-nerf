@@ -78,7 +78,7 @@ Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_co
   mlp_ = std::make_unique<TCNNWP>(config, N_LEVELS * N_CHANNELS, mlp_out_dim_, mlp_hidden_dim_, n_hidden_layers_);
 }
 
-Tensor Hash3DAnchored::AnchoredQuery(const Tensor& points, const Tensor& anchors) {
+Tensor Hash3DAnchored::Query(const Tensor& points) {
 #ifdef PROFILE
   ScopeWatch watch(__func__);
 #endif
@@ -86,6 +86,7 @@ Tensor Hash3DAnchored::AnchoredQuery(const Tensor& points, const Tensor& anchors
   auto info = torch::make_intrusive<Hash3DAnchoredInfo>();
 
   query_points_ = ((points + 1.f) * .5f).contiguous();   // [-1, 1] -> [0, 1]
+  Tensor anchors = torch::zeros({points.size(0), 3}, CUDAInt);
   query_volume_idx_ = anchors.contiguous();
   info->hash3d_ = this;
   Tensor feat = torch::autograd::Hash3DAnchoredFunction::apply(feat_pool_, torch::IValue(info))[0];  // [n_points, n_levels * n_channels];
