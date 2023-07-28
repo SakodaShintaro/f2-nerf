@@ -1,3 +1,0 @@
-factor: 1.0
-data_at_gpu: true
-bounds_factor: [ 0.5, 2.0 ]
