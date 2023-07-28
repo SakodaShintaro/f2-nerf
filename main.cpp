@@ -1,4 +1,5 @@
 #include "src/ExpRunner.h"
+#include "src/Infer.hpp"
 #include "src/Test.hpp"
 #include "src/Walk.hpp"
 
@@ -22,7 +23,7 @@ int main(int argc, char * argv[])
     auto exp_runner = std::make_unique<ExpRunner>(conf_path);
     exp_runner->Execute();
   } else if (command == "infer") {
-    // TODO
+    infer(conf_path);
   } else if (command == "walk") {
     walk(conf_path);
   } else if (command == "test") {

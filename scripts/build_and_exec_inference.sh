@@ -10,6 +10,6 @@ make -j $(nproc)
 
 rm -rf inference_result result_images movie.mp4
 
-./inference_tool ${CONFIG_PATH}
+./main infer ${CONFIG_PATH}
 
 python3 ../scripts/analyze_inference_result.py ./inference_result/

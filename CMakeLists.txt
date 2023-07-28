@@ -86,8 +86,9 @@ set(ALL_LIBS ${TORCH_LIBRARIES}
 # ------------------------------------ Add executables ---------------------------------------
 add_executable(main main.cpp
         src/ExpRunner.cpp
-        src/Walk.cpp
+        src/Infer.cpp
         src/Test.cpp
+        src/Walk.cpp
         ros2/src/ros2-f2-nerf/src/localizer_core.cpp
         ${SRC_ALL})
 target_link_libraries(main ${ALL_LIBS})
@@ -96,11 +97,3 @@ set_property(TARGET main PROPERTY CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
 
 # Install scripts
 configure_file(scripts/run.py ${CMAKE_BINARY_DIR}/run.py COPYONLY)
-
-##################
-# Inference tool #
-##################
-add_executable(inference_tool main_inference.cpp
-        ros2/src/ros2-f2-nerf/src/localizer_core.cpp
-        ${SRC_ALL})
-target_link_libraries(inference_tool ${ALL_LIBS})

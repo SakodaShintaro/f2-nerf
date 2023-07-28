@@ -1,6 +1,8 @@
-#include "../../ros2/src/ros2-f2-nerf/src/localizer_core.hpp"
-#include "../../src/Utils/StopWatch.h"
-#include "../../src/Utils/Utils.h"
+#include "Test.hpp"
+
+#include "../ros2/src/ros2-f2-nerf/src/localizer_core.hpp"
+#include "../src/Utils/StopWatch.h"
+#include "../src/Utils/Utils.h"
 
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem::v1;
@@ -9,25 +11,19 @@ enum Dir { kUp, kUpRight, kRight, kDownRight, kDown, kDownLeft, kLeft, kUpLeft, 
 constexpr int64_t kDx[kDirNum] = {0, 1, 1, 1, 0, -1, -1, -1};
 constexpr int64_t kDz[kDirNum] = {1, 1, 0, -1, -1, -1, 0, 1};
 
-int main(int argc, char * argv[])
+void infer(const std::string & config_path)
 {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " [path to config file]" << std::endl;
-    return 1;
-  }
-  const std::string runtime_config_path = argv[1];
-
   LocalizerCoreParam param{};
   param.resize_factor = 16;
-  param.runtime_config_path = runtime_config_path;
+  param.runtime_config_path = config_path;
   LocalizerCore core(param);
 
-  constexpr int32_t iteration_num = 100;
+  constexpr int32_t iteration_num = 10;
 
   const std::string save_dir = "./inference_result/";
   fs::create_directories(save_dir);
 
-  const YAML::Node & config = YAML::LoadFile(runtime_config_path);
+  const YAML::Node & config = YAML::LoadFile(config_path);
   Dataset dataset(config);
 
   Timer timer;
@@ -80,7 +76,8 @@ int main(int argc, char * argv[])
       output("noised_" + std::to_string(d), curr_pose, score_noised);
 
       // Optimize
-      std::vector<torch::Tensor> optimized_poses = core.optimize_pose(curr_pose, image_tensor, iteration_num);
+      std::vector<torch::Tensor> optimized_poses =
+        core.optimize_pose(curr_pose, image_tensor, iteration_num);
       for (int32_t itr = 0; itr < optimized_poses.size(); itr++) {
         torch::Tensor optimized_pose = optimized_poses[itr];
         auto [score_after, nerf_image_after] =
@@ -91,6 +88,8 @@ int main(int argc, char * argv[])
         output("optimized_" + suffix, optimized_pose, score_after);
       }
     }
+
+    break;
   }
 
   std::cout << "\nTime = " << timer.elapsed_seconds() << std::endl;
