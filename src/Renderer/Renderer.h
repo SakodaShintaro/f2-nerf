@@ -17,7 +17,6 @@
 struct RenderResult {
   using Tensor = torch::Tensor;
   Tensor colors;
-  Tensor first_oct_dis;
   Tensor disparity;
   Tensor depth;
   Tensor weights;

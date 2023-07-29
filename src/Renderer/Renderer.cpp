@@ -61,7 +61,6 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
       torch::zeros({ n_rays, 1 }, CUDAFloat),
       torch::zeros({ n_rays }, CUDAFloat),
       torch::full({ n_rays }, 512.f, CUDAFloat),
-      Tensor(),
       Tensor()
     };
   }
@@ -97,7 +96,6 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     sample_result_early_stop.dt = sample_result.dt.index({mask_idx}).contiguous();
     sample_result_early_stop.t = sample_result.t.index({mask_idx}).contiguous();
 
-    sample_result_early_stop.first_oct_dis = sample_result.first_oct_dis.clone();
     sample_result_early_stop.pts_idx_bounds = FilterIdxBounds(sample_result.pts_idx_bounds, mask);
 
     CHECK_EQ(sample_result_early_stop.pts_idx_bounds.max().item<int>(), sample_result_early_stop.pts.size(0));
@@ -139,7 +137,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
 
   CHECK_NOT_NAN(colors);
 
-  return { colors, sample_result_early_stop.first_oct_dis, disparity, depth, weights, idx_start_end };
+  return { colors, disparity, depth, weights, idx_start_end };
 }
 
 

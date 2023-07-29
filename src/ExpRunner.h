@@ -22,7 +22,7 @@ public:
   void LoadCheckpoint(const std::string& path);
   void SaveCheckpoint();
   void UpdateAdaParams();
-  std::tuple<Tensor, Tensor, Tensor> RenderWholeImage(
+  std::tuple<Tensor, Tensor> RenderWholeImage(
     Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode);
   void VisualizeImage(int idx);
 

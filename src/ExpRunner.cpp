@@ -211,7 +211,7 @@ void ExpRunner::UpdateAdaParams() {
   }
 }
 
-std::tuple<Tensor, Tensor, Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode) {
+std::tuple<Tensor,  Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode) {
   torch::NoGradGuard no_grad_guard;
   rays_o = rays_o.to(torch::kCPU);
   rays_d = rays_d.to(torch::kCPU);
@@ -219,7 +219,6 @@ std::tuple<Tensor, Tensor, Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Te
   const int n_rays = rays_d.sizes()[0];
 
   Tensor pred_colors = torch::zeros({n_rays, 3}, CPUFloat);
-  Tensor first_oct_disp = torch::full({n_rays, 1}, 1.f, CPUFloat);
   Tensor pred_disp = torch::zeros({n_rays, 1}, CPUFloat);
 
   const int ray_batch_size = 8192;
@@ -235,32 +234,23 @@ std::tuple<Tensor, Tensor, Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Te
 
     pred_colors.index_put_({Slc(i, i_high)}, colors);
     pred_disp.index_put_({Slc(i, i_high)}, disp.unsqueeze(-1));
-    if (!render_result.first_oct_dis.sizes().empty()) {
-      Tensor& ret_first_oct_dis = render_result.first_oct_dis;
-      if (ret_first_oct_dis.has_storage()) {
-        Tensor cur_first_oct_dis = render_result.first_oct_dis.detach().to(torch::kCPU);
-        first_oct_disp.index_put_({Slc(i, i_high)}, cur_first_oct_dis);
-      }
-    }
   }
   pred_disp = pred_disp / pred_disp.max();
-  first_oct_disp = first_oct_disp.min() / first_oct_disp;
 
-  return { pred_colors, first_oct_disp, pred_disp };
+  return { pred_colors, pred_disp };
 }
 
 void ExpRunner::VisualizeImage(int idx) {
   torch::NoGradGuard no_grad_guard;
 
   auto [ rays_o, rays_d, bounds ] = dataset_->RaysOfCamera(idx);
-  auto [ pred_colors, first_oct_dis, pred_disps ] = RenderWholeImage(rays_o, rays_d, bounds, RunningMode::VALIDATE);
+  auto [ pred_colors, pred_disps ] = RenderWholeImage(rays_o, rays_d, bounds, RunningMode::VALIDATE);
 
   int H = dataset_->height_;
   int W = dataset_->width_;
 
   Tensor img_tensor = torch::cat({dataset_->image_tensors_[idx].to(torch::kCPU).reshape({H, W, 3}),
                                   pred_colors.reshape({H, W, 3}),
-                                  first_oct_dis.reshape({H, W, 1}).repeat({1, 1, 3}),
                                   pred_disps.reshape({H, W, 1}).repeat({1, 1, 3})}, 1);
   fs::create_directories(base_exp_dir_ + "/images");
   Utils::WriteImageTensor(base_exp_dir_ + "/images/" + fmt::format("{}_{}.png", iter_step_, idx), img_tensor);

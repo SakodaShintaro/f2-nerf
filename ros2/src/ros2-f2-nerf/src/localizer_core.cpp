@@ -140,7 +140,7 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
   for (int64_t i = 0; i < iteration_num; i++) {
     Tensor prev = initial_pose.detach();
     auto [rays_o, rays_d, bounds] = rays_from_pose(initial_pose);
-    auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays_grad(rays_o, rays_d, bounds);
+    auto [pred_colors, pred_disps] = render_all_rays_grad(rays_o, rays_d, bounds);
 
     Tensor pred_img = pred_colors.view({infer_height_, infer_width_, 3});
     pred_img = pred_img.clip(0.f, 1.f);
@@ -167,13 +167,12 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
   return results;
 }
 
-std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays(
+std::tuple<Tensor, Tensor> LocalizerCore::render_all_rays(
   const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds)
 {
   const int n_rays = rays_d.sizes()[0];
 
   Tensor pred_colors = torch::zeros({n_rays, 3}, CPUFloat);
-  Tensor first_oct_disp = torch::full({n_rays, 1}, 1.f, CPUFloat);
   Tensor pred_disp = torch::zeros({n_rays, 1}, CPUFloat);
 
   const int ray_batch_size = (1 << 16);
@@ -189,27 +188,18 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays(
 
     pred_colors.index_put_({Slc(i, i_high)}, colors);
     pred_disp.index_put_({Slc(i, i_high)}, disp.unsqueeze(-1));
-    if (!render_result.first_oct_dis.sizes().empty()) {
-      Tensor & ret_first_oct_dis = render_result.first_oct_dis;
-      if (ret_first_oct_dis.has_storage()) {
-        Tensor cur_first_oct_dis = render_result.first_oct_dis.to(torch::kCPU);
-        first_oct_disp.index_put_({Slc(i, i_high)}, cur_first_oct_dis);
-      }
-    }
   }
   pred_disp = pred_disp / pred_disp.max();
-  first_oct_disp = first_oct_disp.min() / first_oct_disp;
 
-  return {pred_colors, first_oct_disp, pred_disp};
+  return {pred_colors, pred_disp};
 }
 
-std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays_grad(
+std::tuple<Tensor, Tensor> LocalizerCore::render_all_rays_grad(
   const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds)
 {
   const int n_rays = rays_d.sizes()[0];
 
   std::vector<Tensor> pred_colors;
-  std::vector<Tensor> first_oct_disp;
   std::vector<Tensor> pred_disp;
 
   const int ray_batch_size = (1 << 16);
@@ -225,23 +215,14 @@ std::tuple<Tensor, Tensor, Tensor> LocalizerCore::render_all_rays_grad(
 
     pred_colors.push_back(colors);
     pred_disp.push_back(disp.unsqueeze(-1));
-    if (!render_result.first_oct_dis.sizes().empty()) {
-      Tensor & ret_first_oct_dis = render_result.first_oct_dis;
-      if (ret_first_oct_dis.has_storage()) {
-        Tensor cur_first_oct_dis = render_result.first_oct_dis;
-        first_oct_disp.push_back(cur_first_oct_dis);
-      }
-    }
   }
 
   Tensor pred_colors_ts = torch::cat(pred_colors, 0);
   Tensor pred_disp_ts = torch::cat(pred_disp, 0);
-  Tensor first_oct_disp_ts = torch::cat(first_oct_disp, 0);
 
   pred_disp_ts = pred_disp_ts / pred_disp_ts.max();
-  first_oct_disp_ts = first_oct_disp_ts.min() / first_oct_disp_ts;
 
-  return {pred_colors_ts, first_oct_disp_ts, pred_disp_ts};
+  return {pred_colors_ts, pred_disp_ts};
 }
 
 Tensor LocalizerCore::render_image(const Tensor & pose)
@@ -252,7 +233,7 @@ Tensor LocalizerCore::render_image(const Tensor & pose)
   constexpr int kBatchSize = 5000;
   std::vector<torch::Tensor> pred_colors_list;
   for (int i = 0; i < ray_num; i += kBatchSize) {
-    const auto [pred_colors, first_oct_disp, pred_disp] = render_all_rays_grad(
+    const auto [pred_colors, pred_disp] = render_all_rays_grad(
       rays.origins.index({Slc(i, i + kBatchSize)}), rays.dirs.index({Slc(i, i + kBatchSize)}),
       rays.bounds.index({Slc(i, i + kBatchSize)}));
     pred_colors_list.push_back(pred_colors);
@@ -270,7 +251,7 @@ std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
   Timer timer;
   auto [rays_o, rays_d, bounds] = rays_from_pose(pose);
   timer.reset();
-  auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
+  auto [pred_colors, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
 
   Tensor pred_img = pred_colors.view({infer_height_, infer_width_, 3});
   pred_img = pred_img.clip(0.f, 1.f);
@@ -359,7 +340,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
       .contiguous();  // (numel, 2)
 
   timer.reset();
-  auto [pred_colors, first_oct_dis, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
+  auto [pred_colors, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
 
   Tensor pred_pixels = pred_colors.view({pose_num, pixel_num, 3});
   pred_pixels = pred_pixels.clip(0.f, 1.f);

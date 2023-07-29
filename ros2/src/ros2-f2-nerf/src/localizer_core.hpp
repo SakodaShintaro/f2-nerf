@@ -54,9 +54,9 @@ public:
 
   BoundedRays rays_from_pose(const Tensor & pose);
 
-  std::tuple<Tensor, Tensor, Tensor> render_all_rays(
+  std::tuple<Tensor, Tensor> render_all_rays(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
-  std::tuple<Tensor, Tensor, Tensor> render_all_rays_grad(
+  std::tuple<Tensor, Tensor> render_all_rays_grad(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
 
   int infer_height() const { return infer_height_; }
