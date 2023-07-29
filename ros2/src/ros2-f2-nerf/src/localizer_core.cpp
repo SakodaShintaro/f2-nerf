@@ -140,7 +140,7 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
   for (int64_t i = 0; i < iteration_num; i++) {
     Tensor prev = initial_pose.detach();
     auto [rays_o, rays_d, bounds] = rays_from_pose(initial_pose);
-    auto [pred_colors, pred_disps] = render_all_rays_grad(rays_o, rays_d, bounds);
+    auto [pred_colors, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
 
     Tensor pred_img = pred_colors.view({infer_height_, infer_width_, 3});
     pred_img = pred_img.clip(0.f, 1.f);
@@ -168,33 +168,6 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
 }
 
 std::tuple<Tensor, Tensor> LocalizerCore::render_all_rays(
-  const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds)
-{
-  const int n_rays = rays_d.sizes()[0];
-
-  Tensor pred_colors = torch::zeros({n_rays, 3}, CPUFloat);
-  Tensor pred_disp = torch::zeros({n_rays, 1}, CPUFloat);
-
-  const int ray_batch_size = (1 << 16);
-  for (int i = 0; i < n_rays; i += ray_batch_size) {
-    int i_high = std::min(i + ray_batch_size, n_rays);
-    Tensor cur_rays_o = rays_o.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
-    Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
-    Tensor cur_bounds = bounds.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
-
-    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, Tensor(), RunningMode::VALIDATE);
-    Tensor colors = render_result.colors.to(torch::kCPU);
-    Tensor disp = render_result.disparity.to(torch::kCPU).squeeze();
-
-    pred_colors.index_put_({Slc(i, i_high)}, colors);
-    pred_disp.index_put_({Slc(i, i_high)}, disp.unsqueeze(-1));
-  }
-  pred_disp = pred_disp / pred_disp.max();
-
-  return {pred_colors, pred_disp};
-}
-
-std::tuple<Tensor, Tensor> LocalizerCore::render_all_rays_grad(
   const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds)
 {
   const int n_rays = rays_d.sizes()[0];
@@ -233,7 +206,7 @@ Tensor LocalizerCore::render_image(const Tensor & pose)
   constexpr int kBatchSize = 5000;
   std::vector<torch::Tensor> pred_colors_list;
   for (int i = 0; i < ray_num; i += kBatchSize) {
-    const auto [pred_colors, pred_disp] = render_all_rays_grad(
+    const auto [pred_colors, pred_disp] = render_all_rays(
       rays.origins.index({Slc(i, i + kBatchSize)}), rays.dirs.index({Slc(i, i + kBatchSize)}),
       rays.bounds.index({Slc(i, i + kBatchSize)}));
     pred_colors_list.push_back(pred_colors);
