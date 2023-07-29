@@ -62,7 +62,6 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
 void ExpRunner::Train() {
   std::ofstream ofs_log(base_exp_dir_ + "/train_log.txt");
 
-  float time_per_iter = 0.f;
   StopWatch clock;
   Timer timer;
   timer.start();
@@ -129,19 +128,18 @@ void ExpRunner::Train() {
     if (iter_step_ % save_freq_ == 0) {
       SaveCheckpoint();
     }
-    time_per_iter = time_per_iter * 0.6f + clock.TimeDuration() * 0.4f;
     const int64_t total_sec = timer.elapsed_seconds();
     const int64_t total_m = total_sec / 60;
     const int64_t total_s = total_sec % 60;
 
     if (iter_step_ % report_freq_ == 0) {
       const std::string log_str = fmt::format(
-          "Time: {:>02d}:{:>02d} Iter: {:>6d} PSNR: {:.2f} IPS: {:.1f} LR: {:.4f}",
+          "Time: {:>02d}:{:>02d}  Iter: {:>6d}  PSNR: {:.2f}  LOSS: {:.4f}  LR: {:.4f}",
           total_m,
           total_s,
           iter_step_,
           psnr_smooth,
-          1.f / time_per_iter,
+          color_loss.item<float>(),
           optimizer_->param_groups()[0].options().get_lr());
       std::cout << log_str << std::endl;
       ofs_log << log_str << std::endl;
