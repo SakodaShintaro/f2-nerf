@@ -71,7 +71,6 @@ private:
   // Convert mat
   torch::Tensor axis_convert_mat1_;
 
-  int n_images_;
   int train_height_, train_width_;
   int infer_height_, infer_width_;
   Tensor intrinsic_;

@@ -45,7 +45,7 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   dataset_->SaveInferenceParams();
 
   // Renderer
-  renderer_ = std::make_unique<Renderer>(config, dataset_->n_images_);
+  renderer_ = std::make_unique<Renderer>(config);
 
   // Optimizer
   optimizer_ = std::make_unique<torch::optim::Adam>(renderer_->OptimParamGroups(learning_rate_));
@@ -78,7 +78,7 @@ void ExpRunner::Train() {
     Tensor& rays_d = train_rays.dirs;
     Tensor& bounds = train_rays.bounds;
 
-    auto render_result = renderer_->Render(rays_o, rays_d, emb_idx, RunningMode::TRAIN);
+    auto render_result = renderer_->Render(rays_o, rays_d, RunningMode::TRAIN);
     Tensor pred_colors = render_result.colors.index({Slc(0, cur_batch_size)});
     Tensor disparity = render_result.disparity;
     Tensor color_loss = torch::sqrt((pred_colors - gt_colors).square() + 1e-4f).mean();
@@ -226,7 +226,7 @@ std::tuple<Tensor,  Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Tensor ra
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
     Tensor cur_bounds = bounds.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
 
-    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, Tensor(), mode);
+    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, mode);
     Tensor colors = render_result.colors.detach().to(torch::kCPU);
     Tensor disp = render_result.disparity.detach().to(torch::kCPU).squeeze();
 

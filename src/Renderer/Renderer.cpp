@@ -19,7 +19,7 @@ TORCH_LIBRARY(volume_render, m)
   m.class_<VolumeRenderInfo>("VolumeRenderInfo").def(torch::init());
 }
 
-Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_config) {
+Renderer::Renderer(const YAML::Node & root_config) : config_(root_config) {
   const YAML::Node conf = root_config["renderer"];
 
   pts_sampler_ = std::make_unique<PtsSampler>(root_config);
@@ -30,16 +30,9 @@ Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_
 
   shader_ = ConstructShader(root_config);
   RegisterSubPipe(shader_.get());
-
-
-  use_app_emb_ = conf["use_app_emb"].as<bool>();
-  // WARNING: Hard code here.
-  app_emb_ = torch::randn({ n_images, 16 }, CUDAFloat) * .1f;
-  app_emb_.requires_grad_(true);
 }
 
-
-RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode) {
+RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, RunningMode mode) {
 #ifdef PROFILE
   ScopeWatch watch(__func__);
 #endif
@@ -113,11 +106,6 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     torch::ones_like(scene_feat.index({Slc(), Slc(0, 1)}), CUDAFloat),
     scene_feat.index({Slc(), Slc(1, None)})}, 1);
 
-  if (mode == RunningMode::TRAIN && use_app_emb_) {
-    Tensor all_emb_idx = CustomOps::ScatterIdx(n_all_pts, sample_result_early_stop.pts_idx_bounds, emb_idx);
-    shading_feat = CustomOps::ScatterAdd(app_emb_, all_emb_idx, shading_feat);
-  }
-
   Tensor sampled_colors = shader_->Query(shading_feat, dirs);
 
   Tensor sampled_dt = sample_result_early_stop.dt;
@@ -146,8 +134,6 @@ int Renderer::LoadStates(const std::vector<Tensor>& states, int idx) {
     idx = pipe->LoadStates(states, idx);
   }
 
-  app_emb_.data().copy_(states[idx++].clone().to(torch::kCUDA).contiguous());
-
   return idx;
 }
 
@@ -157,8 +143,6 @@ std::vector<Tensor> Renderer::States() {
     auto cur_states = pipe->States();
     ret.insert(ret.end(), cur_states.begin(), cur_states.end());
   }
-
-  ret.push_back(app_emb_.data());
 
   return ret;
 }
@@ -170,17 +154,6 @@ std::vector<torch::optim::OptimizerParamGroup> Renderer::OptimParamGroups(float 
     for (const auto& para_group : cur_params) {
       ret.emplace_back(para_group);
     }
-  }
-
-  {
-    auto opt = std::make_unique<torch::optim::AdamOptions>(lr);
-    opt->betas() = {0.9, 0.99};
-    opt->eps() = 1e-15;
-    opt->weight_decay() = 1e-6;
-
-    std::vector<Tensor> params;
-    params.push_back(app_emb_);
-    ret.emplace_back(std::move(params), std::move(opt));
   }
   return ret;
 }

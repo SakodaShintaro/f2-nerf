@@ -15,10 +15,6 @@ is_continue: false
 
 mode: train
 
-renderer:
-  # Appearance embedding to handling unstable lighting conditions
-  use_app_emb: true
-
 pts_sampler:
   near: 0.01
   scale_by_dis: true

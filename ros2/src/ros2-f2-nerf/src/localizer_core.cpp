@@ -19,7 +19,6 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
   std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
 
   const YAML::Node inference_params = YAML::LoadFile(base_exp_dir + "/inference_params.yaml");
-  n_images_ = inference_params["n_images"].as<int>();
   train_height_ = inference_params["height"].as<int>();
   train_width_ = inference_params["width"].as<int>();
   intrinsic_ =
@@ -31,7 +30,7 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
     torch::tensor(inference_params["normalizing_center"].as<std::vector<float>>(), CUDAFloat);
   radius_ = inference_params["normalizing_radius"].as<float>();
 
-  renderer_ = std::make_unique<Renderer>(config, n_images_);
+  renderer_ = std::make_unique<Renderer>(config);
 
   const std::string checkpoint_path = base_exp_dir + "/checkpoints/latest";
   Tensor scalars;
@@ -182,7 +181,7 @@ std::tuple<Tensor, Tensor> LocalizerCore::render_all_rays(
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).contiguous();
     Tensor cur_bounds = bounds.index({Slc(i, i_high)}).contiguous();
 
-    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, Tensor(), RunningMode::VALIDATE);
+    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, RunningMode::VALIDATE);
     Tensor colors = render_result.colors;
     Tensor disp = render_result.disparity.squeeze();
 

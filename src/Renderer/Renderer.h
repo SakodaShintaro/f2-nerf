@@ -32,8 +32,8 @@ class Renderer : public Pipe {
   using Tensor = torch::Tensor;
 
 public:
-  Renderer(const YAML::Node & config, int n_images);
-  RenderResult Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode);
+  Renderer(const YAML::Node & config);
+  RenderResult Render(const Tensor& rays_o, const Tensor& rays_d, RunningMode mode);
 
   int LoadStates(const std::vector<Tensor>& states, int idx) override;
   std::vector<Tensor> States() override ;
@@ -43,9 +43,6 @@ public:
   std::unique_ptr<PtsSampler> pts_sampler_;
   std::unique_ptr<Field> scene_field_;
   std::unique_ptr<Shader> shader_;
-
-  bool use_app_emb_;
-  Tensor app_emb_;
 };
 
 torch::Tensor FilterIdxBounds(const torch::Tensor& idx_bounds,
