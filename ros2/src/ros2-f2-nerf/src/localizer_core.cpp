@@ -297,7 +297,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
   std::vector<Tensor> rays_o_vec;
   std::vector<Tensor> rays_d_vec;
   for (const Tensor & pose : poses) {
-    auto [rays_o, rays_d] = Dataset::Img2WorldRay(pose, intrinsic_, ij);
+    auto [rays_o, rays_d] = Dataset::Img2WorldRay(pose.unsqueeze(0), intrinsic_.unsqueeze(0), ij);
     rays_o_vec.push_back(rays_o);
     rays_d_vec.push_back(rays_d);
   }
