@@ -10,7 +10,7 @@
 #include <memory>
 #include <yaml-cpp/yaml.h>
 #include "../Utils/Pipe.h"
-#include "../Field/FieldFactory.h"
+#include "../Field/Field.h"
 #include "../Shader/ShaderFactory.h"
 #include "../PtsSampler/PtsSampler.h"
 

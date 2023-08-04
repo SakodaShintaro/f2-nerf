@@ -6,10 +6,11 @@
 #define SANR_HASH3DANCHORED_H
 
 #pragma once
-#include <torch/torch.h>
-
+#include "../Utils/Pipe.h"
 #include "TCNNWP.h"
-#include "Field.h"
+
+#include <torch/torch.h>
+#include <yaml-cpp/yaml.h>
 
 #define N_CHANNELS 2
 #define N_LEVELS 16
@@ -18,12 +19,12 @@
 // 8
 #define RES_BASE_POW_2 3.f
 
-class Hash3DAnchored : public Field  {
+class Hash3DAnchored : public Pipe {
   using Tensor = torch::Tensor;
 public:
   Hash3DAnchored(const YAML::Node & config);
 
-  Tensor Query(const Tensor& points) override;
+  Tensor Query(const Tensor& points);
 
   int LoadStates(const std::vector<Tensor>& states, int idx) override;
   std::vector<Tensor> States() override;

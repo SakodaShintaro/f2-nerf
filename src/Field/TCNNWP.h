@@ -5,8 +5,9 @@
 #ifndef SANR_TCNNWP_H
 #define SANR_TCNNWP_H
 
-#include "Field.h"
 #include <tiny-cuda-nn/cpp_api.h>
+#include <torch/torch.h>
+#include <yaml-cpp/yaml.h>
 
 class TCNNWP {
   using Tensor = torch::Tensor;
