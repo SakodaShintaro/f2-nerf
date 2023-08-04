@@ -102,7 +102,7 @@ class ImagePosePublisher(Node):
         self.offset = [0.0, 0.0, 0.0]
 
         # Publish tf
-        self.target_frame = "camera0/camera_link"
+        self.target_frame = "velodyne_front"
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
         self.tf_msg = geometry_msgs.msg.TransformStamped()
         self.tf_msg.header.stamp = self.get_clock().now().to_msg()
@@ -158,7 +158,7 @@ class ImagePosePublisher(Node):
         # In the NeRF node, poses are held in a queue and processed when an image is subscribed.
         # If poses and images are published simultaneously, the pose might not be held in the queue and processed before the image is subscribed.
         # Therefore, a delay is introduced between publishing poses and images to ensure the proper processing order.
-        time.sleep(0.025)
+        time.sleep(0.1)
 
         # Publish image
         image = cv2.imread(self.image_files[self.idx])
