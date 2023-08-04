@@ -247,22 +247,3 @@ void TCNNWP::InitParams() {
   size_t seed = 19970826;
   module_->initialize_params(seed, params_.data_ptr<float>());
 }
-
-int TCNNWP::LoadStates(const std::vector<Tensor>& states, int idx) {
-  CHECK(false) << "This should be handled by the parent module";
-  return idx;
-}
-
-std::vector<Tensor> TCNNWP::States() {
-  CHECK(false) << "This should be handled by the parent module";
-  return {};
-}
-
-std::vector<torch::optim::OptimizerParamGroup> TCNNWP::OptimParamGroups(float lr) {
-  CHECK(false) << "This should be handled by the parent module";
-  return {};
-}
-
-void TCNNWP::Reset() {
-  CHECK(false) << "This should be handled by the parent module";
-}

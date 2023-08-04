@@ -8,17 +8,13 @@
 #include "Field.h"
 #include <tiny-cuda-nn/cpp_api.h>
 
-class TCNNWP : public Field {
+class TCNNWP {
   using Tensor = torch::Tensor;
 public:
   TCNNWP(const YAML::Node & config, int d_in, int d_out, int d_hidden, int n_hidden_layers);
 
-  Tensor Query(const Tensor& pts) override;
+  Tensor Query(const Tensor& pts);
 
-  int LoadStates(const std::vector<Tensor>& states, int idx) override;
-  std::vector<Tensor> States() override;
-  std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
-  void Reset() override;
   void InitParams();
 
   int d_in_, d_out_, d_hidden_, n_hidden_layers_;
