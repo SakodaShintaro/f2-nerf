@@ -23,7 +23,6 @@ Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_
   const YAML::Node conf = root_config["renderer"];
 
   pts_sampler_ = std::make_unique<PtsSampler>(root_config);
-  RegisterSubPipe(pts_sampler_.get());
 
   scene_field_ = ConstructField(root_config);
   RegisterSubPipe(scene_field_.get());

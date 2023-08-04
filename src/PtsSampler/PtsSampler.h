@@ -4,7 +4,6 @@
 
 #pragma once
 #include "../Common.h"
-#include "../Utils/Pipe.h"
 #include "Eigen/Eigen"
 
 #include <torch/torch.h>
@@ -24,7 +23,7 @@ struct SampleResultFlex
 
 enum RunningMode { TRAIN, VALIDATE };
 
-class PtsSampler : public Pipe
+class PtsSampler
 {
   using Tensor = torch::Tensor;
 
