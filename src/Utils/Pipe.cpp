@@ -36,9 +36,3 @@ std::vector<torch::optim::OptimizerParamGroup> Pipe::OptimParamGroups(float lr) 
 void Pipe::RegisterSubPipe(Pipe* sub_pipe) {
   sub_pipes_.push_back(sub_pipe);
 }
-
-void Pipe::Reset() {
-  for (auto pipe : sub_pipes_) {
-    pipe->Reset();
-  }
-}

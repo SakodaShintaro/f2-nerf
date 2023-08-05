@@ -29,7 +29,6 @@ public:
   int LoadStates(const std::vector<Tensor>& states, int idx) override;
   std::vector<Tensor> States() override;
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
-  void Reset() override;
 
   int pool_size_;
   int mlp_hidden_dim_, mlp_out_dim_, n_hidden_layers_;

@@ -53,7 +53,3 @@ std::vector<torch::optim::OptimizerParamGroup> SHShader::OptimParamGroups(float 
 
   return { torch::optim::OptimizerParamGroup(params, std::move(opt)) };
 }
-
-void SHShader::Reset() {
-  mlp_->InitParams();
-}

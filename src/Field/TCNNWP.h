@@ -16,8 +16,6 @@ public:
 
   Tensor Query(const Tensor& pts);
 
-  void InitParams();
-
   int d_in_, d_out_, d_hidden_, n_hidden_layers_;
   std::unique_ptr<tcnn::cpp::Module> module_;
 

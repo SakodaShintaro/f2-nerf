@@ -145,8 +145,3 @@ std::vector<torch::optim::OptimizerParamGroup> Hash3DAnchored::OptimParamGroups(
 
   return ret;
 }
-
-void Hash3DAnchored::Reset() {
-  feat_pool_.data().uniform_(-1e-2f, 1e-2f);
-  mlp_->InitParams();
-}

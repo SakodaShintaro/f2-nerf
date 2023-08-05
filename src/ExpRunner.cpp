@@ -53,10 +53,6 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   if (config["is_continue"].as<bool>()) {
     LoadCheckpoint(base_exp_dir_ + "/checkpoints/latest");
   }
-
-  if (config["reset"] && config["reset"].as<bool>()) {
-    renderer_->Reset();
-  }
 }
 
 void ExpRunner::Train() {

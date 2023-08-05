@@ -242,8 +242,3 @@ variable_list TCNNWPFunction::backward(AutogradContext *ctx, variable_list grad_
 }
 
 };
-
-void TCNNWP::InitParams() {
-  size_t seed = 19970826;
-  module_->initialize_params(seed, params_.data_ptr<float>());
-}
