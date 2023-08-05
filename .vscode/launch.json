@@ -9,7 +9,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build-Debug/main",
             "args": [
-                "train",
+                "test_field",
                 "../exp/20230609_base_link_logiee/runtime_config.yaml"
             ],
             "stopAtEntry": false,

@@ -88,6 +88,7 @@ add_executable(main main.cpp
         src/ExpRunner.cpp
         src/Infer.cpp
         src/Test.cpp
+        src/TestField.cpp
         src/Walk.cpp
         ros2/src/ros2-f2-nerf/src/localizer_core.cpp
         ${SRC_ALL})
