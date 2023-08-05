@@ -9,13 +9,13 @@
 using Tensor = torch::Tensor;
 
 constexpr bool kAlignCorners = false;
+constexpr int64_t kInputDim = 3;
 
 GridEncoder::GridEncoder(const YAML::Node & root_config)
 {
   ScopeWatch dataset_watch("GridEncoder::GridEncoder");
   const YAML::Node & config = root_config["field"];
 
-  input_dim = 3;
   int64_t num_levels = 16;
   int64_t level_dim = 2;
   per_level_scale = 2;
@@ -36,7 +36,7 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
       static_cast<int64_t>(std::ceil(base_resolution * std::pow(per_level_scale, i)));
     resolution = (kAlignCorners ? resolution : resolution + 1);
     int64_t params_in_level = std::min(
-      max_params, static_cast<int64_t>(std::pow(resolution, input_dim)));        // limit max number
+      max_params, static_cast<int64_t>(std::pow(resolution, kInputDim)));        // limit max number
     params_in_level = static_cast<int64_t>(std::ceil(params_in_level / 8) * 8);  // make divisible
     resolutions.push_back(resolution);
     offsets.push_back(offset);
@@ -76,7 +76,7 @@ Tensor GridEncoder::Query(torch::Tensor inputs, double bound)
   // Compute size before the last dimension
   auto prefix_shape = inputs.sizes().vec();
   prefix_shape.pop_back();
-  inputs = inputs.view({-1, input_dim});
+  inputs = inputs.view({-1, kInputDim});
 
   inputs.requires_grad_(true);
 
