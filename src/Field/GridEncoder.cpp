@@ -51,6 +51,7 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
   // Resize the embeddings tensor with the new size
   embeddings_ = torch::empty({offset, level_dim});
   embeddings_.data().uniform_(-init_std, init_std);
+  // embeddings_.requires_grad_(true);
   embeddings_ = embeddings_.to(torch::kCUDA);
 
   // MLP
@@ -62,22 +63,20 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
     config, num_levels * level_dim, mlp_out_dim_, mlp_hidden_dim_, n_hidden_layers_);
 }
 
-Tensor GridEncoder::Query(torch::Tensor inputs, double bound)
+Tensor GridEncoder::Query(torch::Tensor inputs)
 {
 #ifdef PROFILE
   ScopeWatch watch(__func__);
 #endif
-
-  inputs = (inputs + bound) / (2 * bound);  // map to [0, 1]
-
   // Compute size before the last dimension
-  auto prefix_shape = inputs.sizes().vec();
+  std::vector<int64_t> prefix_shape = inputs.sizes().vec();
   prefix_shape.pop_back();
-  inputs = inputs.view({-1, kInputDim});
 
+  const double bound = 1.0;
+  inputs = (inputs + bound) / (2 * bound);  // [-1, 1] -> [0, 1]
+  inputs = inputs.view({-1, kInputDim});
   inputs.requires_grad_(true);
 
-  // "grid_encode" function call would go here... assuming it's some kind of external function
   torch::Tensor outputs = torch::autograd::GridEncoderFunction::apply(
     inputs, embeddings_, offsets_, inputs.requires_grad())[0];
   prefix_shape.push_back(-1);

@@ -14,7 +14,7 @@ class GridEncoder : public Pipe
 public:
   GridEncoder(const YAML::Node & config);
 
-  Tensor Query(torch::Tensor inputs, double bound = 1);
+  Tensor Query(torch::Tensor inputs);
 
   int LoadStates(const std::vector<Tensor> & states, int idx) override;
   std::vector<Tensor> States() override;
