@@ -13,7 +13,7 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
   ScopeWatch dataset_watch("GridEncoder::GridEncoder");
   const YAML::Node & config = root_config["field"];
 
-  int64_t input_dim = 3;
+  input_dim = 3;
   int64_t num_levels = 16;
   int64_t level_dim = 2;
   double per_level_scale = 2;
@@ -42,8 +42,8 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
     offset += params_in_level;
   }
   offsets.push_back(offset);
+  offsets_ = torch::tensor(offsets).to(torch::kCUDA).to(torch::kInt);
   torch::Tensor idx = torch::empty({offset}, torch::kLong);
-  std::cout << "idx.sizes() = " << idx.sizes() << std::endl;
   for (int64_t i = 0; i < num_levels; i++) {
     idx.slice(0, offsets[i], offsets[i + 1]) = i;
   }
@@ -51,9 +51,9 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
   n_params = offsets[offsets.size() - 1] * level_dim;
 
   // Resize the embeddings tensor with the new size
-  embeddings = torch::empty({offset, level_dim});
-  std::cout << "embeddings.sizes() = " << embeddings.sizes() << std::endl;
-  embeddings.data().uniform_(-init_std, init_std);
+  embeddings_ = torch::empty({offset, level_dim});
+  embeddings_.data().uniform_(-init_std, init_std);
+  embeddings_ = embeddings_.to(torch::kCUDA);
 
   // MLP
   int mlp_hidden_dim_, mlp_out_dim_, n_hidden_layers_;
@@ -77,9 +77,11 @@ Tensor GridEncoder::Query(torch::Tensor inputs, double bound)
   prefix_shape.pop_back();
   inputs = inputs.view({-1, input_dim});
 
+  inputs.requires_grad_(true);
+
   // "grid_encode" function call would go here... assuming it's some kind of external function
   torch::Tensor outputs = torch::autograd::GridEncoderFunction::apply(
-    inputs, embeddings, offsets, per_level_scale, base_resolution, inputs.requires_grad(),
+    inputs, embeddings_, offsets_, per_level_scale, base_resolution, inputs.requires_grad(),
     gridtype_id, align_corners, interp_id)[0];
   prefix_shape.push_back(output_dim);
   outputs = outputs.view(prefix_shape);
@@ -90,7 +92,7 @@ Tensor GridEncoder::Query(torch::Tensor inputs, double bound)
 
 int GridEncoder::LoadStates(const std::vector<Tensor> & states, int idx)
 {
-  embeddings = states[idx++].clone().to(torch::kCUDA).contiguous();
+  embeddings_ = states[idx++].clone().to(torch::kCUDA).contiguous();
   mlp_->params_.data().copy_(states[idx++]);
   return idx;
 }
@@ -98,7 +100,7 @@ int GridEncoder::LoadStates(const std::vector<Tensor> & states, int idx)
 std::vector<Tensor> GridEncoder::States()
 {
   std::vector<Tensor> ret;
-  ret.push_back(embeddings.data());
+  ret.push_back(embeddings_.data());
   ret.push_back(mlp_->params_.data());
   return ret;
 }
@@ -112,7 +114,7 @@ std::vector<torch::optim::OptimizerParamGroup> GridEncoder::OptimParamGroups(flo
     opt->betas() = {0.9, 0.99};
     opt->eps() = 1e-15;
 
-    std::vector<Tensor> params = {embeddings};
+    std::vector<Tensor> params = {embeddings_};
     ret.emplace_back(std::move(params), std::move(opt));
   }
 

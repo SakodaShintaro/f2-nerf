@@ -27,7 +27,7 @@ public:
   bool align_corners;
   std::string gridtype, interpolation;
 
-  torch::Tensor embeddings, offsets, idx, grid_sizes;
+  torch::Tensor embeddings_, offsets_, idx_, grid_sizes_;
 
   std::unique_ptr<TCNNWP> mlp_;
 };
