@@ -22,7 +22,6 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
   base_resolution = 16;
   int64_t log2_hashmap_size = 19;
   double init_std = 1e-4;
-  this->gridtype_id = 0;
   this->interp_id = 0;
 
   output_dim = num_levels * level_dim;
@@ -81,9 +80,10 @@ Tensor GridEncoder::Query(torch::Tensor inputs, double bound)
   inputs.requires_grad_(true);
 
   // "grid_encode" function call would go here... assuming it's some kind of external function
+  constexpr int32_t grid_type_id = 0;
   torch::Tensor outputs = torch::autograd::GridEncoderFunction::apply(
     inputs, embeddings_, offsets_, per_level_scale, base_resolution, inputs.requires_grad(),
-    gridtype_id, interp_id)[0];
+    grid_type_id, interp_id)[0];
   prefix_shape.push_back(output_dim);
   outputs = outputs.view(prefix_shape);
 

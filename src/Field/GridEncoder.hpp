@@ -21,8 +21,8 @@ public:
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
 
   // Member Variables
-  int64_t num_levels, level_dim, log2_hashmap_size, base_resolution, output_dim,
-    gridtype_id, interp_id, max_params, n_params;
+  int64_t num_levels, level_dim, log2_hashmap_size, base_resolution, output_dim, interp_id,
+    max_params, n_params;
   double per_level_scale, init_std;
   std::string gridtype, interpolation;
 
