@@ -8,6 +8,8 @@
 
 using Tensor = torch::Tensor;
 
+constexpr bool kAlignCorners = false;
+
 GridEncoder::GridEncoder(const YAML::Node & root_config)
 {
   ScopeWatch dataset_watch("GridEncoder::GridEncoder");
@@ -19,7 +21,6 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
   per_level_scale = 2;
   base_resolution = 16;
   int64_t log2_hashmap_size = 19;
-  align_corners = false;
   double init_std = 1e-4;
   this->gridtype_id = 0;
   this->interp_id = 0;
@@ -33,7 +34,7 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
   for (int64_t i = 0; i < num_levels; i++) {
     int64_t resolution =
       static_cast<int64_t>(std::ceil(base_resolution * std::pow(per_level_scale, i)));
-    resolution = (align_corners ? resolution : resolution + 1);
+    resolution = (kAlignCorners ? resolution : resolution + 1);
     int64_t params_in_level = std::min(
       max_params, static_cast<int64_t>(std::pow(resolution, input_dim)));        // limit max number
     params_in_level = static_cast<int64_t>(std::ceil(params_in_level / 8) * 8);  // make divisible
@@ -82,7 +83,7 @@ Tensor GridEncoder::Query(torch::Tensor inputs, double bound)
   // "grid_encode" function call would go here... assuming it's some kind of external function
   torch::Tensor outputs = torch::autograd::GridEncoderFunction::apply(
     inputs, embeddings_, offsets_, per_level_scale, base_resolution, inputs.requires_grad(),
-    gridtype_id, align_corners, interp_id)[0];
+    gridtype_id, interp_id)[0];
   prefix_shape.push_back(output_dim);
   outputs = outputs.view(prefix_shape);
 
@@ -138,7 +139,7 @@ namespace torch::autograd
 variable_list GridEncoderFunction::forward(
   AutogradContext * ctx, torch::Tensor inputs, torch::Tensor embeddings, torch::Tensor offsets,
   float per_level_scale, float base_resolution, bool calc_grad_inputs, int32_t gridtype,
-  bool align_corners, int32_t interpolation)
+  int32_t interpolation)
 {
   inputs = inputs.contiguous();
 
@@ -157,7 +158,7 @@ variable_list GridEncoderFunction::forward(
   }
 
   grid_encode_forward(
-    inputs, embeddings, offsets, outputs, B, D, C, L, S, H, dy_dx, gridtype, align_corners,
+    inputs, embeddings, offsets, outputs, B, D, C, L, S, H, dy_dx, gridtype, kAlignCorners,
     interpolation);
 
   outputs = outputs.permute({1, 0, 2}).reshape({B, L * C});
@@ -173,7 +174,6 @@ variable_list GridEncoderFunction::forward(
   dims.push_back(gridtype);
   dims.push_back(interpolation);
   ctx->saved_data["dims"] = torch::IValue(dims);
-  ctx->saved_data["align_corners"] = align_corners;
 
   return {outputs};
 }
@@ -195,7 +195,6 @@ variable_list GridEncoderFunction::backward(AutogradContext * ctx, variable_list
   const int64_t H = dim_list[5];
   const int64_t gridtype = dim_list[6];
   const int64_t interpolation = dim_list[7];
-  bool align_corners = ctx->saved_data["align_corners"].toBool();
 
   // grad: [B, L * C] --> [L, B, C]
   torch::Tensor grad = grad_output[0];
@@ -210,7 +209,7 @@ variable_list GridEncoderFunction::backward(AutogradContext * ctx, variable_list
 
   grid_encode_backward(
     grad, inputs, embeddings, offsets, grad_embeddings, B, D, C, L, S, H, dy_dx, grad_inputs,
-    gridtype, align_corners, interpolation);
+    gridtype, kAlignCorners, interpolation);
 
   if (dy_dx.defined()) {
     grad_inputs = grad_inputs.to(inputs.dtype());

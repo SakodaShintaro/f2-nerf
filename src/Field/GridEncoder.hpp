@@ -24,7 +24,6 @@ public:
   int64_t input_dim, num_levels, level_dim, log2_hashmap_size, base_resolution, output_dim,
     gridtype_id, interp_id, max_params, n_params;
   double per_level_scale, init_std;
-  bool align_corners;
   std::string gridtype, interpolation;
 
   torch::Tensor embeddings_, offsets_, idx_, grid_sizes_;
@@ -41,7 +40,7 @@ public:
   static variable_list forward(
     AutogradContext * ctx, torch::Tensor inputs, torch::Tensor embeddings, torch::Tensor offsets,
     float per_level_scale, float base_resolution, bool calc_grad_inputs = false,
-    int32_t gridtype = 0, bool align_corners = false, int32_t interpolation = 0);
+    int32_t gridtype = 0, int32_t interpolation = 0);
   static variable_list backward(AutogradContext * ctx, variable_list grad_output);
 };
 
