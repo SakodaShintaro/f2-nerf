@@ -16,10 +16,10 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
   input_dim = 3;
   int64_t num_levels = 16;
   int64_t level_dim = 2;
-  double per_level_scale = 2;
-  int64_t base_resolution = 16;
+  per_level_scale = 2;
+  base_resolution = 16;
   int64_t log2_hashmap_size = 19;
-  bool align_corners = false;
+  align_corners = false;
   double init_std = 1e-4;
   this->gridtype_id = 0;
   this->interp_id = 0;
