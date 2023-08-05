@@ -144,6 +144,8 @@ variable_list GridEncoderFunction::forward(
   float S = std::log2(kPerLevelScale);  // resolution multiplier at each level
   float H = kBaseResolution;
 
+  embeddings = embeddings.to(torch::kHalf);
+
   torch::Tensor outputs = torch::empty({L, B, C}).to(inputs.device()).to(embeddings.dtype());
 
   torch::Tensor dy_dx;
@@ -167,6 +169,8 @@ variable_list GridEncoderFunction::forward(
   dims.push_back(H);
   ctx->saved_data["dims"] = torch::IValue(dims);
 
+  outputs = outputs.to(torch::kFloat32);
+
   return {outputs};
 }
 
@@ -187,7 +191,7 @@ variable_list GridEncoderFunction::backward(AutogradContext * ctx, variable_list
   const int64_t H = dim_list[5];
 
   // grad: [B, L * C] --> [L, B, C]
-  torch::Tensor grad = grad_output[0];
+  torch::Tensor grad = grad_output[0].to(torch::kFloat16);
   grad = grad.view({B, L, C}).permute({1, 0, 2}).contiguous();
 
   torch::Tensor grad_embeddings = torch::zeros_like(embeddings);
@@ -204,6 +208,9 @@ variable_list GridEncoderFunction::backward(AutogradContext * ctx, variable_list
   if (dy_dx.defined()) {
     grad_inputs = grad_inputs.to(inputs.dtype());
   }
+
+  grad_inputs = grad_inputs.to(torch::kFloat32);
+  grad_embeddings = grad_embeddings.to(torch::kFloat32);
 
   return {grad_inputs, grad_embeddings, Tensor(), Tensor(), Tensor(),
           Tensor(),    Tensor(),        Tensor(), Tensor()};
