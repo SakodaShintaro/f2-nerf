@@ -7,11 +7,6 @@
 #include <torch/torch.h>
 #include <yaml-cpp/yaml.h>
 
-#define N_CHANNELS 2
-#define N_LEVELS 16
-#define RES_FINE_POW_2 10.f  // 1024
-#define RES_BASE_POW_2 3.f   // 8
-
 class GridEncoder : public Pipe
 {
   using Tensor = torch::Tensor;

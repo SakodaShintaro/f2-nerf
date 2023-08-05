@@ -13,24 +13,14 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
   ScopeWatch dataset_watch("GridEncoder::GridEncoder");
   const YAML::Node & config = root_config["field"];
 
-  int64_t input_dim;
-  int64_t num_levels;
-  int64_t level_dim;
-  double per_level_scale;
-  int64_t base_resolution;
-  int64_t log2_hashmap_size;
-  int64_t desired_resolution;
-  std::string gridtype;
-  bool align_corners;
-  std::string interpolation;
-  double init_std;
-
-  // If desired_resolution is provided, override per_level_scale
-  if (desired_resolution != -1) {
-    per_level_scale =
-      std::pow(2, std::log2(desired_resolution / base_resolution) / (num_levels - 1));
-  }
-
+  int64_t input_dim = 3;
+  int64_t num_levels = 16;
+  int64_t level_dim = 2;
+  double per_level_scale = 2;
+  int64_t base_resolution = 16;
+  int64_t log2_hashmap_size = 19;
+  bool align_corners = false;
+  double init_std = 1e-4;
   this->gridtype_id = 0;
   this->interp_id = 0;
 
@@ -52,7 +42,8 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
     offset += params_in_level;
   }
   offsets.push_back(offset);
-  auto idx = torch::empty({offset}, torch::kLong);
+  torch::Tensor idx = torch::empty({offset}, torch::kLong);
+  std::cout << "idx.sizes() = " << idx.sizes() << std::endl;
   for (int64_t i = 0; i < num_levels; i++) {
     idx.slice(0, offsets[i], offsets[i + 1]) = i;
   }
@@ -61,6 +52,7 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
 
   // Resize the embeddings tensor with the new size
   embeddings = torch::empty({offset, level_dim});
+  std::cout << "embeddings.sizes() = " << embeddings.sizes() << std::endl;
   embeddings.data().uniform_(-init_std, init_std);
 
   // MLP
@@ -69,7 +61,7 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
   mlp_out_dim_ = config["mlp_out_dim"].as<int>();
   n_hidden_layers_ = config["n_hidden_layers"].as<int>();
   mlp_ = std::make_unique<TCNNWP>(
-    config, N_LEVELS * N_CHANNELS, mlp_out_dim_, mlp_hidden_dim_, n_hidden_layers_);
+    config, num_levels * level_dim, mlp_out_dim_, mlp_hidden_dim_, n_hidden_layers_);
 }
 
 Tensor GridEncoder::Query(torch::Tensor inputs, double bound)
