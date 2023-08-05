@@ -49,10 +49,10 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
   }
 
   // Resize the embeddings tensor with the new size
-  embeddings_ = torch::empty({offset, level_dim});
+  embeddings_ = torch::zeros({offset, level_dim});
   embeddings_.data().uniform_(-init_std, init_std);
-  // embeddings_.requires_grad_(true);
   embeddings_ = embeddings_.to(torch::kCUDA);
+  embeddings_.requires_grad_(true);
 
   // MLP
   int mlp_hidden_dim_, mlp_out_dim_, n_hidden_layers_;
