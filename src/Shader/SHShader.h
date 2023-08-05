@@ -5,14 +5,17 @@
 #ifndef SANR_SHSHADER_H
 #define SANR_SHSHADER_H
 
-#include "Shader.h"
 #include "../Field/TCNNWP.h"
+#include "../Utils/Pipe.h"
 
-class SHShader : public Shader {
+#include <torch/torch.h>
+#include <yaml-cpp/yaml.h>
+
+class SHShader : public Pipe {
   using Tensor = torch::Tensor;
 public:
   SHShader(const YAML::Node & config);
-  Tensor Query(const Tensor& feats, const Tensor& dirs) override;
+  Tensor Query(const Tensor& feats, const Tensor& dirs);
   std::vector<Tensor> States() override;
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
   int LoadStates(const std::vector<Tensor>& states, int) override;
@@ -22,6 +25,7 @@ public:
 
   std::unique_ptr<TCNNWP> mlp_;
 
+  int d_in_, d_out_;
   int d_hidden_, n_hiddens_;
   int degree_;
 };

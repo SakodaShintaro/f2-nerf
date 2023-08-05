@@ -27,7 +27,7 @@ Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_
   scene_field_ = std::make_unique<Field>(root_config);
   RegisterSubPipe(scene_field_.get());
 
-  shader_ = ConstructShader(root_config);
+  shader_ = std::make_unique<Shader>(root_config);
   RegisterSubPipe(shader_.get());
 
 

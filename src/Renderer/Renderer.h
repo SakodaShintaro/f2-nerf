@@ -11,7 +11,7 @@
 #include <yaml-cpp/yaml.h>
 #include "../Utils/Pipe.h"
 #include "../Field/Field.h"
-#include "../Shader/ShaderFactory.h"
+#include "../Shader/Shader.h"
 #include "../PtsSampler/PtsSampler.h"
 
 struct RenderResult {
