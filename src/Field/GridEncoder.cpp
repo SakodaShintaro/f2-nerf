@@ -12,28 +12,27 @@ constexpr bool kAlignCorners = false;
 constexpr int64_t kInputDim = 3;
 constexpr int32_t kGridType = 0;
 constexpr int32_t kInterpolation = 0;
+constexpr int64_t kBaseResolution = 16;
+constexpr double kPerLevelScale = 2;
 
 GridEncoder::GridEncoder(const YAML::Node & root_config)
 {
   ScopeWatch dataset_watch("GridEncoder::GridEncoder");
   const YAML::Node & config = root_config["field"];
 
-  int64_t num_levels = 16;
-  int64_t level_dim = 2;
-  per_level_scale = 2;
-  base_resolution = 16;
-  int64_t log2_hashmap_size = 19;
-  double init_std = 1e-4;
-
-  output_dim = num_levels * level_dim;
+  const int64_t num_levels = 16;
+  const int64_t level_dim = 2;
+  const int64_t output_dim = num_levels * level_dim;
+  const int64_t log2_hashmap_size = 19;
+  const double init_std = 1e-4;
 
   std::vector<int64_t> resolutions;
   std::vector<int64_t> offsets;
   int64_t offset = 0;
-  max_params = std::pow(2, log2_hashmap_size);
+  const int64_t max_params = std::pow(2, log2_hashmap_size);
   for (int64_t i = 0; i < num_levels; i++) {
     int64_t resolution =
-      static_cast<int64_t>(std::ceil(base_resolution * std::pow(per_level_scale, i)));
+      static_cast<int64_t>(std::ceil(kBaseResolution * std::pow(kPerLevelScale, i)));
     resolution = (kAlignCorners ? resolution : resolution + 1);
     int64_t params_in_level = std::min(
       max_params, static_cast<int64_t>(std::pow(resolution, kInputDim)));        // limit max number
@@ -48,8 +47,6 @@ GridEncoder::GridEncoder(const YAML::Node & root_config)
   for (int64_t i = 0; i < num_levels; i++) {
     idx.slice(0, offsets[i], offsets[i + 1]) = i;
   }
-
-  n_params = offsets[offsets.size() - 1] * level_dim;
 
   // Resize the embeddings tensor with the new size
   embeddings_ = torch::empty({offset, level_dim});
@@ -82,8 +79,8 @@ Tensor GridEncoder::Query(torch::Tensor inputs, double bound)
 
   // "grid_encode" function call would go here... assuming it's some kind of external function
   torch::Tensor outputs = torch::autograd::GridEncoderFunction::apply(
-    inputs, embeddings_, offsets_, per_level_scale, base_resolution, inputs.requires_grad())[0];
-  prefix_shape.push_back(output_dim);
+    inputs, embeddings_, offsets_, inputs.requires_grad())[0];
+  prefix_shape.push_back(-1);
   outputs = outputs.view(prefix_shape);
 
   outputs = mlp_->Query(outputs);
@@ -137,16 +134,16 @@ namespace torch::autograd
 
 variable_list GridEncoderFunction::forward(
   AutogradContext * ctx, torch::Tensor inputs, torch::Tensor embeddings, torch::Tensor offsets,
-  float per_level_scale, float base_resolution, bool calc_grad_inputs)
+  bool calc_grad_inputs)
 {
   inputs = inputs.contiguous();
 
-  int64_t B = inputs.size(0);            // batch size
-  int64_t D = inputs.size(1);            // coord dim
-  int64_t L = offsets.size(0) - 1;       // level
-  int64_t C = embeddings.size(1);        // embedding dim for each level
-  float S = std::log2(per_level_scale);  // resolution multiplier at each level
-  float H = base_resolution;
+  int64_t B = inputs.size(0);           // batch size
+  int64_t D = inputs.size(1);           // coord dim
+  int64_t L = offsets.size(0) - 1;      // level
+  int64_t C = embeddings.size(1);       // embedding dim for each level
+  float S = std::log2(kPerLevelScale);  // resolution multiplier at each level
+  float H = kBaseResolution;
 
   torch::Tensor outputs = torch::empty({L, B, C}).to(inputs.device()).to(embeddings.dtype());
 
