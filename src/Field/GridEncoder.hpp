@@ -37,12 +37,6 @@ public:
   std::unique_ptr<TCNNWP> mlp_;
 };
 
-// class GridEncoderInfo : public torch::CustomClassHolder
-// {
-// public:
-//   GridEncoder * hash3d_ = nullptr;
-// };
-
 namespace torch::autograd
 {
 
