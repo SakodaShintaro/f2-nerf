@@ -12,8 +12,8 @@ constexpr bool kAlignCorners = false;
 constexpr int64_t kInputDim = 3;
 constexpr int32_t kGridType = 0;
 constexpr int32_t kInterpolation = 0;
-constexpr int64_t kBaseResolution = 16;
-constexpr double kPerLevelScale = 2;
+constexpr int64_t kBaseResolution = 3;
+constexpr double kPerLevelScale = 1.35425554694;
 
 GridEncoder::GridEncoder(const YAML::Node & root_config)
 {
@@ -165,7 +165,6 @@ variable_list GridEncoderFunction::forward(
   dims.push_back(D);
   dims.push_back(C);
   dims.push_back(L);
-  dims.push_back(S);
   dims.push_back(H);
   ctx->saved_data["dims"] = torch::IValue(dims);
 
@@ -187,8 +186,9 @@ variable_list GridEncoderFunction::backward(AutogradContext * ctx, variable_list
   const int64_t D = dim_list[1];
   const int64_t C = dim_list[2];
   const int64_t L = dim_list[3];
-  const int64_t S = dim_list[4];
-  const int64_t H = dim_list[5];
+  const int64_t H = dim_list[4];
+
+  float S = std::log2(kPerLevelScale);  // resolution multiplier at each level
 
   // grad: [B, L * C] --> [L, B, C]
   torch::Tensor grad = grad_output[0].to(torch::kFloat16);
