@@ -43,7 +43,7 @@ public:
 
   int n_volumes_;
 
-  Tensor query_points_, query_volume_idx_;
+  Tensor query_volume_idx_;
 
   const YAML::Node config_;
 };
@@ -58,6 +58,7 @@ namespace torch::autograd {
 class Hash3DAnchoredFunction : public Function<Hash3DAnchoredFunction> {
 public:
   static variable_list forward(AutogradContext *ctx,
+                               Tensor points,
                                Tensor feat_pool_,
                                IValue hash3d_info);
 

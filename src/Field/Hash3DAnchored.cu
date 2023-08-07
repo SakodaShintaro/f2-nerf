@@ -158,12 +158,13 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
 namespace torch::autograd {
 
 variable_list Hash3DAnchoredFunction::forward(AutogradContext* ctx,
+                                              Tensor points,
                                               Tensor feat_pool,
                                               IValue hash3d_info) {
 
   auto info_ptr = hash3d_info.toCustomClass<Hash3DAnchoredInfo>();
   ctx->saved_data["hash3d_info"] = hash3d_info;
-  Tensor& points  = info_ptr->hash3d_->query_points_;                       // [ n_points, 3 ]
+  ctx->saved_data["points"] = points;
   Tensor& volume_idx = info_ptr->hash3d_->query_volume_idx_;                // [ n_points, 1 ]
   Tensor& prim_pool = info_ptr->hash3d_->prim_pool_;
   Tensor& bias_pool = info_ptr->hash3d_->bias_pool_;
@@ -198,7 +199,7 @@ variable_list Hash3DAnchoredFunction::forward(AutogradContext* ctx,
 
 variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_list grad_output) {
   auto info_ptr = ctx->saved_data["hash3d_info"].toCustomClass<Hash3DAnchoredInfo>();
-  Tensor& points  = info_ptr->hash3d_->query_points_;                            // [ n_points, 3 ]
+  Tensor& points  = ctx->saved_data["points"].toTensor();  // [ n_points, 3 ]
   Tensor& volume_idx = info_ptr->hash3d_->query_volume_idx_;
   Tensor& prim_pool = info_ptr->hash3d_->prim_pool_;
   Tensor& bias_pool = info_ptr->hash3d_->bias_pool_;
@@ -229,7 +230,7 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
       RE_INTER(FlexType*, grad_in.data_ptr()),
       RE_INTER(FlexType*, true_grad_out.data_ptr()));
 
-  return {true_grad_out.to(torch::kFloat32) / grad_scale, Tensor() };
+  return {Tensor(), true_grad_out.to(torch::kFloat32) / grad_scale, Tensor()};
 }
 
 }
