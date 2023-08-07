@@ -220,6 +220,7 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
 
   Tensor grad_in = (grad_output[0] * grad_scale).to(torch::kFloat16).contiguous();
 
+  Tensor points_grad = torch::zeros({n_points, 3}, CUDAFlex);
   Tensor true_grad_out = torch::zeros({ pool_size,  N_CHANNELS }, CUDAFlex);
 
   Hash3DAnchoredBackwardKernel<FlexType><<<grid_dim, block_dim>>>(
@@ -230,7 +231,10 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
       RE_INTER(FlexType*, grad_in.data_ptr()),
       RE_INTER(FlexType*, true_grad_out.data_ptr()));
 
-  return {Tensor(), true_grad_out.to(torch::kFloat32) / grad_scale, Tensor()};
+  points_grad = points_grad.to(torch::kFloat32) / grad_scale;
+  true_grad_out = true_grad_out.to(torch::kFloat32) / grad_scale;
+
+  return {points_grad, true_grad_out, Tensor()};
 }
 
 }
