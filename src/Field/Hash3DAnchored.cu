@@ -9,8 +9,8 @@
 using Tensor = torch::Tensor;
 
 template<typename T>
-__global__ void Hash3DAnchoredForwardKernel(int n_points,
-                                            T* feat_pool, int* prim_pool, int* feat_local_idx, int* feat_local_size,
+__global__ void Hash3DAnchoredForwardKernel(int n_points, int local_size,
+                                            T* feat_pool, int* prim_pool,
                                             Wec3f* bias_pool,
                                             Wec3f* points_ptr,
                                             T* out_feat) {
@@ -26,15 +26,14 @@ __global__ void Hash3DAnchoredForwardKernel(int n_points,
   Wec3f pt = points_ptr[0];
   float mul = exp2f((RES_FINE_POW_2 - RES_BASE_POW_2) * float(level_idx) / float(N_LEVELS - 1) + RES_BASE_POW_2);
   pt *= mul;
-  unsigned prim_a, prim_b, prim_c, local_size;
+  unsigned prim_a, prim_b, prim_c;
   {
     const int offset = level_idx * 3;
     prim_a = prim_pool[offset + 0];
     prim_b = prim_pool[offset + 1];
     prim_c = prim_pool[offset + 2];
   }
-  feat_pool = feat_pool + feat_local_idx[level_idx];
-  local_size = feat_local_size[level_idx];
+  feat_pool = feat_pool + local_size * level_idx;
 
   pt = pt + bias_pool[level_idx];
 
@@ -76,9 +75,9 @@ __global__ void Hash3DAnchoredForwardKernel(int n_points,
 }
 
 template<typename T>
-__global__ void Hash3DAnchoredBackwardKernel(int n_points,
+__global__ void Hash3DAnchoredBackwardKernel(int n_points, int local_size,
                                              T* feat_pool,
-                                             int* prim_pool, int* feat_local_idx, int* feat_local_size,
+                                             int* prim_pool,
                                              Wec3f* bias_pool,
                                              Wec3f* points_ptr,
                                              T* grad_in, // [ n_points, n_levels, n_channels ]
@@ -90,13 +89,13 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points,
   if (pts_idx >= n_points) {
     return;
   }
-  feat_pool = feat_pool + feat_local_idx[level_idx];
+  feat_pool = feat_pool + local_size * level_idx;
   points_ptr = points_ptr + pts_idx;
   grad_in = grad_in + (N_LEVELS * N_CHANNELS) * pts_idx + level_idx * N_CHANNELS;
   Wec3f pt = points_ptr[0];
   float mul = exp2f((RES_FINE_POW_2 - RES_BASE_POW_2) * float(level_idx) / float(N_LEVELS - 1) + RES_BASE_POW_2);
   pt *= mul;
-  unsigned prim_a, prim_b, prim_c, local_size;
+  unsigned prim_a, prim_b, prim_c;
   {
     const int offset = level_idx * 3;
     prim_a = prim_pool[offset + 0];
@@ -105,8 +104,7 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points,
   }
 
   grad_points = grad_points + pts_idx * 3;
-  grad_embeds = grad_embeds + feat_local_idx[level_idx];
-  local_size = feat_local_size[level_idx];
+  grad_embeds = grad_embeds + local_size * level_idx;
 
   pt = pt + bias_pool[level_idx];
 
@@ -175,8 +173,6 @@ variable_list Hash3DAnchoredFunction::forward(AutogradContext* ctx,
   ctx->saved_data["feat_pool"] = feat_pool;
   Tensor& prim_pool = info_ptr->hash3d_->prim_pool_;
   Tensor& bias_pool = info_ptr->hash3d_->bias_pool_;
-  Tensor& feat_local_idx = info_ptr->hash3d_->feat_local_idx_;
-  Tensor& feat_local_size = info_ptr->hash3d_->feat_local_size_;
   CHECK(points.device().is_cuda());
 
   int n_points = points.sizes()[0];
@@ -191,9 +187,9 @@ variable_list Hash3DAnchoredFunction::forward(AutogradContext* ctx,
   Tensor feat_pool_true = feat_pool.to(torch::kFloat16).contiguous();
 
   Hash3DAnchoredForwardKernel<FlexType><<<grid_dim, block_dim>>>(
-      n_points,
+      n_points, info_ptr->hash3d_->local_size_,
       RE_INTER(FlexType*, feat_pool_true.data_ptr()),
-      prim_pool.data_ptr<int>(), feat_local_idx.data_ptr<int>(), feat_local_size.data_ptr<int>(),
+      prim_pool.data_ptr<int>(),
       RE_INTER(Wec3f*, bias_pool.data_ptr()),
       RE_INTER(Wec3f*, points.data_ptr()),
       RE_INTER(FlexType*, out_feat.data_ptr()));
@@ -207,8 +203,6 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
   Tensor& feat_pool = ctx->saved_data["feat_pool"].toTensor();
   Tensor& prim_pool = info_ptr->hash3d_->prim_pool_;
   Tensor& bias_pool = info_ptr->hash3d_->bias_pool_;
-  Tensor& feat_local_idx = info_ptr->hash3d_->feat_local_idx_;
-  Tensor& feat_local_size = info_ptr->hash3d_->feat_local_size_;
   CHECK(points.device().is_cuda());
 
   const float grad_scale = 128.f;
@@ -228,9 +222,9 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
   Tensor embeds_grad = torch::zeros({pool_size, N_CHANNELS}, CUDAFlex);
 
   Hash3DAnchoredBackwardKernel<FlexType><<<grid_dim, block_dim>>>(
-      n_points,
+      n_points, info_ptr->hash3d_->local_size_,
       RE_INTER(FlexType*, feat_pool_true.data_ptr()),
-      prim_pool.data_ptr<int>(), feat_local_idx.data_ptr<int>(), feat_local_size.data_ptr<int>(),
+      prim_pool.data_ptr<int>(),
       RE_INTER(Wec3f*, bias_pool.data_ptr()),
       RE_INTER(Wec3f*, points.data_ptr()),
       RE_INTER(FlexType*, grad_in.data_ptr()),

@@ -31,13 +31,12 @@ public:
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
 
   int pool_size_;
+  int local_size_;
   int mlp_hidden_dim_, mlp_out_dim_, n_hidden_layers_;
 
   Tensor feat_pool_;   // [ pool_size_, n_channels_ ];
   Tensor prim_pool_;   // [ n_levels, 3 ];
-  Tensor bias_pool_;   // [ n_levels * n_volumes, 3 ];
-  Tensor feat_local_idx_;  // [ n_levels, n_volumes ];
-  Tensor feat_local_size_; // [ n_levels, n_volumes ];
+  Tensor bias_pool_;   // [ n_levels, 3 ];
 
   std::unique_ptr<TCNNWP> mlp_;
 

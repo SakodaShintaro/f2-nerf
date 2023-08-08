@@ -64,14 +64,8 @@ Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_co
     bias_pool_ = torch::zeros({ N_LEVELS, 3 }, CUDAFloat).contiguous();
   }
 
-  // Size of each level & each volume.
-  {
-    int local_size = pool_size_ / N_LEVELS;
-    local_size = (local_size >> 4) << 4;
-    feat_local_size_  = torch::full({ N_LEVELS }, local_size, CUDAInt).contiguous();
-    feat_local_idx_ = torch::cumsum(feat_local_size_, 0) - local_size;
-    feat_local_idx_ = feat_local_idx_.to(torch::kInt32).contiguous();
-  }
+  local_size_ = pool_size_ / N_LEVELS;
+  local_size_ = (local_size_ >> 4) << 4;
 
   // MLP
   mlp_ = std::make_unique<TCNNWP>(config, N_LEVELS * N_CHANNELS, mlp_out_dim_, mlp_hidden_dim_, n_hidden_layers_);
