@@ -41,8 +41,6 @@ public:
 
   std::unique_ptr<TCNNWP> mlp_;
 
-  Tensor query_volume_idx_;
-
   const YAML::Node config_;
 };
 
