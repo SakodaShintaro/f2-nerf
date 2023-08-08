@@ -84,7 +84,8 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
                                              Wec3f* bias_pool,
                                              Wec3f* points_ptr, int* volume_idx,
                                              T* grad_in, // [ n_points, n_levels, n_channels ]
-                                             T* grad_out // [ pool_size, n_channels ]
+                                             T* grad_points, // [ n_points, 3 ]
+                                             T* grad_embeds  // [ pool_size, n_channels ]
 ) {
   int pts_idx = blockIdx.x * blockDim.x + threadIdx.x;
   int level_idx = blockIdx.y;
@@ -106,7 +107,7 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
     prim_c = prim_pool[offset + 2];
   }
 
-  grad_out = grad_out + feat_local_idx[level_idx];
+  grad_embeds = grad_embeds + feat_local_idx[level_idx];
   local_size = feat_local_size[level_idx];
 
   int transf_idx = level_idx * n_volumes + volume_idx[0];
@@ -148,7 +149,7 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
       float w1 = (float) grad_in[k + 1];
       if (w0 != 0.f || w1 != 0.f) {
         __half2 cur_w = {(__half) (float(w0) * ws[d]), (__half) (float(w1) * ws[d])};
-        atomicAdd((__half2 *) (grad_out + pos[d] * N_CHANNELS + k), cur_w);
+        atomicAdd((__half2 *)(grad_embeds + pos[d] * N_CHANNELS + k), cur_w);
       }
     }
   }
@@ -221,7 +222,7 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
   Tensor grad_in = (grad_output[0] * grad_scale).to(torch::kFloat16).contiguous();
 
   Tensor points_grad = torch::zeros({n_points, 3}, CUDAFlex);
-  Tensor true_grad_out = torch::zeros({ pool_size,  N_CHANNELS }, CUDAFlex);
+  Tensor embeds_grad = torch::zeros({pool_size, N_CHANNELS}, CUDAFlex);
 
   Hash3DAnchoredBackwardKernel<FlexType><<<grid_dim, block_dim>>>(
       n_points, n_volumes,
@@ -229,12 +230,13 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
       RE_INTER(Wec3f*, bias_pool.data_ptr()),
       RE_INTER(Wec3f*, points.data_ptr()), volume_idx.data_ptr<int>(),
       RE_INTER(FlexType*, grad_in.data_ptr()),
-      RE_INTER(FlexType*, true_grad_out.data_ptr()));
+      RE_INTER(FlexType*, points_grad.data_ptr()),
+      RE_INTER(FlexType*, embeds_grad.data_ptr()));
 
   points_grad = points_grad.to(torch::kFloat32) / grad_scale;
-  true_grad_out = true_grad_out.to(torch::kFloat32) / grad_scale;
+  embeds_grad = embeds_grad.to(torch::kFloat32) / grad_scale;
 
-  return {points_grad, true_grad_out, Tensor()};
+  return {points_grad, embeds_grad, Tensor()};
 }
 
 }
