@@ -80,6 +80,7 @@ __global__ void Hash3DAnchoredForwardKernel(int n_points, int n_volumes,
 
 template<typename T>
 __global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
+                                             T* feat_pool,
                                              int* prim_pool, int* feat_local_idx, int* feat_local_size,
                                              Wec3f* bias_pool,
                                              Wec3f* points_ptr, int* volume_idx,
@@ -92,8 +93,8 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
   if (pts_idx >= n_points) {
     return;
   }
-
-  points_ptr  = points_ptr + pts_idx;
+  feat_pool = feat_pool + feat_local_idx[level_idx];
+  points_ptr = points_ptr + pts_idx;
   volume_idx = volume_idx + pts_idx;
   grad_in = grad_in + (N_LEVELS * N_CHANNELS) * pts_idx + level_idx * N_CHANNELS;
   Wec3f pt = points_ptr[0];
@@ -107,6 +108,7 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
     prim_c = prim_pool[offset + 2];
   }
 
+  grad_points = grad_points + pts_idx * 3;
   grad_embeds = grad_embeds + feat_local_idx[level_idx];
   local_size = feat_local_size[level_idx];
 
@@ -141,6 +143,9 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
 
   float ws[8] = { w000, w001, w010, w011, w100, w101, w110, w111 };
   unsigned pos[8] = { pos_000, pos_001, pos_010, pos_011, pos_100, pos_101, pos_110, pos_111 };
+  float sign_x[8] = {-1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+  float sign_y[8] = {-1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f};
+  float sign_z[8] = {-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f};
 
 #pragma unroll
   for (int d = 0; d < 8; d++) {
@@ -152,6 +157,12 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
         atomicAdd((__half2 *)(grad_embeds + pos[d] * N_CHANNELS + k), cur_w);
       }
     }
+    atomicAdd(grad_points + 0, (T)(sign_x[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul));
+    atomicAdd(grad_points + 1, (T)(sign_y[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul));
+    atomicAdd(grad_points + 2, (T)(sign_z[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul));
+    atomicAdd(grad_points + 0, (T)(sign_x[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul));
+    atomicAdd(grad_points + 1, (T)(sign_y[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul));
+    atomicAdd(grad_points + 2, (T)(sign_z[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul));
   }
 }
 
@@ -166,6 +177,7 @@ variable_list Hash3DAnchoredFunction::forward(AutogradContext* ctx,
   auto info_ptr = hash3d_info.toCustomClass<Hash3DAnchoredInfo>();
   ctx->saved_data["hash3d_info"] = hash3d_info;
   ctx->saved_data["points"] = points;
+  ctx->saved_data["feat_pool"] = feat_pool;
   Tensor& volume_idx = info_ptr->hash3d_->query_volume_idx_;                // [ n_points, 1 ]
   Tensor& prim_pool = info_ptr->hash3d_->prim_pool_;
   Tensor& bias_pool = info_ptr->hash3d_->bias_pool_;
@@ -201,6 +213,7 @@ variable_list Hash3DAnchoredFunction::forward(AutogradContext* ctx,
 variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_list grad_output) {
   auto info_ptr = ctx->saved_data["hash3d_info"].toCustomClass<Hash3DAnchoredInfo>();
   Tensor& points  = ctx->saved_data["points"].toTensor();  // [ n_points, 3 ]
+  Tensor& feat_pool = ctx->saved_data["feat_pool"].toTensor();
   Tensor& volume_idx = info_ptr->hash3d_->query_volume_idx_;
   Tensor& prim_pool = info_ptr->hash3d_->prim_pool_;
   Tensor& bias_pool = info_ptr->hash3d_->bias_pool_;
@@ -219,6 +232,8 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
   dim3 block_dim = { unsigned(thread_cap), 1, 1 };
   dim3 grid_dim  = { DivUp(n_points, thread_cap), unsigned(N_LEVELS), 1 };
 
+  Tensor feat_pool_true = feat_pool.to(torch::kFloat16).contiguous();
+
   Tensor grad_in = (grad_output[0] * grad_scale).to(torch::kFloat16).contiguous();
 
   Tensor points_grad = torch::zeros({n_points, 3}, CUDAFlex);
@@ -226,6 +241,7 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
 
   Hash3DAnchoredBackwardKernel<FlexType><<<grid_dim, block_dim>>>(
       n_points, n_volumes,
+      RE_INTER(FlexType*, feat_pool_true.data_ptr()),
       prim_pool.data_ptr<int>(), feat_local_idx.data_ptr<int>(), feat_local_size.data_ptr<int>(),
       RE_INTER(Wec3f*, bias_pool.data_ptr()),
       RE_INTER(Wec3f*, points.data_ptr()), volume_idx.data_ptr<int>(),
