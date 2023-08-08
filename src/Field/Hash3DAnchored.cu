@@ -9,7 +9,7 @@
 using Tensor = torch::Tensor;
 
 template<typename T>
-__global__ void Hash3DAnchoredForwardKernel(int n_points, int n_volumes,
+__global__ void Hash3DAnchoredForwardKernel(int n_points,
                                             T* feat_pool, int* prim_pool, int* feat_local_idx, int* feat_local_size,
                                             Wec3f* bias_pool,
                                             Wec3f* points_ptr,
@@ -28,7 +28,7 @@ __global__ void Hash3DAnchoredForwardKernel(int n_points, int n_volumes,
   pt *= mul;
   unsigned prim_a, prim_b, prim_c, local_size;
   {
-    const int offset = (level_idx * n_volumes) * 3;
+    const int offset = level_idx * 3;
     prim_a = prim_pool[offset + 0];
     prim_b = prim_pool[offset + 1];
     prim_c = prim_pool[offset + 2];
@@ -36,9 +36,7 @@ __global__ void Hash3DAnchoredForwardKernel(int n_points, int n_volumes,
   feat_pool = feat_pool + feat_local_idx[level_idx];
   local_size = feat_local_size[level_idx];
 
-  int transf_idx = level_idx * n_volumes;
-  pt = pt + bias_pool[transf_idx];
-
+  pt = pt + bias_pool[level_idx];
 
   auto pos_x = static_cast<unsigned>(floorf(pt[0]));
   auto pos_y = static_cast<unsigned>(floorf(pt[1]));
@@ -78,7 +76,7 @@ __global__ void Hash3DAnchoredForwardKernel(int n_points, int n_volumes,
 }
 
 template<typename T>
-__global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
+__global__ void Hash3DAnchoredBackwardKernel(int n_points,
                                              T* feat_pool,
                                              int* prim_pool, int* feat_local_idx, int* feat_local_size,
                                              Wec3f* bias_pool,
@@ -100,7 +98,7 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
   pt *= mul;
   unsigned prim_a, prim_b, prim_c, local_size;
   {
-    const int offset = (level_idx * n_volumes) * 3;
+    const int offset = level_idx * 3;
     prim_a = prim_pool[offset + 0];
     prim_b = prim_pool[offset + 1];
     prim_c = prim_pool[offset + 2];
@@ -110,8 +108,7 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int n_volumes,
   grad_embeds = grad_embeds + feat_local_idx[level_idx];
   local_size = feat_local_size[level_idx];
 
-  int transf_idx = level_idx * n_volumes;
-  pt = pt + bias_pool[transf_idx];
+  pt = pt + bias_pool[level_idx];
 
   unsigned pos_x = static_cast<unsigned>(floorf(pt[0]));
   unsigned pos_y = static_cast<unsigned>(floorf(pt[1]));
@@ -184,8 +181,6 @@ variable_list Hash3DAnchoredFunction::forward(AutogradContext* ctx,
 
   int n_points = points.sizes()[0];
 
-  int n_volumes = 1;
-
   const unsigned thread_cap = 512;
   dim3 block_dim = { unsigned(thread_cap), 1, 1 };
   dim3 grid_dim  = { DivUp(n_points, thread_cap), unsigned(N_LEVELS), 1 };
@@ -196,7 +191,7 @@ variable_list Hash3DAnchoredFunction::forward(AutogradContext* ctx,
   Tensor feat_pool_true = feat_pool.to(torch::kFloat16).contiguous();
 
   Hash3DAnchoredForwardKernel<FlexType><<<grid_dim, block_dim>>>(
-      n_points, n_volumes,
+      n_points,
       RE_INTER(FlexType*, feat_pool_true.data_ptr()),
       prim_pool.data_ptr<int>(), feat_local_idx.data_ptr<int>(), feat_local_size.data_ptr<int>(),
       RE_INTER(Wec3f*, bias_pool.data_ptr()),
@@ -220,7 +215,6 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
   int n_points = points.sizes()[0];
 
   int pool_size = info_ptr->hash3d_->pool_size_;
-  int n_volumes = 1;
 
   const unsigned thread_cap = 512;
   dim3 block_dim = { unsigned(thread_cap), 1, 1 };
@@ -234,7 +228,7 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
   Tensor embeds_grad = torch::zeros({pool_size, N_CHANNELS}, CUDAFlex);
 
   Hash3DAnchoredBackwardKernel<FlexType><<<grid_dim, block_dim>>>(
-      n_points, n_volumes,
+      n_points,
       RE_INTER(FlexType*, feat_pool_true.data_ptr()),
       prim_pool.data_ptr<int>(), feat_local_idx.data_ptr<int>(), feat_local_size.data_ptr<int>(),
       RE_INTER(Wec3f*, bias_pool.data_ptr()),
