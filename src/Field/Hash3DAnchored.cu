@@ -188,7 +188,7 @@ variable_list Hash3DAnchoredFunction::forward(AutogradContext* ctx,
 
   int n_points = points.sizes()[0];
 
-  int n_volumes = info_ptr->hash3d_->n_volumes_;
+  int n_volumes = 1;
 
   const unsigned thread_cap = 512;
   dim3 block_dim = { unsigned(thread_cap), 1, 1 };
@@ -226,7 +226,7 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
   int n_points = points.sizes()[0];
 
   int pool_size = info_ptr->hash3d_->pool_size_;
-  int n_volumes = info_ptr->hash3d_->n_volumes_;
+  int n_volumes = 1;
 
   const unsigned thread_cap = 512;
   dim3 block_dim = { unsigned(thread_cap), 1, 1 };

@@ -31,7 +31,6 @@ Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_co
   feat_pool_.requires_grad_(true);
   CHECK(feat_pool_.is_contiguous());
 
-  n_volumes_ = 1;
   // Get prime numbers
   auto is_prim = [](int x) {
     for (int i = 2; i * i <= x; i++) {
@@ -44,7 +43,7 @@ Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_co
   int min_local_prim = 1 << 28;
   int max_local_prim = 1 << 30;
 
-  for (int i = 0; i < 3 * N_LEVELS * n_volumes_; i++) {
+  for (int i = 0; i < 3 * N_LEVELS; i++) {
     int val;
     do {
       val = torch::randint(min_local_prim, max_local_prim, {1}, CPUInt).item<int>();
@@ -53,16 +52,16 @@ Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_co
     prim_selected.push_back(val);
   }
 
-  CHECK_EQ(prim_selected.size(), 3 * N_LEVELS * n_volumes_);
+  CHECK_EQ(prim_selected.size(), 3 * N_LEVELS);
 
-  prim_pool_ = torch::from_blob(prim_selected.data(), 3 * N_LEVELS * n_volumes_, CPUInt).to(torch::kCUDA);
-  prim_pool_ = prim_pool_.reshape({N_LEVELS, n_volumes_, 3}).contiguous();
+  prim_pool_ = torch::from_blob(prim_selected.data(), 3 * N_LEVELS, CPUInt).to(torch::kCUDA);
+  prim_pool_ = prim_pool_.reshape({N_LEVELS, 3}).contiguous();
 
   if (config["rand_bias"].as<bool>()) {
-    bias_pool_ = (torch::rand({ N_LEVELS * n_volumes_, 3 }, CUDAFloat) * 1000.f + 100.f).contiguous();
+    bias_pool_ = (torch::rand({ N_LEVELS, 3 }, CUDAFloat) * 1000.f + 100.f).contiguous();
   }
   else {
-    bias_pool_ = torch::zeros({ N_LEVELS * n_volumes_, 3 }, CUDAFloat).contiguous();
+    bias_pool_ = torch::zeros({ N_LEVELS, 3 }, CUDAFloat).contiguous();
   }
 
   // Size of each level & each volume.
@@ -100,7 +99,6 @@ int Hash3DAnchored::LoadStates(const std::vector<Tensor> &states, int idx) {
   feat_pool_.data().copy_(states[idx++]);
   prim_pool_ = states[idx++].clone().to(torch::kCUDA).contiguous();   // The size may changed.
   bias_pool_.data().copy_(states[idx++]);
-  n_volumes_ = states[idx++].item<int>();
 
   mlp_->params_.data().copy_(states[idx++]);
 
@@ -112,7 +110,6 @@ std::vector<Tensor> Hash3DAnchored::States() {
   ret.push_back(feat_pool_.data());
   ret.push_back(prim_pool_.data());
   ret.push_back(bias_pool_.data());
-  ret.push_back(torch::full({1}, n_volumes_, CPUInt));
 
   ret.push_back(mlp_->params_.data());
 
