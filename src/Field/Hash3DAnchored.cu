@@ -150,12 +150,12 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int local_size,
         atomicAdd((__half2 *)(grad_embeds + pos[d] * N_CHANNELS + k), cur_w);
       }
     }
-    atomicAdd(grad_points + 0, (T)(sign_x[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul));
-    atomicAdd(grad_points + 1, (T)(sign_y[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul));
-    atomicAdd(grad_points + 2, (T)(sign_z[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul));
-    atomicAdd(grad_points + 0, (T)(sign_x[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul));
-    atomicAdd(grad_points + 1, (T)(sign_y[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul));
-    atomicAdd(grad_points + 2, (T)(sign_z[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul));
+    atomicAdd(grad_points + 0, (T)(sign_x[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul * (float)grad_in[0]));
+    atomicAdd(grad_points + 1, (T)(sign_y[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul * (float)grad_in[0]));
+    atomicAdd(grad_points + 2, (T)(sign_z[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul * (float)grad_in[0]));
+    atomicAdd(grad_points + 0, (T)(sign_x[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul * (float)grad_in[1]));
+    atomicAdd(grad_points + 1, (T)(sign_y[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul * (float)grad_in[1]));
+    atomicAdd(grad_points + 2, (T)(sign_z[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul * (float)grad_in[1]));
   }
 }
 
