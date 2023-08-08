@@ -27,7 +27,7 @@ void infer(const std::string & config_path)
   Timer timer;
   timer.start();
 
-  const float noise = 1.0f / core.radius();
+  const float noise = 0.5f / core.radius();
   std::cout << "noise = " << noise << std::endl;
 
   for (int32_t i = 0; i < dataset.n_images_; i++) {
