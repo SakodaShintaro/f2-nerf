@@ -134,11 +134,11 @@ torch::Tensor gram_schmidt(torch::Tensor A)
 std::vector<Tensor> LocalizerCore::optimize_pose(
   Tensor initial_pose, Tensor image_tensor, int64_t iteration_num)
 {
+  Tensor prev = initial_pose.detach().clone();
   std::vector<Tensor> results;
   initial_pose = initial_pose.requires_grad_(true);
   torch::optim::Adam optimizer({initial_pose}, 4 * 1e-2);
   for (int64_t i = 0; i < iteration_num; i++) {
-    Tensor prev = initial_pose.detach();
     auto [rays_o, rays_d, bounds] = rays_from_pose(initial_pose);
     auto [pred_colors, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
 
@@ -159,9 +159,7 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
     optimizer.step();
 
     Tensor curr_result = initial_pose.clone().detach();
-    Tensor rotation = curr_result.index({Slc(0, 3), Slc(0, 3)});
-    rotation = gram_schmidt(rotation);
-    curr_result.index_put_({Slc(0, 3), Slc(0, 3)}, rotation);
+    curr_result.index_put_({Slc(0, 3), Slc(0, 3)}, prev.index({Slc(0, 3), Slc(0, 3)}));
     results.push_back(curr_result);
   }
   return results;
