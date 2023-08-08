@@ -45,7 +45,7 @@ if __name__ == "__main__":
         plt.xlabel('x')
         plt.ylabel('y')
         plt.colorbar(label='Score')
-        plt.savefig(f"{frame_dir}/plot_result.png",
-                    bbox_inches="tight", pad_inches=0.05)
+        save_path = os.path.abspath(f"{frame_dir}/plot_result.png")
+        plt.savefig(save_path, bbox_inches="tight", pad_inches=0.05)
         plt.close()
-        print(os.path.abspath(f"{frame_dir}/plot_result.png"))
+        print(f"Saved to {save_path}")
