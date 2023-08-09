@@ -86,7 +86,7 @@ private:
 
   bool is_activated_;
 
-  bool is_awsim_;
+  bool is_awsim_ = false;
 
   LocalizerCore localizer_core_;
 };

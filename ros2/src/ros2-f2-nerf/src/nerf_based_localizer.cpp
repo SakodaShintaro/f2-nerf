@@ -1,7 +1,7 @@
 #include "nerf_based_localizer.hpp"
 
 #include "../../src/Utils/Utils.h"
-#include "timer.hpp"
+#include "../../src/Utils/StopWatch.h"
 
 #include <Eigen/Eigen>
 #include <experimental/filesystem>
@@ -203,6 +203,7 @@ NerfBasedLocalizer::localize(
   const geometry_msgs::msg::Pose & pose_msg, const sensor_msgs::msg::Image & image_msg)
 {
   Timer timer;
+  timer.start();
 
   // Get data of image_ptr
   // Accessing header information
@@ -266,7 +267,6 @@ NerfBasedLocalizer::localize(
   initial_pose = localizer_core_.world2camera(initial_pose);
 
   // run NeRF
-  Timer timer2;
   const double base_score = this->get_parameter("base_score").as_double();
   const float noise_coeff = (base_score > 0 ? base_score / previous_score_ : 1.0f);
   std::vector<Particle> particles = localizer_core_.random_search(
@@ -291,10 +291,8 @@ NerfBasedLocalizer::localize(
     cnt++;
   }
 
-  timer2.reset();
   torch::Tensor optimized_pose = LocalizerCore::calc_average_pose(particles);
 
-  timer2.reset();
   auto [score, nerf_image] =
     localizer_core_.pred_image_and_calc_score(optimized_pose, image_tensor);
 
@@ -389,7 +387,7 @@ NerfBasedLocalizer::localize(
   transform.child_frame_id = "nerf_base_link";
   tf2_broadcaster_.sendTransform(transform);
 
-  RCLCPP_INFO_STREAM(get_logger(), "localize time: " << timer);
+  RCLCPP_INFO_STREAM(get_logger(), "localize time: " << timer.elapsed_milli_seconds());
 
   return std::make_tuple(result_pose_base_link, nerf_image_msg, score_msg);
 }
