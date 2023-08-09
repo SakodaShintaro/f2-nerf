@@ -44,8 +44,8 @@ if __name__ == "__main__":
                 plt.scatter(optimized['x'], optimized['y'],
                             c=optimized['score'], cmap='viridis', vmin=min_score, vmax=max_score, label=f'Optimized_{i}_{j:02d}')
 
-        plt.xlabel('x')
-        plt.ylabel('y')
+        plt.xlabel('x(m)')
+        plt.ylabel('y(m)')
         plt.colorbar(label='Score')
         save_path = os.path.abspath(f"{frame_dir}/plot_result.png")
         plt.savefig(save_path, bbox_inches="tight", pad_inches=0.05)
@@ -75,8 +75,8 @@ if __name__ == "__main__":
                       head_width=0.05, head_length=0.05, fc='k', ec='k')
 
 
-        plt.xlabel('x')
-        plt.ylabel('y')
+        plt.xlabel('x(m)')
+        plt.ylabel('y(m)')
         plt.colorbar(label='Score')
         save_path = os.path.abspath(f"{frame_dir}/plot_result_last.png")
         plt.savefig(save_path, bbox_inches="tight", pad_inches=0.05)
