@@ -48,8 +48,4 @@ public:
   Tensor app_emb_;
 };
 
-torch::Tensor FilterIdxBounds(const torch::Tensor& idx_bounds,
-                              const torch::Tensor& mask);
-
-
 #endif //SANR_RENDERER_H
