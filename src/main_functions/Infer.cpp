@@ -13,7 +13,7 @@ constexpr int64_t kDz[kDirNum] = {1, 1, 0, -1, -1, -1, 0, 1};
 void infer(const std::string & config_path)
 {
   LocalizerCoreParam param{};
-  param.resize_factor = 16;
+  param.resize_factor = 32;
   param.runtime_config_path = config_path;
   LocalizerCore core(param);
 
@@ -91,8 +91,6 @@ void infer(const std::string & config_path)
         output("optimized_" + suffix, optimized_pose, score_after);
       }
     }
-
-    break;
   }
 
   torch::Tensor optimize_time_tensor = torch::tensor(optimize_times, torch::kFloat);
