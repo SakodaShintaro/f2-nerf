@@ -29,7 +29,6 @@ SampleResultFlex PtsSampler::GetSamples(
   int n_rays = rays_o.sizes()[0];
 
   // do ray marching
-  constexpr int MAX_SAMPLE_PER_RAY = 1024;
   const int n_all_pts = n_rays * MAX_SAMPLE_PER_RAY;
 
   Tensor rays_noise;

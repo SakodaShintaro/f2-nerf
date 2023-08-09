@@ -11,6 +11,8 @@
 
 #include <memory>
 
+constexpr int MAX_SAMPLE_PER_RAY = 1024;
+
 struct SampleResultFlex
 {
   using Tensor = torch::Tensor;

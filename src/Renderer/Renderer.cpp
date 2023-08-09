@@ -95,7 +95,13 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     sample_result_early_stop.dt = sample_result.dt.index({mask_idx}).contiguous();
     sample_result_early_stop.t = sample_result.t.index({mask_idx}).contiguous();
 
-    sample_result_early_stop.pts_idx_bounds = FilterIdxBounds(sample_result.pts_idx_bounds, mask);
+    Tensor mask_2d = mask.reshape({n_rays, MAX_SAMPLE_PER_RAY});
+    Tensor num = mask_2d.sum(1);
+    Tensor cum_num = torch::cumsum(num, 0);
+    Tensor idx_bounds = torch::zeros({n_rays, 2}, CUDAInt);
+    idx_bounds.index_put_({Slc(), 0}, cum_num - num);
+    idx_bounds.index_put_({Slc(), 1}, cum_num);
+    sample_result_early_stop.pts_idx_bounds = idx_bounds;
 
     CHECK_EQ(sample_result_early_stop.pts_idx_bounds.max().item<int>(), sample_result_early_stop.pts.size(0));
   }
