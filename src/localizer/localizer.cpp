@@ -284,8 +284,8 @@ std::vector<float> LocalizerCore::evaluate_poses(
     i_vec.push_back(i);
     j_vec.push_back(j);
   }
-  const Tensor i = torch::tensor(i_vec, CUDALong);
-  const Tensor j = torch::tensor(j_vec, CUDALong);
+  Tensor i = torch::tensor(i_vec, CUDALong);
+  Tensor j = torch::tensor(j_vec, CUDALong);
 
   // Pick rays by random sampling with replacement
   // const Tensor i = torch::randint(0, H, pixel_num, CUDALong);
@@ -316,6 +316,9 @@ std::vector<float> LocalizerCore::evaluate_poses(
   Tensor pred_pixels = pred_colors.view({pose_num, pixel_num, 3});
   pred_pixels = pred_pixels.clip(0.f, 1.f);
   pred_pixels = pred_pixels.to(image.device());  // (pose_num, pixel_num, 3)
+
+  i = i.to(image.device());
+  j = j.to(image.device());
 
   Tensor gt_pixels = image.index({i, j});              // (pixel_num, 3)
   Tensor diff = pred_pixels - gt_pixels;               // (pose_num, pixel_num, 3)
