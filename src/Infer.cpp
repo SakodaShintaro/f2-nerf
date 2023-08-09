@@ -24,8 +24,10 @@ void infer(const std::string & config_path)
   const YAML::Node & config = YAML::LoadFile(config_path);
   Dataset dataset(config);
 
-  Timer timer;
+  Timer timer, timer_local;
   timer.start();
+
+  std::vector<double> optimize_times;
 
   const float noise = 0.5f / core.radius();
   std::cout << "noise = " << noise << std::endl;
@@ -74,8 +76,10 @@ void infer(const std::string & config_path)
       output("noised_" + std::to_string(d), curr_pose, score_noised);
 
       // Optimize
+      timer_local.start();
       std::vector<torch::Tensor> optimized_poses =
         core.optimize_pose(curr_pose, image_tensor, iteration_num);
+      optimize_times.push_back(timer_local.elapsed_seconds());
       for (int32_t itr = 0; itr < optimized_poses.size(); itr++) {
         torch::Tensor optimized_pose = optimized_poses[itr];
         auto [score_after, nerf_image_after] =
@@ -90,5 +94,7 @@ void infer(const std::string & config_path)
     break;
   }
 
-  std::cout << "\nTime = " << timer.elapsed_seconds() << std::endl;
+  torch::Tensor optimize_time_tensor = torch::tensor(optimize_times, torch::kFloat);
+
+  std::cout << "\nAverage Time = " << optimize_time_tensor.mean() << " sec" << std::endl;
 }
