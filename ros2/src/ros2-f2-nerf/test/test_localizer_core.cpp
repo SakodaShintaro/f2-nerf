@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
-#include "../src/localizer_core.hpp"
+
+// If you include this first, you will get an error.
+// clang-format off
+#include "../../../src/localizer/localizer.hpp"
+// clang-format on
 
 TEST(LocalizerCoreTest, TestMonteCarloLocalize)
 {

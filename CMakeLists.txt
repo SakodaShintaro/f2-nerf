@@ -63,6 +63,7 @@ include(src/PtsSampler/pts_sampler.cmake)
 include(src/Renderer/renderer.cmake)
 include(src/Shader/shader.cmake)
 include(src/Utils/utils.cmake)
+include(src/localizer/localizer.cmake)
 
 list(APPEND SRC_ALL
         ${SRC_FIELD}
@@ -71,7 +72,8 @@ list(APPEND SRC_ALL
         ${SRC_PTS_SAMPLER}
         ${SRC_RENDERER}
         ${SRC_SHADER}
-        ${SRC_UTILS})
+        ${SRC_UTILS}
+        ${SRC_LOCALIZER})
 
 set(ALL_LIBS ${TORCH_LIBRARIES}
         ${TORCH_CUDA_LIBRARIES}
@@ -90,7 +92,6 @@ add_executable(main main.cpp
         src/main_functions/Test.cpp
         src/main_functions/TestField.cpp
         src/main_functions/Walk.cpp
-        ros2/src/ros2-f2-nerf/src/localizer_core.cpp
         ${SRC_ALL})
 target_link_libraries(main ${ALL_LIBS})
 set_property(TARGET main PROPERTY CXX_STANDARD 17)

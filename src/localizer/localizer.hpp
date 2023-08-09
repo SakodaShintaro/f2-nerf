@@ -1,9 +1,9 @@
-#ifndef LOCALIZER_CORE_HPP_
-#define LOCALIZER_CORE_HPP_
+#ifndef LOCALIZER_HPP_
+#define LOCALIZER_HPP_
 
-#include "../../src/Dataset/Dataset.h"
-#include "../../src/Renderer/Renderer.h"
-#include "../../src/Utils/CameraUtils.h"
+#include "../Dataset/Dataset.h"
+#include "../Renderer/Renderer.h"
+#include "../Utils/CameraUtils.h"
 
 #include <torch/torch.h>
 
@@ -80,4 +80,4 @@ private:
   float radius_;
 };
 
-#endif  // LOCALIZER_CORE_HPP_
+#endif  // LOCALIZER_HPP_

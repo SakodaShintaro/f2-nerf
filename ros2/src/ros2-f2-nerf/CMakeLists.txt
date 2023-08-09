@@ -74,6 +74,7 @@ include(${ROOT_DIR}/src/PtsSampler/pts_sampler.cmake)
 include(${ROOT_DIR}/src/Renderer/renderer.cmake)
 include(${ROOT_DIR}/src/Shader/shader.cmake)
 include(${ROOT_DIR}/src/Utils/utils.cmake)
+include(${ROOT_DIR}/src/localizer/localizer.cmake)
 
 list(APPEND SRC_ALL
         ${SRC_FIELD}
@@ -82,7 +83,8 @@ list(APPEND SRC_ALL
         ${SRC_PTS_SAMPLER}
         ${SRC_RENDERER}
         ${SRC_SHADER}
-        ${SRC_UTILS})
+        ${SRC_UTILS}
+        ${SRC_LOCALIZER})
 set(PROJECT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 message(STATUS "SRC_ALL: ${SRC_ALL}")
@@ -120,7 +122,6 @@ ament_package()
 
 add_executable(nerf_based_localizer src/main.cpp
                                     src/nerf_based_localizer.cpp
-                                    src/localizer_core.cpp
                                     ${SRC_ALL}
 )
 ament_target_dependencies(nerf_based_localizer
@@ -141,7 +142,6 @@ target_link_libraries(nerf_based_localizer ${ALL_LIBS})
 
 ## Test
 ament_add_gtest(test_localizer_core test/test_localizer_core.cpp
-                                    src/localizer_core.cpp
                                     ${SRC_ALL}
                                     )
 target_link_libraries(test_localizer_core ${ALL_LIBS})

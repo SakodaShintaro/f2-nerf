@@ -19,7 +19,7 @@
 
 // If you include this first, you will get an error.
 // clang-format off
-#include "localizer_core.hpp"
+#include "../../../src/localizer/localizer.hpp"
 // clang-format on
 
 class NerfBasedLocalizer : public rclcpp::Node

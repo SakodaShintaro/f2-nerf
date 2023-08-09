@@ -1,7 +1,7 @@
-#include "localizer_core.hpp"
+#include "localizer.hpp"
 
 #include "../../src/Dataset/Dataset.h"
-#include "timer.hpp"
+#include "../Utils/StopWatch.h"
 
 #include <Eigen/Geometry>
 
@@ -221,7 +221,7 @@ std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
   torch::NoGradGuard no_grad_guard;
   Timer timer;
   auto [rays_o, rays_d, bounds] = rays_from_pose(pose);
-  timer.reset();
+  timer.start();
   auto [pred_colors, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
 
   Tensor pred_img = pred_colors.view({infer_height_, infer_width_, 3});
@@ -310,7 +310,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
       {torch::full({numel}, near_, CUDAFloat), torch::full({numel}, far_, CUDAFloat)}, -1)
       .contiguous();  // (numel, 2)
 
-  timer.reset();
+  timer.start();
   auto [pred_colors, pred_disps] = render_all_rays(rays_o, rays_d, bounds);
 
   Tensor pred_pixels = pred_colors.view({pose_num, pixel_num, 3});
