@@ -1,7 +1,6 @@
-#include "Walk.hpp"
-
-#include "../ros2/src/ros2-f2-nerf/src/localizer_core.hpp"
-#include "../src/Utils/Utils.h"
+#include "../../ros2/src/ros2-f2-nerf/src/localizer_core.hpp"
+#include "../main_functions.hpp"
+#include "../Utils/Utils.h"
 
 #include <fcntl.h>
 #include <stdio.h>

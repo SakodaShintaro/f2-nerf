@@ -86,10 +86,10 @@ set(ALL_LIBS ${TORCH_LIBRARIES}
 # ------------------------------------ Add executables ---------------------------------------
 add_executable(main main.cpp
         src/ExpRunner.cpp
-        src/Infer.cpp
-        src/Test.cpp
-        src/TestField.cpp
-        src/Walk.cpp
+        src/main_functions/Infer.cpp
+        src/main_functions/Test.cpp
+        src/main_functions/TestField.cpp
+        src/main_functions/Walk.cpp
         ros2/src/ros2-f2-nerf/src/localizer_core.cpp
         ${SRC_ALL})
 target_link_libraries(main ${ALL_LIBS})

@@ -1,8 +1,5 @@
 #include "src/ExpRunner.h"
-#include "src/Infer.hpp"
-#include "src/Test.hpp"
-#include "src/TestField.hpp"
-#include "src/Walk.hpp"
+#include "src/main_functions.hpp"
 
 #include <torch/torch.h>
 

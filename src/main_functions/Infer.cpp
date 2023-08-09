@@ -1,6 +1,7 @@
-#include "../ros2/src/ros2-f2-nerf/src/localizer_core.hpp"
-#include "../src/Utils/StopWatch.h"
-#include "../src/Utils/Utils.h"
+#include "../../ros2/src/ros2-f2-nerf/src/localizer_core.hpp"
+#include "../Utils/StopWatch.h"
+#include "../Utils/Utils.h"
+#include "../main_functions.hpp"
 
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem::v1;
@@ -96,5 +97,6 @@ void infer(const std::string & config_path)
 
   torch::Tensor optimize_time_tensor = torch::tensor(optimize_times, torch::kFloat);
 
-  std::cout << "\nAverage Time = " << optimize_time_tensor.mean().item<float>() << " sec" << std::endl;
+  std::cout << "\nAverage Time = " << optimize_time_tensor.mean().item<float>() << " sec"
+            << std::endl;
 }
