@@ -32,7 +32,6 @@ public:
 
   int pool_size_;
   int local_size_;
-  int mlp_hidden_dim_, mlp_out_dim_, n_hidden_layers_;
 
   Tensor feat_pool_;   // [ pool_size_, n_channels_ ];
   Tensor prim_pool_;   // [ n_levels, 3 ];

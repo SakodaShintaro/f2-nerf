@@ -22,10 +22,6 @@ Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_co
 
   pool_size_ = (1 << config["log2_table_size"].as<int>()) * N_LEVELS;
 
-  mlp_hidden_dim_ = config["mlp_hidden_dim"].as<int>();
-  mlp_out_dim_ = config["mlp_out_dim"].as<int>();
-  n_hidden_layers_ = config["n_hidden_layers"].as<int>();
-
   // Feat pool
   feat_pool_ = (torch::rand({pool_size_, N_CHANNELS}, CUDAFloat) * .2f - 1.f) * 1e-4f;
   feat_pool_.requires_grad_(true);
@@ -68,7 +64,10 @@ Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_co
   local_size_ = (local_size_ >> 4) << 4;
 
   // MLP
-  mlp_ = std::make_unique<TCNNWP>(config, N_LEVELS * N_CHANNELS, mlp_out_dim_, mlp_hidden_dim_, n_hidden_layers_);
+  int mlp_hidden_dim = config["mlp_hidden_dim"].as<int>();
+  int mlp_out_dim = config["mlp_out_dim"].as<int>();
+  int n_hidden_layers = config["n_hidden_layers"].as<int>();
+  mlp_ = std::make_unique<TCNNWP>(config, N_LEVELS * N_CHANNELS, mlp_out_dim, mlp_hidden_dim, n_hidden_layers);
 }
 
 Tensor Hash3DAnchored::Query(const Tensor& points) {
@@ -77,13 +76,11 @@ Tensor Hash3DAnchored::Query(const Tensor& points) {
 #endif
 
   auto info = torch::make_intrusive<Hash3DAnchoredInfo>();
+  info->hash3d_ = this;
 
   Tensor query_points = ((points + 1.f) * .5f).contiguous();   // [-1, 1] -> [0, 1]
-  info->hash3d_ = this;
   Tensor feat = torch::autograd::Hash3DAnchoredFunction::apply(query_points, feat_pool_, torch::IValue(info))[0];
-
   Tensor output = mlp_->Query(feat);
-  output = output;
   return output;
 }
 
