@@ -96,5 +96,5 @@ void infer(const std::string & config_path)
 
   torch::Tensor optimize_time_tensor = torch::tensor(optimize_times, torch::kFloat);
 
-  std::cout << "\nAverage Time = " << optimize_time_tensor.mean() << " sec" << std::endl;
+  std::cout << "\nAverage Time = " << optimize_time_tensor.mean().item<float>() << " sec" << std::endl;
 }
