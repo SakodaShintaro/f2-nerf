@@ -1,6 +1,6 @@
 pts_batch_size: 262144
 end_iter: 50000
-report_freq: 50
+report_freq: 200
 vis_freq: 2500
 save_freq: 25000
 validate_freq: 100000
