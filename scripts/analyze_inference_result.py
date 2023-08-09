@@ -71,9 +71,11 @@ if __name__ == "__main__":
                         c=optimized['score'], cmap='viridis', vmin=min_score, vmax=max_score, label=f'Optimized_{i}_{j:02d}')
 
             # plot arrow noised -> optimized
-            plt.arrow(nx, ny, ox - nx, oy - ny, length_includes_head=True,
-                      head_width=0.05, head_length=0.05, fc='k', ec='k')
-
+            dx = ox - nx
+            dy = oy - ny
+            norm = (dx**2 + dy**2)**0.5
+            plt.arrow(nx, ny, dx, dy, length_includes_head=True,
+                      head_width=norm/10, head_length=norm/10, fc='k', ec='k')
 
         plt.xlabel('x(m)')
         plt.ylabel('y(m)')
