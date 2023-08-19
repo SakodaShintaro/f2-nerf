@@ -90,11 +90,11 @@ if __name__ == "__main__":
         target_frame = "camera0/camera_link"
         image_topic_name = "/sensing/camera/traffic_light/image_raw"
         camera_info_topic_name = "/sensing/camera/traffic_light/camera_info"
-        # pose_topic_name = "/localization/pose_twist_fusion_filter/biased_pose_with_covariance"
-        pose_topic_name = "/awsim/ground_truth/vehicle/pose"
+        pose_topic_name = "/localization/pose_twist_fusion_filter/biased_pose_with_covariance"
+        # pose_topic_name = "/awsim/ground_truth/vehicle/pose"
         image_topic_type = Image()
-        # pose_topic_type = PoseWithCovarianceStamped()
-        pose_topic_type = PoseStamped()
+        pose_topic_type = PoseWithCovarianceStamped()
+        # pose_topic_type = PoseStamped()
     elif data_type == "logiee":
         target_frame = "front_c1_cam_link"
         image_topic_name = "/sensing/camera/c1/image"
