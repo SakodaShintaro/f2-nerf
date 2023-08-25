@@ -47,6 +47,13 @@ public:
   int height_, width_;
   std::vector<int> train_set_, test_set_, val_set_, split_info_;
   Tensor image_tensors_;
+
+  // learnable pose
+  static Tensor vec2skew(Tensor v); // v(n, 3) -> return (n, 3, 3)
+  static Tensor so3_to_SO3(Tensor r); // r(n, r) -> return (n, 3, 3)
+  static Tensor convert_r_and_t_to_3x4(Tensor r, Tensor t); // r(n, 3), t(n, 3) -> return (n, 3, 4)
+  Tensor learnable_pos_;
+  Tensor learnable_ori_;
 };
 
 #endif  // SANR_DATASET_H

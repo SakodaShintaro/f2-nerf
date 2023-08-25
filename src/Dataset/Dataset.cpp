@@ -45,6 +45,11 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
     bounds_ = bounds.to(torch::kCUDA).contiguous();
   }
 
+  learnable_pos_ = torch::zeros({n_images_, 3}, poses_.options());
+  learnable_ori_ = torch::zeros({n_images_, 3}, poses_.options());
+  learnable_pos_.requires_grad_(true);
+  learnable_ori_.requires_grad_(true);
+
   NormalizeScene();
 
   // Relax bounds
@@ -211,9 +216,60 @@ std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size, in
   ij = ij.to(torch::kInt32);
 
   Tensor selected_poses = torch::index_select(poses_, 0, cam_indices);
+
+  Tensor selected_pos = torch::index_select(learnable_pos_, 0, cam_indices);
+  Tensor selected_ori = torch::index_select(learnable_ori_, 0, cam_indices);
+  Tensor selected_delta = convert_r_and_t_to_3x4(selected_ori, selected_pos);
+  Tensor bottom_row = torch::tensor({0.0, 0.0, 0.0, 1.0})
+                        .view({1, 1, 4})
+                        .expand({selected_poses.size(0), -1, -1})
+                        .to(selected_poses.device());
+  Tensor selected_poses_n44 = torch::cat({selected_poses, bottom_row}, 1);
+  Tensor merged_poses_n34 = torch::matmul(selected_delta, selected_poses_n44);
   Tensor selected_intri = torch::index_select(intri_, 0, cam_indices);
-  auto [rays_o, rays_d] = Img2WorldRay(selected_poses, selected_intri, ij);
+  auto [rays_o, rays_d] = Img2WorldRay(merged_poses_n34, selected_intri, ij);
 
   Tensor bounds = bounds_.index({cam_indices.to(torch::kLong)}).contiguous();
   return {{rays_o, rays_d, bounds}, gt_colors, cam_indices.to(torch::kInt32).contiguous()};
+}
+
+Tensor Dataset::vec2skew(Tensor v)
+{
+  torch::Tensor zero = torch::zeros({v.size(0), 1}, v.options());
+
+  // 各成分の抽出
+  Tensor vx = v.select(1, 0).unsqueeze(1);
+  Tensor vy = v.select(1, 1).unsqueeze(1);
+  Tensor vz = v.select(1, 2).unsqueeze(1);
+
+  // 歪対称行列の各行を作成
+  Tensor skew_v0 = torch::cat({zero, -vz, vy}, 1);
+  Tensor skew_v1 = torch::cat({vz, zero, -vx}, 1);
+  Tensor skew_v2 = torch::cat({-vy, vx, zero}, 1);
+
+  // 3x3行列を組み立て
+  Tensor skew = torch::stack({skew_v0, skew_v1, skew_v2}, 1);
+
+  return skew;
+}
+
+Tensor Dataset::so3_to_SO3(Tensor r)
+{
+  const int64_t n = r.size(0);
+  Tensor skew_r_n33 = vec2skew(r);
+  Tensor norm_r_n1 = r.norm() + 1e-15;
+  Tensor eye_133 = torch::eye(3, r.options()).unsqueeze(0);
+  Tensor coeff1_n1 = torch::sin(norm_r_n1) / norm_r_n1;
+  Tensor coeff2_n1 = (1 - torch::cos(norm_r_n1)) / torch::pow(norm_r_n1, 2);
+  Tensor skew_r2_n33 = torch::matmul(skew_r_n33, skew_r_n33);
+  Tensor R_n33 = eye_133 + coeff1_n1 * skew_r_n33 + coeff2_n1 * skew_r2_n33;
+  return R_n33;
+}
+
+Tensor Dataset::convert_r_and_t_to_3x4(Tensor r, Tensor t)
+{
+  Tensor r_n33 = so3_to_SO3(r);
+  t = t.unsqueeze(-1);
+  Tensor result_n34 = torch::cat({r_n33, t}, 2);
+  return result_n34;
 }

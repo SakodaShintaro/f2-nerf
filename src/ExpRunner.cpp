@@ -47,8 +47,25 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   // Renderer
   renderer_ = std::make_unique<Renderer>(config, dataset_->n_images_);
 
+  std::vector<torch::optim::OptimizerParamGroup> param_groups =
+    renderer_->OptimParamGroups(learning_rate_);
+
+  // add learnable_pos_, ori_ to param groups
+  std::unique_ptr<torch::optim::AdamOptions> opt =
+    std::make_unique<torch::optim::AdamOptions>(learning_rate_ * 0);
+  opt->betas() = {0.9, 0.99};
+  opt->eps() = 1e-15;
+  opt->weight_decay() = 1e5;
+  std::vector<Tensor> params;
+  params.push_back(dataset_->learnable_pos_);
+  params.push_back(dataset_->learnable_ori_);
+  torch::optim::OptimizerParamGroup pose_delta_group(std::move(params), std::move(opt));
+
+  // Add pose_delta_group to param_groups
+  param_groups.push_back(pose_delta_group);
+
   // Optimizer
-  optimizer_ = std::make_unique<torch::optim::Adam>(renderer_->OptimParamGroups(learning_rate_));
+  optimizer_ = std::make_unique<torch::optim::Adam>(param_groups);
 
   if (config["is_continue"].as<bool>()) {
     LoadCheckpoint(base_exp_dir_ + "/checkpoints/latest");
@@ -142,6 +159,19 @@ void ExpRunner::Train() {
     }
     UpdateAdaParams();
   }
+  std::cout << "save pose_delta_" << std::endl;
+  // Save dataset_->pose_delta_
+  std::ofstream ofs_pose_delta(base_exp_dir_ + "/pose_delta.txt");
+  ofs_pose_delta << std::fixed;
+  ofs_pose_delta << "x\ty\tz\tax\tay\taz" << std::endl;
+  for (int i = 0; i < dataset_->n_images_; i++) {
+    ofs_pose_delta << dataset_->learnable_pos_[i][0].item<float>() << "\t";
+    ofs_pose_delta << dataset_->learnable_pos_[i][1].item<float>() << "\t";
+    ofs_pose_delta << dataset_->learnable_pos_[i][2].item<float>() << "\t";
+    ofs_pose_delta << dataset_->learnable_ori_[i][0].item<float>() << "\t";
+    ofs_pose_delta << dataset_->learnable_ori_[i][1].item<float>() << "\t";
+    ofs_pose_delta << dataset_->learnable_ori_[i][2].item<float>() << std::endl;
+  }
 
   std::cout << "Train done" << std::endl;
 }
@@ -202,6 +232,15 @@ void ExpRunner::UpdateAdaParams() {
   float lr = learning_rate_ * lr_factor;
   for (auto& g : optimizer_->param_groups()) {
     g.options().set_lr(lr);
+  }
+
+  optimizer_->param_groups().back().options().set_lr(lr * 0);
+  if (iter_step_ == 5000) {
+    // pose_delta_groupはparam_groupsの最後に追加されたので、param_groupsの最後の要素としてアクセスする
+    std::cout << "Weight Decay to 1e-1" << std::endl;
+    auto & options =
+      static_cast<torch::optim::AdamOptions &>(optimizer_->param_groups().back().options());
+    options.weight_decay(1e-1);
   }
 }
 
