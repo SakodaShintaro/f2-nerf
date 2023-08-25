@@ -13,6 +13,7 @@
 namespace fs = std::experimental::filesystem::v1;
 using Tensor = torch::Tensor;
 
+constexpr float kPoseLrCoeff = 0.1;
 
 ExpRunner::ExpRunner(const std::string& conf_path) {
   const YAML::Node & config = YAML::LoadFile(conf_path);
@@ -52,7 +53,7 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
 
   // add learnable_pos_, ori_ to param groups
   std::unique_ptr<torch::optim::AdamOptions> opt =
-    std::make_unique<torch::optim::AdamOptions>(learning_rate_ * 0);
+    std::make_unique<torch::optim::AdamOptions>(learning_rate_ * kPoseLrCoeff);
   opt->betas() = {0.9, 0.99};
   opt->eps() = 1e-15;
   opt->weight_decay() = 1e5;
@@ -234,7 +235,7 @@ void ExpRunner::UpdateAdaParams() {
     g.options().set_lr(lr);
   }
 
-  optimizer_->param_groups().back().options().set_lr(lr * 0);
+  optimizer_->param_groups().back().options().set_lr(lr * kPoseLrCoeff);
   if (iter_step_ == 5000) {
     // pose_delta_groupはparam_groupsの最後に追加されたので、param_groupsの最後の要素としてアクセスする
     std::cout << "Weight Decay to 1e-1" << std::endl;
