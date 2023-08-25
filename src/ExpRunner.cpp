@@ -238,10 +238,10 @@ void ExpRunner::UpdateAdaParams() {
   optimizer_->param_groups().back().options().set_lr(lr * kPoseLrCoeff);
   if (iter_step_ == 2500) {
     // pose_delta_groupはparam_groupsの最後に追加されたので、param_groupsの最後の要素としてアクセスする
-    std::cout << "Weight Decay to 1e-1" << std::endl;
+    std::cout << "Weight Decay to 0" << std::endl;
     auto & options =
       static_cast<torch::optim::AdamOptions &>(optimizer_->param_groups().back().options());
-    options.weight_decay(1e-1);
+    options.weight_decay(0);
   }
 }
 
