@@ -13,7 +13,7 @@
 namespace fs = std::experimental::filesystem::v1;
 using Tensor = torch::Tensor;
 
-constexpr float kPoseLrCoeff = 0.1;
+constexpr float kPoseLrCoeff = 0.01;
 
 ExpRunner::ExpRunner(const std::string& conf_path) {
   const YAML::Node & config = YAML::LoadFile(conf_path);
