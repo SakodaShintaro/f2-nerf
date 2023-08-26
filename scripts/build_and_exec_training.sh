@@ -11,4 +11,5 @@ cd ${ROOT_DIR}/ros2
 colcon build --symlink-install --packages-up-to ros2-f2-nerf --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 cd ${ROOT_DIR}
+rm -rf ./exp/$(basename ${DATASET_PATH})
 python3 scripts/run.py --config-name=my_dataset dataset_path=${DATASET_PATH}
