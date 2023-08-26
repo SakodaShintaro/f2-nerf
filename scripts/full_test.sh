@@ -7,4 +7,4 @@ cd $(dirname $0)
 
 ./build_and_exec_training.sh ${DATASET_PATH}
 
-./build_and_exec_inference.sh ../exp/$(basename ${DATASET_PATH})/runtime_config.yaml
+./build_and_exec_test.sh ../exp/$(basename ${DATASET_PATH})/runtime_config.yaml
