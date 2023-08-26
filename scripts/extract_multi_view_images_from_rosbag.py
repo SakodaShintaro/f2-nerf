@@ -111,10 +111,10 @@ if __name__ == "__main__":
     bridge = CvBridge()
     tf_buffer = Buffer()
 
-    index_images_all = 0
     prev_image = None
     image_timestamp_lists = defaultdict(list)
     image_lists = defaultdict(list)
+    image_num = defaultdict(int)
     frame_ids = dict()
     pose_timestamp_list = list()
     pose_list = list()
@@ -137,13 +137,11 @@ if __name__ == "__main__":
             diff = (1 if prev_image is None else np.abs(
                 prev_image - curr_image).sum())
             prev_image = curr_image
-            index_images_all += 1
-            if diff == 0 or index_images_all % skip != 0:
+            image_num[topic] += 1
+            if diff == 0 or image_num[topic] % skip != 0:
                 continue
             image_timestamp_lists[topic].append(t)
             image_lists[topic].append(curr_image)
-            if index_images_all >= 500:
-                break
         elif topic == pose_topic_name:
             pose_msg = deserialize_message(data, pose_topic_type)
             pose = pose_msg.pose.pose if pose_topic_type == PoseWithCovarianceStamped() else pose_msg.pose
@@ -259,7 +257,7 @@ if __name__ == "__main__":
         print(f"Saved to {save_path}")
 
     # 全カメラ分を統合したものを作る
-    os.makedirs(f"{output_dir}/images_original/", exist_ok=True)
+    os.makedirs(f"{output_dir}/images/", exist_ok=True)
     index_images_all = 0
     df_pose_all = pd.DataFrame(columns=columns)
     for topic_name in image_topic_names:
@@ -270,7 +268,7 @@ if __name__ == "__main__":
             f"{each_camera_output_dir}/{save_name}_pose.tsv", sep="\t")
         df_pose_all = pd.concat([df_pose_all, df_pose], ignore_index=True)
         for i, image in enumerate(image_list):
-            save_path = f"{output_dir}/images_original/{index_images_all:08d}.png"
+            save_path = f"{output_dir}/images/{index_images_all:08d}.png"
             cv2.imwrite(save_path, image)
             index_images_all += 1
     df_pose_all.to_csv(f"{output_dir}/pose.tsv",
