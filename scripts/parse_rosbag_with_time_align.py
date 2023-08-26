@@ -16,6 +16,7 @@ import geometry_msgs
 from scipy.spatial.transform import Rotation
 import matplotlib.pyplot as plt
 import rosbag2_py
+from interpolate import interpolate_pose_in_time
 
 
 def create_reader(input_bag_dir: str, storage_id: str):
@@ -119,19 +120,18 @@ if __name__ == "__main__":
     bridge = CvBridge()
     tf_buffer = Buffer()
 
-    index_images = 0
     index_images_all = 0
     skip = args.skip
     prev_image = None
-    df_pose_ekf = pd.DataFrame(columns=["x", "y", "z", "qx", "qy", "qz", "qw"])
-    df_pose_to_save = pd.DataFrame(
-        columns=["x", "y", "z", "qx", "qy", "qz", "qw"])
+    image_timestamp_list = list()
+    image_list = list()
+    columns = ["timestamp", "x", "y", "z", "qx", "qy", "qz", "qw"]
+    df_pose = pd.DataFrame(columns=columns)
     os.makedirs(f"{output_dir}/images_original", exist_ok=True)
     while reader.has_next():
         (topic, data, t) = reader.read_next()
+        t /= 1e9
         if topic == image_topic_name:
-            if len(df_pose_ekf) == 0:
-                continue
             image_msg = deserialize_message(data, image_topic_type)
             if image_topic_type == Image():
                 curr_image = bridge.imgmsg_to_cv2(
@@ -147,12 +147,8 @@ if __name__ == "__main__":
             index_images_all += 1
             if diff == 0 or index_images_all % skip != 0:
                 continue
-            save_path = f"{output_dir}/images_original/{index_images:08d}.png"
-            cv2.imwrite(save_path, curr_image)
-            index_images += 1
-
-            # get pose
-            df_pose_to_save.loc[len(df_pose_to_save)] = df_pose_ekf.iloc[-1]
+            image_timestamp_list.append(t)
+            image_list.append(curr_image)
         elif topic == pose_topic_name:
             pose_msg = deserialize_message(data, pose_topic_type)
             # try:
@@ -162,7 +158,8 @@ if __name__ == "__main__":
             #     print(e)
             #     continue
             pose = pose_msg.pose.pose if pose_topic_type == PoseWithCovarianceStamped() else pose_msg.pose
-            df_pose_ekf.loc[len(df_pose_ekf)] = [
+            df_pose.loc[len(df_pose)] = [
+                t,
                 pose.position.x,
                 pose.position.y,
                 pose.position.z,
@@ -185,12 +182,29 @@ if __name__ == "__main__":
                 else:
                     tf_buffer.set_transform(
                         transform_stamped, "default_authority")
-    df_pose_to_save.to_csv(f"{output_dir}/pose.tsv",
-                           index=True, sep="\t", float_format="%.12f")
+
+    image_timestamp_list = np.array(image_timestamp_list)
+    image_list = np.array(image_list)
+
+    min_pose_t = df_pose["timestamp"].min()
+    max_pose_t = df_pose["timestamp"].max()
+    ok_image_timestamp = (min_pose_t < image_timestamp_list) * \
+        (image_timestamp_list < max_pose_t)
+    image_timestamp_list = image_timestamp_list[ok_image_timestamp]
+    image_list = image_list[ok_image_timestamp]
+
+    df_pose = interpolate_pose_in_time(df_pose, image_timestamp_list)
+
+    for i, image in enumerate(image_list):
+        save_path = f"{output_dir}/images_original/{i:08d}.png"
+        cv2.imwrite(save_path, image)
+
+    df_pose.to_csv(f"{output_dir}/pose.tsv",
+                   index=True, sep="\t", float_format="%.12f")
 
     # plot all of trajectory
     save_path = f"{output_dir}/plot_pose.png"
-    plt.plot(df_pose_to_save["x"], df_pose_to_save["y"])
+    plt.plot(df_pose["x"], df_pose["y"])
     plt.xlabel("x")
     plt.ylabel("y")
     plt.axis("equal")
