@@ -4,8 +4,7 @@ defaults:
   - shader: sh_shader
   - _self_
 
-dataset_name: logiee
-case_name: 20230609_base_link_logiee
+dataset_path: None
 
 is_continue: false
 

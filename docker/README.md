@@ -28,7 +28,7 @@ pip3 install click numpy omegaconf hydra-core
 ln -s /root/data/learn_result/ ./exp
 
 # Run
-python3 scripts/run.py --config-name=wanjinyou dataset_name=example case_name=ngp_fox mode=train
+python3 scripts/run.py --config-name=wanjinyou dataset_path=./data/example/ngp_fox mode=train
 ```
 
 ## install ros2
