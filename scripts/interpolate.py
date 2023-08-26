@@ -1,5 +1,6 @@
 import pandas as pd
 from scipy.spatial.transform import Rotation, Slerp
+import numpy as np
 
 
 def interpolate_pose_in_time(df: pd.DataFrame, target_timestamp_list: pd.Series) -> pd.DataFrame:
@@ -47,3 +48,27 @@ def interpolate_pose_in_time(df: pd.DataFrame, target_timestamp_list: pd.Series)
         result_df = result_df.append(target_row)
         target_index += 1
     return result_df
+
+
+if __name__ == "__main__":
+    df = pd.DataFrame(columns=['timestamp', 'x', 'y', 'z', 'qx', 'qy', 'qz', 'qw'])
+
+    # 秒数0で(x, y, z) = (0, 0, 0), 向きX軸方向
+    default_rot = Rotation.from_quat(np.array([0, 0, 0, 1]))
+    quat1 = default_rot.as_quat()
+    df.loc[0] = [0, 0, 0, 0, quat1[0], quat1[1], quat1[2], quat1[3]]
+
+    # 秒数1で(x, y, z) = (0, 0, 0), yaw 90度回転
+    r2 = Rotation.from_rotvec(np.array([0, 0, 1]) * (90 * (np.pi / 180)))
+    quat2 = (r2 * default_rot).as_quat()
+    df.loc[1] = [1, 0, 0, 0, quat2[0], quat2[1], quat2[2], quat2[3]]
+
+    target_timestamp_list = pd.Series([0.5])
+
+    # 関数をテスト
+    result_df = interpolate_pose_in_time(df, target_timestamp_list)
+
+    # 出力結果の表示
+    print(result_df)
+    r_ans = Rotation.from_rotvec(np.array([0, 0, 1]) * (45 * (np.pi / 180)))
+    print(r_ans.as_quat())
