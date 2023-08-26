@@ -27,7 +27,7 @@ public:
   void VisualizeImage(int idx);
 
   // data
-  std::string case_name_, base_dir_, base_exp_dir_;
+  std::string base_dir_, base_exp_dir_;
 
   unsigned iter_step_ = 0;
   unsigned end_iter_;

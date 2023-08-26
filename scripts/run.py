@@ -25,12 +25,12 @@ def main(conf: DictConfig) -> None:
     base_dir = os.getcwd()
     print(f'Working directory is {base_dir}')
 
-    data_path = os.path.join(
-        base_dir, 'data', conf['dataset_name'], conf['case_name'])
+    data_path = os.path.abspath(conf['dataset_path'])
     assert os.path.exists(data_path), data_path
     make_image_list(data_path)
 
-    base_exp_dir = os.path.join(base_dir, 'exp', conf['case_name'])
+    save_dir_name = os.path.basename(data_path)
+    base_exp_dir = os.path.join(base_dir, 'exp', save_dir_name)
     os.makedirs(base_exp_dir, exist_ok=True)
 
     subprocess.run(

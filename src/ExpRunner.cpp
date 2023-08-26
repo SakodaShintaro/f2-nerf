@@ -17,7 +17,6 @@ using Tensor = torch::Tensor;
 ExpRunner::ExpRunner(const std::string& conf_path) {
   const YAML::Node & config = YAML::LoadFile(conf_path);
   config_ = config;
-  case_name_ = config["case_name"].as<std::string>();
   base_dir_ = config["base_dir"].as<std::string>();
 
   base_exp_dir_ = config["base_exp_dir"].as<std::string>();
