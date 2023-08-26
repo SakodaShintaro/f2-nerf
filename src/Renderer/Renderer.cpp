@@ -19,19 +19,15 @@ TORCH_LIBRARY(volume_render, m)
   m.class_<VolumeRenderInfo>("VolumeRenderInfo").def(torch::init());
 }
 
-Renderer::Renderer(GlobalDataPool* global_data_pool, int n_images) {
-  global_data_pool_ = global_data_pool;
-  // global_data_pool_->renderer_ = std::reinterpret_cast<void*>(this);
-  global_data_pool_->renderer_ = reinterpret_cast<void*>(this);
-  auto conf = global_data_pool->config_["renderer"];
+Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_config) {
+  const YAML::Node conf = root_config["renderer"];
 
-  pts_sampler_ = ConstructPtsSampler(global_data_pool);
-  RegisterSubPipe(pts_sampler_.get());
+  pts_sampler_ = std::make_unique<PtsSampler>(root_config);
 
-  scene_field_ = ConstructField(global_data_pool);
+  scene_field_ = std::make_unique<Field>(root_config);
   RegisterSubPipe(scene_field_.get());
 
-  shader_ = ConstructShader(global_data_pool);
+  shader_ = std::make_unique<Shader>(root_config);
   RegisterSubPipe(shader_.get());
 
 
@@ -39,64 +35,35 @@ Renderer::Renderer(GlobalDataPool* global_data_pool, int n_images) {
   // WARNING: Hard code here.
   app_emb_ = torch::randn({ n_images, 16 }, CUDAFloat) * .1f;
   app_emb_.requires_grad_(true);
-
-  auto bg_color = conf["bg_color"].as<std::string>();
-  if (bg_color == "white")
-    bg_color_type_ = BGColorType::white;
-  else if (bg_color == "black")
-    bg_color_type_ = BGColorType::black;
-  else
-    bg_color_type_ = BGColorType::rand_noise;
 }
 
 
-RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& bounds, const Tensor& emb_idx) {
+RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode) {
 #ifdef PROFILE
   ScopeWatch watch(__func__);
 #endif
   int n_rays = rays_o.sizes()[0];
-  sample_result_ = pts_sampler_->GetSamples(rays_o, rays_d, bounds);
-  int n_all_pts = sample_result_.pts.sizes()[0];
+  SampleResultFlex sample_result = pts_sampler_->GetSamples(rays_o, rays_d, mode);
+  int n_all_pts = sample_result.pts.sizes()[0];
   float sampled_pts_per_ray = float(n_all_pts) / float(n_rays);
-  if (global_data_pool_->mode_ == RunningMode::TRAIN) {
-    global_data_pool_->sampled_pts_per_ray_ =
-        global_data_pool_->sampled_pts_per_ray_ * 0.9f + sampled_pts_per_ray * 0.1f;
-  }
-  CHECK(sample_result_.pts_idx_bounds.max().item<int>() <= n_all_pts);
-  CHECK(sample_result_.pts_idx_bounds.min().item<int>() >= 0);
+  CHECK(sample_result.pts_idx_bounds.max().item<int>() <= n_all_pts);
+  CHECK(sample_result.pts_idx_bounds.min().item<int>() >= 0);
 
-  Tensor bg_color;
-  if (bg_color_type_ == BGColorType::white) {
-    bg_color = torch::ones({n_rays, 3}, CUDAFloat);
-  }
-  else if (bg_color_type_ == BGColorType::rand_noise) {
-    if (global_data_pool_->mode_ == RunningMode::TRAIN) {
-      bg_color = torch::rand({n_rays, 3}, CUDAFloat);
-    }
-    else {
-      bg_color = torch::ones({n_rays, 3}, CUDAFloat) * .5f;
-    }
-  }
-  else {
-    bg_color = torch::zeros({n_rays, 3}, CUDAFloat);
-  }
+  Tensor bg_color =
+    ((mode == RunningMode::TRAIN) ? torch::rand({n_rays, 3}, CUDAFloat)
+                                  : torch::ones({n_rays, 3}, CUDAFloat) * .5f);
 
   if (n_all_pts <= 0) {
     Tensor colors = bg_color;
-    if (global_data_pool_->mode_ == RunningMode::TRAIN) {
-      global_data_pool_->meaningful_sampled_pts_per_ray_ = global_data_pool_->meaningful_sampled_pts_per_ray_ * 0.9f;
-    }
     return {
       colors,
       torch::zeros({ n_rays, 1 }, CUDAFloat),
       torch::zeros({ n_rays }, CUDAFloat),
-      Tensor(),
       torch::full({ n_rays }, 512.f, CUDAFloat),
-      Tensor(),
       Tensor()
     };
   }
-  CHECK_EQ(rays_o.sizes()[0], sample_result_.pts_idx_bounds.sizes()[0]);
+  CHECK_EQ(rays_o.sizes()[0], sample_result.pts_idx_bounds.sizes()[0]);
 
   auto DensityAct = [](Tensor x) -> Tensor {
     const float shift = 3.f;
@@ -106,74 +73,44 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   // First, inference without gradients - early stop
   SampleResultFlex sample_result_early_stop;
   {
-    torch::NoGradGuard no_grad_guard;
+    Tensor pts  = sample_result.pts;
+    Tensor dirs = sample_result.dirs;
 
-    Tensor pts  = sample_result_.pts;
-    Tensor dirs = sample_result_.dirs;
-    Tensor anchors = sample_result_.anchors.index({"...", 0}).contiguous();
-
-    Tensor scene_feat = scene_field_->AnchoredQuery(pts, anchors);
+    Tensor scene_feat = scene_field_->Query(pts);
     Tensor sampled_density = DensityAct(scene_feat.index({ Slc(), Slc(0, 1) }));
 
-    Tensor sampled_dt = sample_result_.dt;
-    Tensor sampled_t = (sample_result_.t + 1e-2f).contiguous();
+    Tensor sampled_dt = sample_result.dt;
+    Tensor sampled_t = (sample_result.t + 1e-2f).contiguous();
     Tensor sec_density = sampled_density.index({Slc(), 0}) * sampled_dt;
     Tensor alphas = 1.f - torch::exp(-sec_density);
-    Tensor idx_start_end = sample_result_.pts_idx_bounds;
+    Tensor idx_start_end = sample_result.pts_idx_bounds;
     Tensor acc_density = FlexOps::AccumulateSum(sec_density, idx_start_end, false);
     Tensor trans = torch::exp(-acc_density);
     Tensor weights = trans * alphas;
     Tensor mask = trans > 1e-4f;
     Tensor mask_idx = torch::where(mask)[0];
 
-    sample_result_early_stop.pts = sample_result_.pts.index({mask_idx}).contiguous();
-    sample_result_early_stop.dirs = sample_result_.dirs.index({mask_idx}).contiguous();
-    sample_result_early_stop.dt = sample_result_.dt.index({mask_idx}).contiguous();
-    sample_result_early_stop.t = sample_result_.t.index({mask_idx}).contiguous();
-    sample_result_early_stop.anchors = sample_result_.anchors.index({mask_idx}).contiguous();
+    sample_result_early_stop.pts = sample_result.pts.index({mask_idx}).contiguous();
+    sample_result_early_stop.dirs = sample_result.dirs.index({mask_idx}).contiguous();
+    sample_result_early_stop.dt = sample_result.dt.index({mask_idx}).contiguous();
+    sample_result_early_stop.t = sample_result.t.index({mask_idx}).contiguous();
 
-    sample_result_early_stop.first_oct_dis = sample_result_.first_oct_dis.clone();
-    sample_result_early_stop.pts_idx_bounds = FilterIdxBounds(sample_result_.pts_idx_bounds, mask);
+    Tensor mask_2d = mask.reshape({n_rays, MAX_SAMPLE_PER_RAY});
+    Tensor num = mask_2d.sum(1);
+    Tensor cum_num = torch::cumsum(num, 0);
+    Tensor idx_bounds = torch::zeros({n_rays, 2}, CUDAInt);
+    idx_bounds.index_put_({Slc(), 0}, cum_num - num);
+    idx_bounds.index_put_({Slc(), 1}, cum_num);
+    sample_result_early_stop.pts_idx_bounds = idx_bounds;
 
     CHECK_EQ(sample_result_early_stop.pts_idx_bounds.max().item<int>(), sample_result_early_stop.pts.size(0));
-
-
-    if (global_data_pool_->mode_ == RunningMode::TRAIN) {
-      pts_sampler_->UpdateOctNodes(sample_result_,
-                                   weights.detach(),
-                                   alphas.detach());
-
-      float meaningful_per_ray = mask.to(torch::kFloat32).sum().item<float>();
-      meaningful_per_ray /= n_rays;
-      global_data_pool_->meaningful_sampled_pts_per_ray_ =
-          global_data_pool_->meaningful_sampled_pts_per_ray_ * 0.9f + meaningful_per_ray * 0.1f;
-    }
   }
 
-  Tensor scene_feat, edge_feat;
   Tensor pts  = sample_result_early_stop.pts;
   Tensor dirs = sample_result_early_stop.dirs;
-  Tensor anchors = sample_result_early_stop.anchors.index({"...", 0}).contiguous();
   n_all_pts = pts.size(0);
 
-  // Feature variation loss.
-  if (global_data_pool_->mode_ == RunningMode::TRAIN) {
-    const int n_edge_pts = 8192;
-    auto [ edge_pts, edge_anchors ] = pts_sampler_->GetEdgeSamples(n_edge_pts);
-    edge_pts = edge_pts.reshape({ n_edge_pts * 2, 3 }).contiguous();
-    edge_anchors = edge_anchors.reshape({ n_edge_pts * 2 }).contiguous();
-
-    Tensor query_pts = torch::cat({ pts, edge_pts }, 0);
-    Tensor query_anchors = torch::cat({ anchors, edge_anchors }, 0);
-    Tensor all_feat = scene_field_->AnchoredQuery(query_pts, query_anchors);
-    scene_feat = all_feat.slice(0, 0, n_all_pts);
-    edge_feat = all_feat.slice(0, n_all_pts, n_all_pts + n_edge_pts * 2).reshape({ n_edge_pts, 2, -1 });
-  }
-  else {
-    // Query density &gra color
-    scene_feat = scene_field_->AnchoredQuery(pts, anchors);  // [n_pts, feat_dim];
-  }
-
+  Tensor scene_feat = scene_field_->Query(pts);
 
   Tensor sampled_density = DensityAct(scene_feat.index({ Slc(), Slc(0, 1) }));
 
@@ -181,7 +118,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     torch::ones_like(scene_feat.index({Slc(), Slc(0, 1)}), CUDAFloat),
     scene_feat.index({Slc(), Slc(1, None)})}, 1);
 
-  if (global_data_pool_->mode_ == RunningMode::TRAIN && use_app_emb_) {
+  if (mode == RunningMode::TRAIN && use_app_emb_) {
     Tensor all_emb_idx = CustomOps::ScatterIdx(n_all_pts, sample_result_early_stop.pts_idx_bounds, emb_idx);
     shading_feat = CustomOps::ScatterAdd(app_emb_, all_emb_idx, shading_feat);
   }
@@ -205,7 +142,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
 
   CHECK_NOT_NAN(colors);
 
-  return { colors, sample_result_early_stop.first_oct_dis, disparity, edge_feat, depth, weights, idx_start_end };
+  return { colors, disparity, depth, weights, idx_start_end };
 }
 
 
@@ -231,17 +168,17 @@ std::vector<Tensor> Renderer::States() {
   return ret;
 }
 
-std::vector<torch::optim::OptimizerParamGroup> Renderer::OptimParamGroups() {
+std::vector<torch::optim::OptimizerParamGroup> Renderer::OptimParamGroups(float lr) {
   std::vector<torch::optim::OptimizerParamGroup> ret;
   for (auto pipe : sub_pipes_) {
-    auto cur_params = pipe->OptimParamGroups();
+    auto cur_params = pipe->OptimParamGroups(lr);
     for (const auto& para_group : cur_params) {
       ret.emplace_back(para_group);
     }
   }
 
   {
-    auto opt = std::make_unique<torch::optim::AdamOptions>(global_data_pool_->learning_rate_);
+    auto opt = std::make_unique<torch::optim::AdamOptions>(lr);
     opt->betas() = {0.9, 0.99};
     opt->eps() = 1e-15;
     opt->weight_decay() = 1e-6;

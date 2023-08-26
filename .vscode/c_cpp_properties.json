@@ -1,13 +1,14 @@
 {
-  "configurations": [
-    {
-      "name": "f2-nerf",
-      "intelliSenseMode": "gcc-x64",
-      "compilerPath": "/usr/bin/gcc",
-      "cStandard": "c17",
-      "cppStandard": "c++17",
-      "compileCommands": "${workspaceFolder}/build/compile_commands.json"
-    }
-  ],
-  "version": 4
+    "configurations": [
+        {
+            "name": "f2-nerf",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "configurationProvider": "ms-vscode.cmake-tools"
+        }
+    ],
+    "version": 4
 }

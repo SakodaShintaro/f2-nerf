@@ -1,7 +1,7 @@
 #include "nerf_based_localizer.hpp"
 
 #include "../../src/Utils/Utils.h"
-#include "timer.hpp"
+#include "../../src/Utils/StopWatch.h"
 
 #include <Eigen/Eigen>
 #include <experimental/filesystem>
@@ -26,12 +26,10 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   this->declare_parameter("particle_num", 100);
   this->declare_parameter("output_covariance", 0.1);
   this->declare_parameter("base_score", 40.0f);
-  is_awsim_ = this->declare_parameter<bool>("is_awsim", false);
-  const std::string runtime_config_path =
-    this->declare_parameter<std::string>("runtime_config_path");
   target_frame_ = this->declare_parameter<std::string>("target_frame");
 
   LocalizerCoreParam param;
+  param.runtime_config_path = this->declare_parameter<std::string>("runtime_config_path");
   param.render_pixel_num = this->declare_parameter<int>("render_pixel_num");
   param.noise_position_x = this->declare_parameter<float>("noise_position_x");
   param.noise_position_y = this->declare_parameter<float>("noise_position_y");
@@ -39,8 +37,8 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   param.noise_rotation_x = this->declare_parameter<float>("noise_rotation_x");
   param.noise_rotation_y = this->declare_parameter<float>("noise_rotation_y");
   param.noise_rotation_z = this->declare_parameter<float>("noise_rotation_z");
-  param.is_awsim = is_awsim_;
-  localizer_core_ = LocalizerCore(runtime_config_path, param);
+  param.resize_factor = this->declare_parameter<int>("resize_factor");
+  localizer_core_ = LocalizerCore(param);
 
   initial_pose_with_covariance_subscriber_ =
     this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -60,19 +58,6 @@ NerfBasedLocalizer::NerfBasedLocalizer(
       "nerf_pose_with_covariance", 10);
   nerf_score_publisher_ = this->create_publisher<std_msgs::msg::Float32>("nerf_score", 10);
   nerf_image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("nerf_image", 10);
-
-  /*
-    [[0, 0, -1, 0],
-    [-1, 0, 0, 0],
-    [0, -1, 0, 0],
-    [0, 0, 0, 1]]
-  */
-  axis_convert_mat1_ = torch::zeros({4, 4});
-  axis_convert_mat1_[0][2] = -1;
-  axis_convert_mat1_[1][0] = -1;
-  axis_convert_mat1_[2][1] = -1;
-  axis_convert_mat1_[3][3] = 1;
-  axis_convert_mat1_ = axis_convert_mat1_.to(torch::kCUDA);
 
   previous_score_ = this->get_parameter("base_score").as_double();
 
@@ -218,6 +203,7 @@ NerfBasedLocalizer::localize(
   const geometry_msgs::msg::Pose & pose_msg, const sensor_msgs::msg::Image & image_msg)
 {
   Timer timer;
+  timer.start();
 
   // Get data of image_ptr
   // Accessing header information
@@ -244,20 +230,7 @@ NerfBasedLocalizer::localize(
   if (is_awsim_) {
     image_tensor = image_tensor.index({Slc(0, 460)});
   }
-  if (height != localizer_core_.H || width != localizer_core_.W) {
-    // change HWC to CHW
-    image_tensor = image_tensor.permute({2, 0, 1});
-    image_tensor = image_tensor.unsqueeze(0);  // add batch dim
-
-    // Resize
-    std::vector<int64_t> size = {localizer_core_.H, localizer_core_.W};
-    image_tensor = torch::nn::functional::interpolate(
-      image_tensor, torch::nn::functional::InterpolateFuncOptions().size(size));
-
-    // change CHW to HWC
-    image_tensor = image_tensor.squeeze(0);  // remove batch dim
-    image_tensor = image_tensor.permute({1, 2, 0});
-  }
+  image_tensor = localizer_core_.resize_image(image_tensor);
 
   geometry_msgs::msg::PoseWithCovarianceStamped pose_lidar;
   try {
@@ -291,10 +264,9 @@ NerfBasedLocalizer::localize(
   initial_pose = initial_pose.to(torch::kFloat32);
   RCLCPP_INFO_STREAM(this->get_logger(), "world_before:\n" << initial_pose);
 
-  initial_pose = world2camera(initial_pose);
+  initial_pose = localizer_core_.world2camera(initial_pose);
 
   // run NeRF
-  Timer timer2;
   const double base_score = this->get_parameter("base_score").as_double();
   const float noise_coeff = (base_score > 0 ? base_score / previous_score_ : 1.0f);
   std::vector<Particle> particles = localizer_core_.random_search(
@@ -319,10 +291,8 @@ NerfBasedLocalizer::localize(
     cnt++;
   }
 
-  timer2.reset();
   torch::Tensor optimized_pose = LocalizerCore::calc_average_pose(particles);
 
-  timer2.reset();
   auto [score, nerf_image] =
     localizer_core_.pred_image_and_calc_score(optimized_pose, image_tensor);
 
@@ -360,7 +330,7 @@ NerfBasedLocalizer::localize(
   }
 
   // Convert pose to base_link
-  optimized_pose = camera2world(optimized_pose);
+  optimized_pose = localizer_core_.camera2world(optimized_pose);
 
   RCLCPP_INFO_STREAM(this->get_logger(), "world_after:\n" << optimized_pose);
 
@@ -417,7 +387,7 @@ NerfBasedLocalizer::localize(
   transform.child_frame_id = "nerf_base_link";
   tf2_broadcaster_.sendTransform(transform);
 
-  RCLCPP_INFO_STREAM(get_logger(), "localize time: " << timer);
+  RCLCPP_INFO_STREAM(get_logger(), "localize time: " << timer.elapsed_milli_seconds());
 
   return std::make_tuple(result_pose_base_link, nerf_image_msg, score_msg);
 }
@@ -437,24 +407,4 @@ void NerfBasedLocalizer::service_trigger_node(
     image_msg_ptr_array_.clear();
   }
   res->success = true;
-}
-
-torch::Tensor NerfBasedLocalizer::world2camera(const torch::Tensor & pose_in_world)
-{
-  torch::Tensor x = pose_in_world;
-  x = torch::mm(x, axis_convert_mat1_);
-  x = torch::mm(axis_convert_mat1_.t(), x);
-  x = localizer_core_.normalize_position(x);
-  x = x.index({Slc(0, 3), Slc(0, 4)});
-  return x;
-}
-
-torch::Tensor NerfBasedLocalizer::camera2world(const torch::Tensor & pose_in_camera)
-{
-  torch::Tensor x = pose_in_camera;
-  x = torch::cat({x, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
-  x = localizer_core_.inverse_normalize_position(x);
-  x = torch::mm(x, axis_convert_mat1_.t());
-  x = torch::mm(axis_convert_mat1_, x);
-  return x;
 }

@@ -9,7 +9,6 @@
 #include <torch/torch.h>
 #include "Dataset/Dataset.h"
 #include "Renderer/Renderer.h"
-#include "Utils/GlobalDataPool.h"
 
 class ExpRunner {
   using Tensor = torch::Tensor;
@@ -18,14 +17,13 @@ public:
 
   void Execute();
   void Train();
-  void TestImages();
   void RenderAllImages();
 
   void LoadCheckpoint(const std::string& path);
   void SaveCheckpoint();
   void UpdateAdaParams();
-  std::tuple<Tensor, Tensor, Tensor> RenderWholeImage(Tensor rays_o, Tensor rays_d, Tensor bounds);
-  void RenderPath();
+  std::tuple<Tensor, Tensor> RenderWholeImage(
+    Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode);
   void VisualizeImage(int idx);
 
   // data
@@ -33,7 +31,7 @@ public:
 
   unsigned iter_step_ = 0;
   unsigned end_iter_;
-  unsigned report_freq_, vis_freq_, stats_freq_, save_freq_;
+  unsigned report_freq_, vis_freq_, save_freq_;
   unsigned pts_batch_size_;
 
   float ray_march_init_fineness_;
@@ -43,7 +41,8 @@ public:
   float gradient_door_end_iter_;
   float var_loss_weight_, tv_loss_weight_, disp_loss_weight_;
 
-  std::unique_ptr<GlobalDataPool> global_data_pool_;
+  YAML::Node config_;
+
   std::unique_ptr<Dataset> dataset_;
   std::unique_ptr<Renderer> renderer_;
   std::unique_ptr<torch::optim::Adam> optimizer_;

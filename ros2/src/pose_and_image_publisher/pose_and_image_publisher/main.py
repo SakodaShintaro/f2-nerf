@@ -99,14 +99,15 @@ class ImagePosePublisher(Node):
             f"Number of images ({len(self.image_files)}) and poses ({len(self.poses)}) do not match."
         self.get_logger().info(f"Number of images ({len(self.image_files)}) and poses ({len(self.poses)}).")
 
-        self.offset = [0.705, 0.0, 0.262]
+        self.offset = [0.0, 0.0, 0.0]
 
         # Publish tf
+        self.target_frame = "velodyne_front"
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
         self.tf_msg = geometry_msgs.msg.TransformStamped()
         self.tf_msg.header.stamp = self.get_clock().now().to_msg()
         self.tf_msg.header.frame_id = "base_link"
-        self.tf_msg.child_frame_id = "velodyne_front"
+        self.tf_msg.child_frame_id = self.target_frame
         self.tf_msg.transform.translation.x = self.offset[0]
         self.tf_msg.transform.translation.y = self.offset[1]
         self.tf_msg.transform.translation.z = self.offset[2]
@@ -145,11 +146,11 @@ class ImagePosePublisher(Node):
         # Transform the pose_msg from the frame "velodyne_front" to the frame "base_link"
         try:
             transform = self.tf_buffer.lookup_transform(
-                "velodyne_front", "base_link", rclpy.time.Time())
+                self.target_frame, "base_link", rclpy.time.Time())
             pose_msg.pose.pose = tf2_geometry_msgs.do_transform_pose(
                 pose_msg.pose.pose, transform)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            self.get_logger().error('Failed to get transform from velodyne_front to base_link')
+            self.get_logger().error(f'Failed to get transform from {self.target_frame} to base_link')
             return
 
         self.pose_pub.publish(pose_msg)
@@ -157,7 +158,7 @@ class ImagePosePublisher(Node):
         # In the NeRF node, poses are held in a queue and processed when an image is subscribed.
         # If poses and images are published simultaneously, the pose might not be held in the queue and processed before the image is subscribed.
         # Therefore, a delay is introduced between publishing poses and images to ensure the proper processing order.
-        time.sleep(0.025)
+        time.sleep(0.1)
 
         # Publish image
         image = cv2.imread(self.image_files[self.idx])

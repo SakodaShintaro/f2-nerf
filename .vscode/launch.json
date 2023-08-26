@@ -1,0 +1,52 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "test_field",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build-Debug/main",
+            "args": [
+                "test_field",
+                "../exp/20230609_base_link_logiee/runtime_config.yaml"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build-Debug",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb"
+        },
+        {
+            "name": "infer",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build-Debug/main",
+            "args": [
+                "infer",
+                "../exp/20230609_base_link_logiee/runtime_config.yaml"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build-Debug",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb"
+        },
+        {
+            "name": "train",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build-Debug/main",
+            "args": [
+                "train",
+                "../exp/20230609_base_link_logiee/runtime_config.yaml"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build-Debug",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb"
+        }
+    ]
+}

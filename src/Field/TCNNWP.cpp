@@ -76,8 +76,7 @@ TORCH_LIBRARY(tcnn_wp, m)
   m.class_<TCNNWPInfo>("TCNNWPInfo").def(torch::init());
 }
 
-TCNNWP::TCNNWP(GlobalDataPool* global_data_pool, int d_in, int d_out, int d_hidden, int n_hidden_layers) {
-  global_data_pool_ = global_data_pool;
+TCNNWP::TCNNWP(const YAML::Node & yaml_config, int d_in, int d_out, int d_hidden, int n_hidden_layers) {
   d_in_ = d_in;
   d_out_ = d_out;
   d_hidden_ = d_hidden;
@@ -235,35 +234,11 @@ variable_list TCNNWPFunction::backward(AutogradContext *ctx, variable_list grad_
       !torch::all(torch::isfinite(dL_dparams)).item<bool>()) {
     // dL_dinput = torch::zeros_like(dL_dinput);
     // dL_dparams = torch::zeros_like(dL_dparams);
-    tcnn_wp->global_data_pool_->backward_nan_ = true;
     tcnn_wp->loss_scale_ = std::max(tcnn_wp->loss_scale_ / 2.f, 1.f);
+    throw std::runtime_error("Non-finite value detected in input or parameters");
   }
 
   return { dL_dinput, dL_dparams, Tensor() };
 }
 
 };
-
-void TCNNWP::InitParams() {
-  size_t seed = 19970826;
-  module_->initialize_params(seed, params_.data_ptr<float>());
-}
-
-int TCNNWP::LoadStates(const std::vector<Tensor>& states, int idx) {
-  CHECK(false) << "This should be handled by the parent module";
-  return idx;
-}
-
-std::vector<Tensor> TCNNWP::States() {
-  CHECK(false) << "This should be handled by the parent module";
-  return {};
-}
-
-std::vector<torch::optim::OptimizerParamGroup> TCNNWP::OptimParamGroups() {
-  CHECK(false) << "This should be handled by the parent module";
-  return {};
-}
-
-void TCNNWP::Reset() {
-  CHECK(false) << "This should be handled by the parent module";
-}

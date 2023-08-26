@@ -19,7 +19,7 @@
 
 // If you include this first, you will get an error.
 // clang-format off
-#include "localizer_core.hpp"
+#include "../../../src/localizer/localizer.hpp"
 // clang-format on
 
 class NerfBasedLocalizer : public rclcpp::Node
@@ -44,8 +44,6 @@ private:
     const geometry_msgs::msg::Pose & pose_msg, const sensor_msgs::msg::Image & image_msg);
 
   void save_image(const torch::Tensor image_tensor, const std::string & prefix, int save_id);
-  torch::Tensor world2camera(const torch::Tensor & pose_in_world);
-  torch::Tensor camera2world(const torch::Tensor & pose_in_camera);
 
   // NerfBasedLocalizer subscribes to the following topics:
   // (1) initial_pose_with_covariance [geometry_msgs::msg::PoseWithCovarianceStamped]
@@ -70,9 +68,6 @@ private:
   tf2_ros::TransformListener tf_listener_;
   tf2_ros::TransformBroadcaster tf2_broadcaster_;
 
-  // Convert mat
-  torch::Tensor axis_convert_mat1_;
-
   float previous_score_;
 
   // Service
@@ -91,7 +86,7 @@ private:
 
   bool is_activated_;
 
-  bool is_awsim_;
+  bool is_awsim_ = false;
 
   LocalizerCore localizer_core_;
 };

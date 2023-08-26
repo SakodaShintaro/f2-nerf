@@ -1,0 +1,11 @@
+{
+    "cmake.configureOnOpen": false,
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}/**",
+        "/opt/ros/humble/**",
+    ],
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/**",
+        "/opt/ros/humble/**",
+    ],
+}

@@ -1,10 +1,15 @@
 #include <gtest/gtest.h>
-#include "../src/localizer_core.hpp"
+
+// If you include this first, you will get an error.
+// clang-format off
+#include "../../../src/localizer/localizer.hpp"
+// clang-format on
 
 TEST(LocalizerCoreTest, TestMonteCarloLocalize)
 {
   LocalizerCoreParam param;
-  LocalizerCore localizer_core("./runtime_config.yaml", param);
+  param.runtime_config_path = "./runtime_config.yaml";
+  LocalizerCore localizer_core(param);
   EXPECT_EQ(1, 1);
 }
 

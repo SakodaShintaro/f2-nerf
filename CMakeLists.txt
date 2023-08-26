@@ -3,10 +3,12 @@ project(f2nerf
         VERSION 0.1
         LANGUAGES CUDA CXX)
 
+add_compile_options(-w)
+
 include(CheckLanguage)
 check_language(CUDA)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 ###############################################################################
 # CUDA compiler setup
@@ -48,12 +50,20 @@ include_directories(External/yaml-cpp/include)
 # eigen
 include_directories(External/eigen-3.4.0)
 
+# OpenCV
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+# GTSAM
+find_package(GTSAM REQUIRED)
+
 include(src/Field/field.cmake)
 include(src/Dataset/dataset.cmake)
 include(src/PtsSampler/pts_sampler.cmake)
 include(src/Renderer/renderer.cmake)
 include(src/Shader/shader.cmake)
 include(src/Utils/utils.cmake)
+include(src/localizer/localizer.cmake)
 
 list(APPEND SRC_ALL
         ${SRC_FIELD}
@@ -62,25 +72,27 @@ list(APPEND SRC_ALL
         ${SRC_PTS_SAMPLER}
         ${SRC_RENDERER}
         ${SRC_SHADER}
-        ${SRC_UTILS})
+        ${SRC_UTILS}
+        ${SRC_LOCALIZER})
 
-list(APPEND SRC_ALL src/ExpRunner.cpp)
-
-
-set(ALL_LIBS ${TORCH_LIBRARIES} ${TORCH_CUDA_LIBRARIES} ${ZLIB_LIBRARIES} yaml-cpp fmt::fmt)
-set(ALL_LIBS ${ALL_LIBS} tiny-cuda-nn stdc++fs)
+set(ALL_LIBS ${TORCH_LIBRARIES}
+        ${TORCH_CUDA_LIBRARIES}
+        ${ZLIB_LIBRARIES}
+        ${OpenCV_LIBS}
+        yaml-cpp
+        fmt::fmt
+        tiny-cuda-nn
+        stdc++fs
+        gtsam)
 
 # ------------------------------------ Add executables ---------------------------------------
-add_executable(main main.cpp ${SRC_ALL})
+add_executable(main main.cpp
+        src/ExpRunner.cpp
+        src/main_functions/Infer.cpp
+        src/main_functions/Test.cpp
+        src/main_functions/TestField.cpp
+        src/main_functions/Walk.cpp
+        ${SRC_ALL})
 target_link_libraries(main ${ALL_LIBS})
 set_property(TARGET main PROPERTY CXX_STANDARD 17)
 set_property(TARGET main PROPERTY CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
-
-# Install scripts
-configure_file(scripts/run.py ${CMAKE_BINARY_DIR}/run.py COPYONLY)
-
-# ------------------------------------ Add executables ---------------------------------------
-add_executable(localization main_localization.cpp ${SRC_ALL} src/localization_executer.cpp)
-target_link_libraries(localization ${ALL_LIBS})
-set_property(TARGET localization PROPERTY CXX_STANDARD 17)
-set_property(TARGET localization PROPERTY CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
