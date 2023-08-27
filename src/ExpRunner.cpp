@@ -32,7 +32,6 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   learning_rate_alpha_ = config["train"]["learning_rate_alpha"].as<float>();
   learning_rate_warm_up_end_iter_ = config["train"]["learning_rate_warm_up_end_iter"].as<int>();
   ray_march_init_fineness_ = config["train"]["ray_march_init_fineness"].as<float>();
-  ray_march_fineness_decay_end_iter_ = config["train"]["ray_march_fineness_decay_end_iter"].as<int>();
   tv_loss_weight_ = config["train"]["tv_loss_weight"].as<float>();
   disp_loss_weight_ = config["train"]["disp_loss_weight"].as<float>();
   var_loss_weight_ = config["train"]["var_loss_weight"].as<float>();
@@ -179,8 +178,6 @@ void ExpRunner::SaveCheckpoint() {
 }
 
 void ExpRunner::UpdateAdaParams() {
-  // Update ray march fineness
-  renderer_->pts_sampler_->ray_march_fineness_ = 1.f;
   // Update learning rate
   float lr_factor;
   if (iter_step_ >= learning_rate_warm_up_end_iter_) {

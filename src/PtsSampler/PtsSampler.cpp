@@ -37,7 +37,6 @@ SampleResultFlex PtsSampler::GetSamples(
   } else {
     rays_noise = ((torch::rand({n_all_pts}, CUDAFloat) - .5f) + 1.f).contiguous();
   }
-  rays_noise.mul_(ray_march_fineness_);
   rays_noise = rays_noise.view({n_rays, MAX_SAMPLE_PER_RAY}).contiguous();
   Tensor cum_noise = torch::cumsum(rays_noise, 1) * sample_l_;
   Tensor sampled_t = cum_noise.reshape({n_all_pts}).contiguous();
