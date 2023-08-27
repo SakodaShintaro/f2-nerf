@@ -23,11 +23,6 @@ struct RenderResult {
   Tensor idx_start_end;
 };
 
-class VolumeRenderInfo : public torch::CustomClassHolder {
-public:
-  SampleResultFlex* sample_result;
-};
-
 class Renderer : public Pipe {
   using Tensor = torch::Tensor;
 
