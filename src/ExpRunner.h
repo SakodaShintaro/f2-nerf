@@ -27,17 +27,15 @@ public:
   void VisualizeImage(int idx);
 
   // data
-  std::string base_dir_, base_exp_dir_;
+  std::string base_exp_dir_;
 
   unsigned iter_step_ = 0;
   unsigned end_iter_;
   unsigned report_freq_, vis_freq_, save_freq_;
   unsigned pts_batch_size_;
 
-  float ray_march_init_fineness_;
   int var_loss_start_, var_loss_end_;
   float learning_rate_, learning_rate_alpha_, learning_rate_warm_up_end_iter_;
-  float gradient_door_end_iter_;
   float var_loss_weight_, disp_loss_weight_;
 
   YAML::Node config_;
