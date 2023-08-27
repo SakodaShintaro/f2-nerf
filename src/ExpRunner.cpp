@@ -32,7 +32,6 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   learning_rate_alpha_ = config["train"]["learning_rate_alpha"].as<float>();
   learning_rate_warm_up_end_iter_ = config["train"]["learning_rate_warm_up_end_iter"].as<int>();
   ray_march_init_fineness_ = config["train"]["ray_march_init_fineness"].as<float>();
-  tv_loss_weight_ = config["train"]["tv_loss_weight"].as<float>();
   disp_loss_weight_ = config["train"]["disp_loss_weight"].as<float>();
   var_loss_weight_ = config["train"]["var_loss_weight"].as<float>();
   var_loss_start_ = config["train"]["var_loss_start"].as<int>();
