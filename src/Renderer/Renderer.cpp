@@ -13,12 +13,6 @@
 using Tensor = torch::Tensor;
 namespace F = torch::nn::functional;
 
-TORCH_LIBRARY(volume_render, m)
-{
-  std::cout << "register volume render info" << std::endl;
-  m.class_<VolumeRenderInfo>("VolumeRenderInfo").def(torch::init());
-}
-
 Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_config) {
   const YAML::Node conf = root_config["renderer"];
 
@@ -70,7 +64,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     return torch::autograd::TruncExp::apply(x - shift)[0];
   };
 
-  // First, inference without gradients - early stop
+  // First, inference - early stop
   SampleResultFlex sample_result_early_stop;
   {
     Tensor pts  = sample_result.pts;

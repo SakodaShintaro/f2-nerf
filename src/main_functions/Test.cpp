@@ -20,7 +20,9 @@ void test(const std::string & config_path)
   fs::create_directories(save_dir);
 
   Timer timer;
-  timer.start();
+
+  float score_sum = 0.0f;
+  float time_sum = 0.0f;
 
   for (int32_t i = 0; i < dataset.n_images_; i++) {
     torch::Tensor initial_pose = dataset.poses_[i];
@@ -28,17 +30,27 @@ void test(const std::string & config_path)
 
     image_tensor = localizer.resize_image(image_tensor);
 
+    timer.start();
     torch::Tensor nerf_image = localizer.render_image(initial_pose).cpu();
+    time_sum += timer.elapsed_seconds();
     torch::Tensor diff = nerf_image - image_tensor;
     torch::Tensor loss = (diff * diff).mean(-1).sum();
     torch::Tensor score = (localizer.infer_height() * localizer.infer_width()) / (loss + 1e-6f);
 
-    std::cout << "score[" << i << "] = " << score.item<float>() << std::endl;
+    std::cout << "\rscore[" << i << "] = " << score.item<float>() << std::flush;
+    score_sum += score.item<float>();
 
     std::stringstream ss;
     ss << save_dir << std::setfill('0') << std::setw(8) << i << ".png";
     Utils::WriteImageTensor(ss.str(), nerf_image);
   }
 
-  std::cout << "\nTime = " << timer.elapsed_seconds() / dataset.n_images_ << std::endl;
+  const float average_time = time_sum / dataset.n_images_;
+  const float average_score = score_sum / dataset.n_images_;
+
+  std::ofstream summary(config["base_exp_dir"].as<std::string>() + "/summary.tsv");
+  summary << std::fixed;
+  summary << "average_time\taverage_score" << std::endl;
+  summary << average_time << "\t" << average_score << std::endl;
+  std::cout << "\ntime = " << average_time << ", score = " << average_score << std::endl;
 }

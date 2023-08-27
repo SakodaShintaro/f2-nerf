@@ -40,7 +40,6 @@ def main(conf: DictConfig) -> None:
 
     conf = OmegaConf.to_container(conf, resolve=True)
     conf['dataset']['data_path'] = data_path
-    conf['base_dir'] = base_dir
     conf['base_exp_dir'] = base_exp_dir
 
     save_config_path = os.path.join(base_exp_dir, 'runtime_config.yaml')

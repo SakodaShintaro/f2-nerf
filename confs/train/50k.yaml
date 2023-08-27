@@ -4,9 +4,6 @@ report_freq: 200
 vis_freq: 2500
 save_freq: 25000
 validate_freq: 100000
-tv_loss_weight: 1e-1
-ray_march_init_fineness: 4
-ray_march_fineness_decay_end_iter: 10000
 disp_loss_weight: 0.
 learning_rate: 1e-2
 learning_rate_alpha: 1e-1

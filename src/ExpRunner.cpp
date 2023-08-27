@@ -18,7 +18,6 @@ constexpr float kPoseLrCoeff = 0.01;
 ExpRunner::ExpRunner(const std::string& conf_path) {
   const YAML::Node & config = YAML::LoadFile(conf_path);
   config_ = config;
-  base_dir_ = config["base_dir"].as<std::string>();
 
   base_exp_dir_ = config["base_exp_dir"].as<std::string>();
 
@@ -32,9 +31,6 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   learning_rate_ = config["train"]["learning_rate"].as<float>();
   learning_rate_alpha_ = config["train"]["learning_rate_alpha"].as<float>();
   learning_rate_warm_up_end_iter_ = config["train"]["learning_rate_warm_up_end_iter"].as<int>();
-  ray_march_init_fineness_ = config["train"]["ray_march_init_fineness"].as<float>();
-  ray_march_fineness_decay_end_iter_ = config["train"]["ray_march_fineness_decay_end_iter"].as<int>();
-  tv_loss_weight_ = config["train"]["tv_loss_weight"].as<float>();
   disp_loss_weight_ = config["train"]["disp_loss_weight"].as<float>();
   var_loss_weight_ = config["train"]["var_loss_weight"].as<float>();
   var_loss_start_ = config["train"]["var_loss_start"].as<int>();
@@ -210,15 +206,6 @@ void ExpRunner::SaveCheckpoint() {
 }
 
 void ExpRunner::UpdateAdaParams() {
-  // Update ray march fineness
-  if (iter_step_ >= ray_march_fineness_decay_end_iter_) {
-    renderer_->pts_sampler_->ray_march_fineness_ = 1.f;
-  }
-  else {
-    float progress = float(iter_step_) / float(ray_march_fineness_decay_end_iter_);
-    renderer_->pts_sampler_->ray_march_fineness_ =
-      std::exp(std::log(1.f) * progress + std::log(ray_march_init_fineness_) * (1.f - progress));
-  }
   // Update learning rate
   float lr_factor;
   if (iter_step_ >= learning_rate_warm_up_end_iter_) {

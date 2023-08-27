@@ -25,6 +25,3 @@ pts_sampler:
 dataset:
   factor: 2
   bounds_factor: [ 0.5, 4.0 ]
-
-train:
-  ray_march_init_fineness: 16

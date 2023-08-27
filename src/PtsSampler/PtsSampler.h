@@ -35,5 +35,4 @@ public:
   const YAML::Node config_;
 
   float sample_l_;
-  float ray_march_fineness_ = 1.f;
 };
