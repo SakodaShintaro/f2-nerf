@@ -180,14 +180,7 @@ void ExpRunner::SaveCheckpoint() {
 
 void ExpRunner::UpdateAdaParams() {
   // Update ray march fineness
-  if (iter_step_ >= ray_march_fineness_decay_end_iter_) {
-    renderer_->pts_sampler_->ray_march_fineness_ = 1.f;
-  }
-  else {
-    float progress = float(iter_step_) / float(ray_march_fineness_decay_end_iter_);
-    renderer_->pts_sampler_->ray_march_fineness_ =
-      std::exp(std::log(1.f) * progress + std::log(ray_march_init_fineness_) * (1.f - progress));
-  }
+  renderer_->pts_sampler_->ray_march_fineness_ = 1.f;
   // Update learning rate
   float lr_factor;
   if (iter_step_ >= learning_rate_warm_up_end_iter_) {
