@@ -21,7 +21,7 @@ if __name__ == "__main__":
     target_dir = args.target_dir
 
     input_dir = f"{target_dir}/images_original"
-    output_dir = f"{target_dir}/images_cropped"
+    output_dir = f"{target_dir}/images"
 
     os.makedirs(output_dir, exist_ok=True)
     image_list = sorted(glob(f"{input_dir}/*.png"))

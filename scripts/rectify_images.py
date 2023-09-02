@@ -20,11 +20,9 @@ if __name__ == "__main__":
     path_to_image_dir = f"{path_to_target_dir}/images_original"
     path_to_camera_info_yaml = f"{path_to_target_dir}/camera_info.yaml"
 
-    path_to_image_dir = os.path.abspath(path_to_image_dir)
-
     image_path_list = sorted(glob(f"{path_to_image_dir}/*.png"))
     camera_info = load_camera_info_from_yaml(path_to_camera_info_yaml)
-    save_dir = f"{path_to_image_dir}_rectified"
+    save_dir = f"{os.path.abspath(path_to_image_dir)}/../images"
     os.makedirs(save_dir, exist_ok=True)
 
     for image_path in tqdm(image_path_list):
