@@ -223,14 +223,14 @@ NerfBasedLocalizer::localize(
   // Accessing image data
   torch::Tensor image_tensor = torch::tensor(image_msg.data);
   image_tensor = image_tensor.view({height, width, 3});
-  image_tensor = image_tensor.to(torch::kCUDA);
+  if (true) {
+    image_tensor = image_tensor.index({Slc(0, 850)});
+  }
   image_tensor = image_tensor.to(torch::kFloat32);
   image_tensor /= 255.0;
   image_tensor = image_tensor.flip(2);  // BGR to RGB
-  if (is_awsim_) {
-    image_tensor = image_tensor.index({Slc(0, 460)});
-  }
   image_tensor = localizer_core_.resize_image(image_tensor);
+  image_tensor = image_tensor.to(torch::kCUDA);
 
   geometry_msgs::msg::PoseWithCovarianceStamped pose_lidar;
   try {

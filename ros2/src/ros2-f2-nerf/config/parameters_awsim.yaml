@@ -1,6 +1,6 @@
 nerf_based_localizer:
   ros__parameters:
-    target_frame: camera0/camera_link
+    target_frame: base_link
     particle_num: 50
     render_pixel_num: 128
     noise_position_x: 0.003
@@ -10,5 +10,5 @@ nerf_based_localizer:
     noise_rotation_y: 1.0
     noise_rotation_z: 0.5
     base_score: -1.0
-    output_covariance: 0.000225
+    output_covariance: 0.0000225
     resize_factor: 10

@@ -102,7 +102,7 @@ class ImagePosePublisher(Node):
         self.offset = [0.0, 0.0, 0.0]
 
         # Publish tf
-        self.target_frame = "velodyne_front"
+        self.target_frame = "camera0/camera_link"
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
         self.tf_msg = geometry_msgs.msg.TransformStamped()
         self.tf_msg.header.stamp = self.get_clock().now().to_msg()
@@ -162,6 +162,7 @@ class ImagePosePublisher(Node):
 
         # Publish image
         image = cv2.imread(self.image_files[self.idx])
+        # image = cv2.resize(image, (384, 170))
         msg_image = self.bridge.cv2_to_imgmsg(image, 'bgr8')
         self.image_pub.publish(msg_image)
 
