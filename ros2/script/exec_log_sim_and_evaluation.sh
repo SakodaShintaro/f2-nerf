@@ -30,7 +30,7 @@ ros2 launch autoware_launch logging_simulator.launch.xml \
     map_path:=$HOME/Downloads/nishishinjuku_autoware_map \
     vehicle_model:=sample_vehicle \
     sensor_model:=awsim_sensor_kit \
-    pose_source:=none \
+    pose_source:=artag \
     perception:=false \
     planning:=false \
     control:=false &
