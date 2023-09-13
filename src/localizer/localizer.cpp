@@ -70,12 +70,23 @@ std::vector<Particle> LocalizerCore::random_search(
   torch::NoGradGuard no_grad_guard;
 
   std::mt19937_64 engine(std::random_device{}());
-  std::normal_distribution<float> dist_position_x(0.0f, param_.noise_position_x * noise_coeff);
-  std::normal_distribution<float> dist_position_y(0.0f, param_.noise_position_y * noise_coeff);
-  std::normal_distribution<float> dist_position_z(0.0f, param_.noise_position_z * noise_coeff);
-  std::normal_distribution<float> dist_rotation_x(0.0f, param_.noise_rotation_x * noise_coeff);
-  std::normal_distribution<float> dist_rotation_y(0.0f, param_.noise_rotation_y * noise_coeff);
-  std::normal_distribution<float> dist_rotation_z(0.0f, param_.noise_rotation_z * noise_coeff);
+
+  // 軸の順番が違うことに注意
+  // 世界座標(x: Front, y: Left, z: Up)
+  // NeRF座標(x: Right, y: Up, z: Back)
+  const float pos_noise_x_in_nerf = param_.noise_position_y * noise_coeff / radius_;
+  const float pos_noise_y_in_nerf = param_.noise_position_z * noise_coeff / radius_;
+  const float pos_noise_z_in_nerf = param_.noise_position_x * noise_coeff / radius_;
+  const float theta_x_in_nerf = param_.noise_rotation_y * noise_coeff;
+  const float theta_y_in_nerf = param_.noise_rotation_z * noise_coeff;
+  const float theta_z_in_nerf = param_.noise_rotation_x * noise_coeff;
+
+  std::normal_distribution<float> dist_position_x(0.0f, pos_noise_x_in_nerf);
+  std::normal_distribution<float> dist_position_y(0.0f, pos_noise_y_in_nerf);
+  std::normal_distribution<float> dist_position_z(0.0f, pos_noise_z_in_nerf);
+  std::normal_distribution<float> dist_rotation_x(0.0f, theta_x_in_nerf);
+  std::normal_distribution<float> dist_rotation_y(0.0f, theta_y_in_nerf);
+  std::normal_distribution<float> dist_rotation_z(0.0f, theta_z_in_nerf);
 
   std::vector<Tensor> poses;
   for (int64_t i = 0; i < particle_num; i++) {
