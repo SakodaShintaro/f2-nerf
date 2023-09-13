@@ -3,12 +3,12 @@ nerf_based_localizer:
     target_frame: base_link
     particle_num: 50
     render_pixel_num: 128
-    noise_position_x: 0.25  # [m]
-    noise_position_y: 0.25  # [m]
+    noise_position_x: 0.10  # [m]
+    noise_position_y: 0.10  # [m]
     noise_position_z: 0.05  # [m]
-    noise_rotation_x: 0.25  # [deg]
-    noise_rotation_y: 0.25  # [deg]
-    noise_rotation_z: 0.5   # [deg]
+    noise_rotation_x: 0.05  # [deg]
+    noise_rotation_y: 0.05  # [deg]
+    noise_rotation_z: 0.10  # [deg]
     base_score: -1.0
-    output_covariance: 0.0000225
+    output_covariance: 0.000225
     resize_factor: 10
