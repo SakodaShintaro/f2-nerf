@@ -6,7 +6,6 @@
 #include <experimental/filesystem>  // GCC 7.5?
 #include <fmt/core.h>
 #include "Utils/Utils.h"
-#include "Utils/cnpy.h"
 #include "Utils/StopWatch.h"
 #include "Utils/CustomOps/CustomOps.h"
 

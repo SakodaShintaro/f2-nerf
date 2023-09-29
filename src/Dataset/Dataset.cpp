@@ -5,7 +5,6 @@
 #include <iostream>
 #include <fmt/core.h>
 #include <experimental/filesystem>
-#include "../Utils/cnpy.h"
 #include "../Utils/Utils.h"
 #include "../Utils/StopWatch.h"
 

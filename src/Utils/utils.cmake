@@ -3,7 +3,6 @@ list(APPEND SRC_UTILS
         ${CUR_DIR}/StopWatch.cpp
         ${CUR_DIR}/Utils.cpp
         ${CUR_DIR}/Pipe.cpp
-        ${CUR_DIR}/cnpy.cpp
         ${CUR_DIR}/CustomOps/CustomOps.cpp
         ${CUR_DIR}/CustomOps/CustomOps.cu
         ${CUR_DIR}/CustomOps/FlexOps.cpp

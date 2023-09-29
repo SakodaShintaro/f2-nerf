@@ -108,7 +108,6 @@ Besides LibTorch, this project is also built upon the following awesome librarie
 - [eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page) for linear algebra computing
 - [yaml-cpp](https://github.com/jbeder/yaml-cpp) for I/O of YAML files
 - [hydra](https://github.com/facebookresearch/hydra) for configuration
-- [cnpy](https://github.com/rogersce/cnpy) for I/O of npy files
 
 Some of the code snippets are inspired from [instant-ngp](https://github.com/NVlabs/instant-ngp), [torch-ngp](https://github.com/ashawkey/torch-ngp) and [ngp-pl](https://github.com/kwea123/ngp_pl).
 The COLMAP processing scripts are from [multinerf](https://github.com/google-research/multinerf). The example data `ngp_fox` is from  [instant-ngp](https://github.com/NVlabs/instant-ngp).

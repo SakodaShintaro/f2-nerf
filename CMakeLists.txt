@@ -20,10 +20,6 @@ set(CUDA_LINK_LIBRARIES_KEYWORD PUBLIC)
 
 add_definitions(-DHALF_PRECISION)
 
-# zlib, for compiling cnpy
-find_package(ZLIB REQUIRED)
-include_directories(${ZLIB_INCLUDE_DIRS})
-
 # Libtorch
 set(CMAKE_PREFIX_PATH ${DCMAKE_PREFIX_PATH}$ ${CMAKE_SOURCE_DIR}/External/libtorch/)
 find_package(Torch REQUIRED PATHS ${CMAKE_SOURCE_DIR}/External/libtorch NO_DEFAULT_PATH)
@@ -65,7 +61,6 @@ list(APPEND SRC_ALL
 
 set(ALL_LIBS ${TORCH_LIBRARIES}
         ${TORCH_CUDA_LIBRARIES}
-        ${ZLIB_LIBRARIES}
         ${OpenCV_LIBS}
         yaml-cpp
         stdc++fs

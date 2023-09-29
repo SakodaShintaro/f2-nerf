@@ -20,10 +20,6 @@ message(STATUS "ROOT_DIR: ${ROOT_DIR}")
 
 add_definitions(-DHALF_PRECISION)
 
-# zlib, for compiling cnpy
-find_package(ZLIB REQUIRED)
-include_directories(${ZLIB_INCLUDE_DIRS})
-
 # Libtorch
 set(CMAKE_PREFIX_PATH ${DCMAKE_PREFIX_PATH}$ ${ROOT_DIR}/External/libtorch/)
 find_package(Torch REQUIRED PATHS ${ROOT_DIR}/External/libtorch NO_DEFAULT_PATH)
@@ -47,7 +43,6 @@ find_package(GTSAM REQUIRED)
 
 set(ALL_LIBS ${TORCH_LIBRARIES}
              ${TORCH_CUDA_LIBRARIES}
-             ${ZLIB_LIBRARIES}
              ${OpenCV_LIBS}
              yaml-cpp
              stdc++fs
