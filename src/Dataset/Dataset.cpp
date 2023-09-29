@@ -85,8 +85,8 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
       else train_set_.push_back(i);
     }
   }
-  std::cout << fmt::format("Number of train/test/val images: {}/{}/{}",
-                           train_set_.size(), test_set_.size(), val_set_.size()) << std::endl;
+  std::cout << "Number of train/test/val images: " << train_set_.size() << "/" << test_set_.size()
+            << "/" << val_set_.size() << std::endl;
 
   // Prepare training images
   height_ = images[0].size(0);

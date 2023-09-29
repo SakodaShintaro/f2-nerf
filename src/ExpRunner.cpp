@@ -125,14 +125,15 @@ void ExpRunner::Train() {
     const int64_t total_s = total_sec % 60;
 
     if (iter_step_ % report_freq_ == 0) {
-      const std::string log_str = fmt::format(
-          "Time: {:>02d}:{:>02d}  Iter: {:>6d}  PSNR: {:.2f}  LOSS: {:.4f}  LR: {:.4f}",
-          total_m,
-          total_s,
-          iter_step_,
-          psnr_smooth,
-          color_loss.item<float>(),
-          optimizer_->param_groups()[0].options().get_lr());
+      std::stringstream ss;
+      ss << std::fixed;
+      ss << "Time: " << std::setw(2) << std::setfill('0') << total_m << ":" << std::setw(2)
+         << std::setfill('0') << total_s << " ";
+      ss << "Iter: " << std::setw(6) << iter_step_ << " ";
+      ss << "PSNR: " << psnr_smooth << " ";
+      ss << "LOSS: " << color_loss.item<float>() << " ";
+      ss << "LR: " << optimizer_->param_groups()[0].options().get_lr();
+      const std::string log_str = ss.str();
       std::cout << log_str << std::endl;
       ofs_log << log_str << std::endl;
     }
@@ -154,7 +155,9 @@ void ExpRunner::LoadCheckpoint(const std::string& path) {
 }
 
 void ExpRunner::SaveCheckpoint() {
-  std::string output_dir = base_exp_dir_ + fmt::format("/checkpoints/{:0>8d}", iter_step_);
+  std::stringstream ss;
+  ss << base_exp_dir_ << "/checkpoints/" << std::setw(8) << std::setfill('0') << iter_step_;
+  std::string output_dir = ss.str();
   fs::create_directories(output_dir);
 
   fs::remove_all(base_exp_dir_ + "/checkpoints/latest");
@@ -230,7 +233,9 @@ void ExpRunner::VisualizeImage(int idx) {
                                   pred_colors.reshape({H, W, 3}),
                                   pred_disps.reshape({H, W, 1}).repeat({1, 1, 3})}, 1);
   fs::create_directories(base_exp_dir_ + "/images");
-  Utils::WriteImageTensor(base_exp_dir_ + "/images/" + fmt::format("{}_{}.png", iter_step_, idx), img_tensor);
+  std::stringstream ss;
+  ss << iter_step_ << "_" << idx << ".png";
+  Utils::WriteImageTensor(base_exp_dir_ + "/images/" + ss.str(), img_tensor);
 }
 
 void ExpRunner::Execute() {

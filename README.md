@@ -107,7 +107,6 @@ python scripts/llff2poses.py --data_dir=xxx/nerf_llff_data/horns
 Besides LibTorch, this project is also built upon the following awesome libraries:
 - [happly](https://github.com/nmwsharp/happly) for I/O of PLY files
 - [stb_image](https://github.com/nothings/stb) for I/O of image files
-- [tiny-cuda-nn](https://github.com/NVlabs/tiny-cuda-nn) for fast MLP training/inference
 - [eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page) for linear algebra computing
 - [yaml-cpp](https://github.com/jbeder/yaml-cpp) for I/O of YAML files
 - [hydra](https://github.com/facebookresearch/hydra) for configuration

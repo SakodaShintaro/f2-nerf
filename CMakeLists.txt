@@ -20,18 +20,6 @@ set(CUDA_LINK_LIBRARIES_KEYWORD PUBLIC)
 
 add_definitions(-DHALF_PRECISION)
 
-# tiny-cuda-nn
-add_definitions(-DJSON_HAS_CPP_14)
-set(TCNN_BUILD_BENCHMARK OFF)
-set(TCNN_BUILD_EXAMPLES OFF)
-add_subdirectory(External/tiny-cuda-nn)
-include_directories(${TCNN_INCLUDE_DIRECTORIES})
-include_directories(External/tiny-cuda-nn/include)
-include_directories(External/tiny-cuda-nn/dependencies)
-
-set(CMAKE_CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
-set_property(GLOBAL PROPERTY CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
-
 # zlib, for compiling cnpy
 find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIRS})
@@ -80,8 +68,6 @@ set(ALL_LIBS ${TORCH_LIBRARIES}
         ${ZLIB_LIBRARIES}
         ${OpenCV_LIBS}
         yaml-cpp
-        fmt::fmt
-        tiny-cuda-nn
         stdc++fs
         gtsam)
 
@@ -95,4 +81,3 @@ add_executable(main main.cpp
         ${SRC_ALL})
 target_link_libraries(main ${ALL_LIBS})
 set_property(TARGET main PROPERTY CXX_STANDARD 17)
-set_property(TARGET main PROPERTY CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
