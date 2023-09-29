@@ -65,28 +65,7 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
     }
   }
 
-  // Load train/test/val split info
-  try {
-    cnpy::NpyArray sp_arr = cnpy::npy_load(data_path + "/split.npy");
-    CHECK_EQ(sp_arr.shape[0], n_images_);
-
-    auto sp_arr_ptr = sp_arr.data<unsigned char>();
-    for (int i = 0; i < n_images_; i++) {
-      int st = sp_arr_ptr[i];
-      split_info_.push_back(st);
-      if ((st & 1) == 1) train_set_.push_back(i);
-      if ((st & 2) == 2) test_set_.push_back(i);
-      if ((st & 4) == 4) val_set_.push_back(i);
-    }
-  }
-  catch (...) {
-    for (int i = 0; i < n_images_; i++) {
-      if (i % 8 == 0) test_set_.push_back(i);
-      else train_set_.push_back(i);
-    }
-  }
-  std::cout << "Number of train/test/val images: " << train_set_.size() << "/" << test_set_.size()
-            << "/" << val_set_.size() << std::endl;
+  std::cout << "Number of images: " << n_images_ << std::endl;
 
   // Prepare training images
   height_ = images[0].size(0);
@@ -184,20 +163,8 @@ BoundedRays Dataset::RaysOfCamera(int idx, int reso_level) {
   return { rays_o, rays_d, bounds };
 }
 
-std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size, int sets) {
-  std::vector<int> img_idx;
-  if ((sets & DATA_TRAIN_SET) != 0) {
-    img_idx.insert(img_idx.end(), train_set_.begin(), train_set_.end());
-  }
-  if ((sets & DATA_VAL_SET) != 0) {
-    img_idx.insert(img_idx.end(), val_set_.begin(), val_set_.end());
-  }
-  if ((sets & DATA_TEST_SET) != 0) {
-    img_idx.insert(img_idx.end(), test_set_.begin(), test_set_.end());
-  }
-  Tensor cur_set = torch::from_blob(img_idx.data(), { int(img_idx.size())}, CPUInt);
-  Tensor cam_indices = torch::randint(int(img_idx.size()), { batch_size }, CPULong); // Torch index need "long long" type
-  cam_indices = cur_set.index({cam_indices}).contiguous();
+std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size) {
+  Tensor cam_indices = torch::randint(n_images_, {batch_size}, CPULong);
   Tensor i = torch::randint(0, height_, batch_size, CPULong);
   Tensor j = torch::randint(0, width_, batch_size, CPULong);
   Tensor ij = torch::stack({i, j}, -1).to(torch::kCUDA).contiguous();

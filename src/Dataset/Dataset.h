@@ -16,10 +16,6 @@
 #include <tuple>
 #include <vector>
 
-#define DATA_TRAIN_SET 1
-#define DATA_TEST_SET 2
-#define DATA_VAL_SET 4
-
 class Dataset
 {
   using Tensor = torch::Tensor;
@@ -37,7 +33,7 @@ public:
 
   // Rays
   BoundedRays RaysOfCamera(int idx, int reso_level = 1);
-  std::tuple<BoundedRays, Tensor, Tensor> RandRaysData(int batch_size, int sets);
+  std::tuple<BoundedRays, Tensor, Tensor> RandRaysData(int batch_size);
 
   // variables
   int n_images_ = 0;
@@ -45,7 +41,6 @@ public:
   Tensor center_;
   float radius_;
   int height_, width_;
-  std::vector<int> train_set_, test_set_, val_set_, split_info_;
   Tensor image_tensors_;
 };
 

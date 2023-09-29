@@ -64,7 +64,7 @@ void ExpRunner::Train() {
   for (; iter_step_ < end_iter_;) {
     constexpr float sampled_pts_per_ray_ = 512.f;
     int cur_batch_size = int(pts_batch_size_ / sampled_pts_per_ray_) >> 4 << 4;
-    auto [train_rays, gt_colors, emb_idx] = dataset_->RandRaysData(cur_batch_size, DATA_TRAIN_SET);
+    auto [train_rays, gt_colors, emb_idx] = dataset_->RandRaysData(cur_batch_size);
 
     Tensor& rays_o = train_rays.origins;
     Tensor& rays_d = train_rays.dirs;
@@ -110,11 +110,7 @@ void ExpRunner::Train() {
     iter_step_++;
 
     if (iter_step_ % vis_freq_ == 0) {
-      int t = iter_step_ / vis_freq_;
-      int vis_idx;
-      vis_idx = (iter_step_ / vis_freq_) % dataset_->test_set_.size();
-      vis_idx = dataset_->test_set_[vis_idx];
-      VisualizeImage(vis_idx);
+      VisualizeImage(0);
     }
 
     if (iter_step_ % save_freq_ == 0) {
