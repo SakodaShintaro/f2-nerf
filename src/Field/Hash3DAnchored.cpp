@@ -64,9 +64,7 @@ Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_co
   local_size_ = (local_size_ >> 4) << 4;
 
   // MLP
-  int mlp_hidden_dim = config["mlp_hidden_dim"].as<int>();
   int mlp_out_dim = config["mlp_out_dim"].as<int>();
-  int n_hidden_layers = config["n_hidden_layers"].as<int>();
   mlp_ = torch::nn::Linear(N_LEVELS * N_CHANNELS, mlp_out_dim);
 
   register_parameter("feat_pool", feat_pool_);
