@@ -10,14 +10,13 @@ using Tensor = torch::Tensor;
 SHShader::SHShader(const YAML::Node & root_config)
 {
   const YAML::Node config = root_config["shader"];
-  d_in_ = config["d_in"].as<int>();
-  d_out_ = config["d_out"].as<int>();
+  const int d_in = config["d_in"].as<int>();
+  const int d_hidden = config["d_hidden"].as<int>();
+  const int d_out = config["d_out"].as<int>();
   degree_ = config["degree"].as<int>();
-  d_hidden_ = config["d_hidden"].as<int>();
-  n_hiddens_ = config["n_hiddens"].as<int>();
 
   mlp_ = torch::nn::Sequential(
-    torch::nn::Linear(d_in_, d_hidden_), torch::nn::ReLU(), torch::nn::Linear(d_hidden_, d_out_));
+    torch::nn::Linear(d_in, d_hidden), torch::nn::ReLU(), torch::nn::Linear(d_hidden, d_out));
   register_module("mlp", mlp_);
 }
 

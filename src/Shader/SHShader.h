@@ -21,8 +21,6 @@ public:
 
   torch::nn::Sequential mlp_ = nullptr;
 
-  int d_in_, d_out_;
-  int d_hidden_, n_hiddens_;
   int degree_;
 };
 
