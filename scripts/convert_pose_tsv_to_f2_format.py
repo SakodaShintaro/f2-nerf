@@ -62,3 +62,20 @@ if __name__ == "__main__":
 
     data = np.concatenate([mat, camera_param, dist_param, bounds], axis=1)
     np.save(os.path.join(target_dir, "cams_meta.npy"), data)
+
+    # save as tsv
+    df = pd.DataFrame(data, columns=[
+        # mat
+        "R00", "R01", "R02", "tx",
+        "R10", "R11", "R12", "ty",
+        "R20", "R21", "R22", "tz",
+        # camera_param
+        "p00", "p01", "p02",
+        "p10", "p11", "p12",
+        "p20", "p21", "p22",
+        # dist_param
+        "k1", "k2", "p1", "p2",
+        # bounds
+        "bound_near", "bound_far"
+    ])
+    df.to_csv(os.path.join(target_dir, "cams_meta.tsv"), sep="\t", index=False)

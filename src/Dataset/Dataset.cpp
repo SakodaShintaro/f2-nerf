@@ -23,26 +23,56 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
   const auto factor = config["factor"].as<float>();
 
   // Load camera pose
-  CHECK(fs::exists(data_path + "/cams_meta.npy"));
+  CHECK(fs::exists(data_path + "/cams_meta.tsv"));
   {
-    cnpy::NpyArray arr = cnpy::npy_load(data_path + "/cams_meta.npy");
-    auto options = torch::TensorOptions().dtype(torch::kFloat64);  // WARN: Float64 Here!!!!!
-    Tensor cam_data = torch::from_blob(arr.data<double>(), arr.num_vals, options).to(torch::kFloat32).to(torch::kCUDA);
+    std::ifstream ifs(data_path + "/cams_meta.tsv");
+    std::string line;
+    std::getline(ifs, line);  // header
+    std::vector<Tensor> poses, intrinsics, dist_params, bounds;
+    while (std::getline(ifs, line)) {
+      std::istringstream iss(line);
+      std::vector<std::string> tokens;
+      std::string token;
+      while (std::getline(iss, token, '\t')) {
+        tokens.push_back(token);
+      }
+      const int POSE_NUM = 12;       //(3, 4)
+      const int INTRINSIC_NUM = 9;   //(3, 3)
+      const int DISTORTION_NUM = 4;  //(k1, k2, p1, p2)
+      const int BOUNDS_NUM = 2;      //(near, far)
+      CHECK_EQ(tokens.size(), POSE_NUM + INTRINSIC_NUM + DISTORTION_NUM + BOUNDS_NUM);
+      Tensor pose = torch::zeros({3, 4}, torch::kFloat32);
+      for (int i = 0; i < POSE_NUM; i++) {
+        pose.index_put_({i / 4, i % 4}, std::stof(tokens[i]));
+      }
+      pose = pose.reshape({3, 4});
+      poses.push_back(pose);
 
-    n_images_ = arr.shape[0];
-    cam_data = cam_data.reshape({n_images_, 27});
-    Tensor poses = cam_data.slice(1, 0, 12).reshape({-1, 3, 4}).contiguous();
+      Tensor intrinsic = torch::zeros({3, 3}, torch::kFloat32);
+      for (int i = 0; i < INTRINSIC_NUM; i++) {
+        intrinsic.index_put_({i / 3, i % 3}, std::stof(tokens[POSE_NUM + i]));
+      }
+      intrinsic = intrinsic.reshape({3, 3});
+      intrinsics.push_back(intrinsic);
 
-    Tensor intri = cam_data.slice(1, 12, 21).reshape({-1, 3, 3}).contiguous();
-    intri.index_put_({Slc(), Slc(0, 2), Slc(0, 3)}, intri.index({Slc(), Slc(0, 2), Slc(0, 3)}) / factor);
+      Tensor dist_param = torch::zeros({4}, torch::kFloat32);
+      for (int i = 0; i < DISTORTION_NUM; i++) {
+        dist_param.index_put_({i}, std::stof(tokens[POSE_NUM + INTRINSIC_NUM + i]));
+      }
+      dist_params.push_back(dist_param);
 
-    Tensor dist_params = cam_data.slice(1, 21, 25).reshape({-1, 4}).contiguous();   // [k1, k2, p1, p2]
-    Tensor bounds = cam_data.slice(1, 25, 27).reshape({-1, 2}).contiguous();
+      Tensor bound = torch::zeros({2}, torch::kFloat32);
+      for (int i = 0; i < BOUNDS_NUM; i++) {
+        bound.index_put_({i}, std::stof(tokens[POSE_NUM + INTRINSIC_NUM + DISTORTION_NUM + i]));
+      }
+      bounds.push_back(bound);
+    }
 
-    poses_ = poses.to(torch::kCUDA).contiguous();
-    intri_ = intri.to(torch::kCUDA).contiguous();
-    dist_params_ = dist_params.to(torch::kCUDA).contiguous();
-    bounds_ = bounds.to(torch::kCUDA).contiguous();
+    n_images_ = poses.size();
+    poses_ = torch::stack(poses, 0).contiguous().to(torch::kCUDA);
+    intri_ = torch::stack(intrinsics, 0).contiguous().to(torch::kCUDA);
+    dist_params_ = torch::stack(dist_params, 0).contiguous().to(torch::kCUDA);
+    bounds_ = torch::stack(bounds, 0).contiguous().to(torch::kCUDA);
   }
 
   NormalizeScene();
