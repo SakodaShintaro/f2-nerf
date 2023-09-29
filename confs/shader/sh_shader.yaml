@@ -1,5 +1,0 @@
-type: SHShader
-d_in: 32
-d_hidden: 64
-d_out: 3
-degree: 4

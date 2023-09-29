@@ -1,4 +1,0 @@
-type: Hash3DAnchored
-log2_table_size: 19
-rand_bias: true
-mlp_out_dim: 16
