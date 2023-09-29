@@ -5,7 +5,7 @@
 #include <vector>
 #include <torch/torch.h>
 
-class Pipe {
+class Pipe : torch::nn::Module {
   using Tensor = torch::Tensor;
 
 public:
