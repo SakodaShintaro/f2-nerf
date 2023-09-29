@@ -16,19 +16,19 @@ namespace F = torch::nn::functional;
 Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_config) {
   const YAML::Node conf = root_config["renderer"];
 
-  pts_sampler_ = std::make_unique<PtsSampler>(root_config);
+  pts_sampler_ = std::make_shared<PtsSampler>(root_config);
 
-  scene_field_ = std::make_unique<Field>(root_config);
-  RegisterSubPipe(scene_field_.get());
+  scene_field_ = std::make_shared<Field>(root_config);
+  register_module("scene_field", scene_field_);
 
-  shader_ = std::make_unique<Shader>(root_config);
-  RegisterSubPipe(shader_.get());
-
+  shader_ = std::make_shared<Shader>(root_config);
+  register_module("shader", shader_);
 
   use_app_emb_ = conf["use_app_emb"].as<bool>();
   // WARNING: Hard code here.
   app_emb_ = torch::randn({ n_images, 16 }, CUDAFloat) * .1f;
   app_emb_.requires_grad_(true);
+  register_parameter("app_emb", app_emb_);
 }
 
 
@@ -140,31 +140,10 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
 }
 
 
-int Renderer::LoadStates(const std::vector<Tensor>& states, int idx) {
-  for (auto pipe : sub_pipes_) {
-    idx = pipe->LoadStates(states, idx);
-  }
-
-  app_emb_.data().copy_(states[idx++].clone().to(torch::kCUDA).contiguous());
-
-  return idx;
-}
-
-std::vector<Tensor> Renderer::States() {
-  std::vector<Tensor> ret;
-  for (auto pipe : sub_pipes_) {
-    auto cur_states = pipe->States();
-    ret.insert(ret.end(), cur_states.begin(), cur_states.end());
-  }
-
-  ret.push_back(app_emb_.data());
-
-  return ret;
-}
-
 std::vector<torch::optim::OptimizerParamGroup> Renderer::OptimParamGroups(float lr) {
   std::vector<torch::optim::OptimizerParamGroup> ret;
-  for (auto pipe : sub_pipes_) {
+  for (auto sub_module : modules(false)) {
+    auto pipe = dynamic_cast<Pipe *>(sub_module.get());
     auto cur_params = pipe->OptimParamGroups(lr);
     for (const auto& para_group : cur_params) {
       ret.emplace_back(para_group);

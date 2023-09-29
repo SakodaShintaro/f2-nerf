@@ -16,9 +16,7 @@ class SHShader : public Pipe {
 public:
   SHShader(const YAML::Node & config);
   Tensor Query(const Tensor& feats, const Tensor& dirs);
-  std::vector<Tensor> States() override;
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
-  int LoadStates(const std::vector<Tensor>& states, int) override;
 
   Tensor SHEncode(const Tensor& dirs);
 

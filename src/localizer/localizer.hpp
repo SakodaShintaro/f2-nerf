@@ -66,7 +66,7 @@ private:
 
   LocalizerCoreParam param_;
 
-  std::unique_ptr<Renderer> renderer_;
+  std::shared_ptr<Renderer> renderer_;
 
   // Convert mat
   torch::Tensor axis_convert_mat1_;

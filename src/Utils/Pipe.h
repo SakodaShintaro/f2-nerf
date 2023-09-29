@@ -5,14 +5,9 @@
 #include <vector>
 #include <torch/torch.h>
 
-class Pipe : torch::nn::Module {
+class Pipe : public torch::nn::Module {
   using Tensor = torch::Tensor;
 
 public:
-  virtual int LoadStates(const std::vector<Tensor>& states, int idx);
-  virtual std::vector<Tensor> States();
   virtual std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr);
-  void RegisterSubPipe(Pipe* sub_pipe);
-
-  std::vector<Pipe*> sub_pipes_;
 };

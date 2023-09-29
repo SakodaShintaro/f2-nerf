@@ -26,8 +26,6 @@ public:
 
   Tensor Query(const Tensor& points);
 
-  int LoadStates(const std::vector<Tensor>& states, int idx) override;
-  std::vector<Tensor> States() override;
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
 
   int pool_size_;

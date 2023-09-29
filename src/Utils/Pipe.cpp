@@ -6,33 +6,15 @@
 
 using Tensor = torch::Tensor;
 
-int Pipe::LoadStates(const std::vector<Tensor>& states, int idx) {
-  for (auto pipe : sub_pipes_) {
-    idx = pipe->LoadStates(states, idx);
-  }
-  return idx;
-}
-
-std::vector<Tensor> Pipe::States() {
-  std::vector<Tensor> ret;
-  for (auto pipe : sub_pipes_) {
-    auto cur_states = pipe->States();
-    ret.insert(ret.end(), cur_states.begin(), cur_states.end());
-  }
-  return ret;
-}
-
-std::vector<torch::optim::OptimizerParamGroup> Pipe::OptimParamGroups(float lr) {
+std::vector<torch::optim::OptimizerParamGroup> Pipe::OptimParamGroups(float lr)
+{
   std::vector<torch::optim::OptimizerParamGroup> ret;
-  for (auto pipe : sub_pipes_) {
+  for (auto sub_module : modules(false)) {
+    auto pipe = dynamic_cast<Pipe *>(sub_module.get());
     auto cur_params = pipe->OptimParamGroups(lr);
     for (const auto& para_group : cur_params) {
       ret.emplace_back(para_group);
     }
   }
   return ret;
-}
-
-void Pipe::RegisterSubPipe(Pipe* sub_pipe) {
-  sub_pipes_.push_back(sub_pipe);
 }

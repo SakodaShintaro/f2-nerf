@@ -68,6 +68,11 @@ Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_co
   int mlp_out_dim = config["mlp_out_dim"].as<int>();
   int n_hidden_layers = config["n_hidden_layers"].as<int>();
   mlp_ = std::make_unique<TCNNWP>(config, N_LEVELS * N_CHANNELS, mlp_out_dim, mlp_hidden_dim, n_hidden_layers);
+
+  register_parameter("feat_pool", feat_pool_);
+  register_parameter("prim_pool", prim_pool_, false);
+  register_parameter("bias_pool", bias_pool_);
+  register_parameter("mlp", mlp_->params_);
 }
 
 Tensor Hash3DAnchored::Query(const Tensor& points) {
@@ -86,27 +91,6 @@ Tensor Hash3DAnchored::Query(const Tensor& points) {
   Tensor feat = torch::autograd::Hash3DAnchoredFunction::apply(x, feat_pool_, torch::IValue(info))[0];
   Tensor output = mlp_->Query(feat);
   return output;
-}
-
-int Hash3DAnchored::LoadStates(const std::vector<Tensor> &states, int idx) {
-  feat_pool_.data().copy_(states[idx++]);
-  prim_pool_ = states[idx++].clone().to(torch::kCUDA).contiguous();   // The size may changed.
-  bias_pool_.data().copy_(states[idx++]);
-
-  mlp_->params_.data().copy_(states[idx++]);
-
-  return idx;
-}
-
-std::vector<Tensor> Hash3DAnchored::States() {
-  std::vector<Tensor> ret;
-  ret.push_back(feat_pool_.data());
-  ret.push_back(prim_pool_.data());
-  ret.push_back(bias_pool_.data());
-
-  ret.push_back(mlp_->params_.data());
-
-  return ret;
 }
 
 std::vector<torch::optim::OptimizerParamGroup> Hash3DAnchored::OptimParamGroups(float lr)

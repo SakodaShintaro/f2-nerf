@@ -30,14 +30,12 @@ public:
   Renderer(const YAML::Node & config, int n_images);
   RenderResult Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode);
 
-  int LoadStates(const std::vector<Tensor>& states, int idx) override;
-  std::vector<Tensor> States() override ;
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
 
   const YAML::Node config_;
-  std::unique_ptr<PtsSampler> pts_sampler_;
-  std::unique_ptr<Field> scene_field_;
-  std::unique_ptr<Shader> shader_;
+  std::shared_ptr<PtsSampler> pts_sampler_;
+  std::shared_ptr<Field> scene_field_;
+  std::shared_ptr<Shader> shader_;
 
   bool use_app_emb_;
   Tensor app_emb_;

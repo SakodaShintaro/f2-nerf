@@ -18,6 +18,7 @@ SHShader::SHShader(const YAML::Node & root_config)
 
   // MLP
   mlp_ = std::make_unique<TCNNWP>(root_config, d_in_, d_out_, d_hidden_, n_hiddens_);
+  register_parameter("mlp", mlp_->params_);
 }
 
 Tensor SHShader::Query(const Tensor &feats, const Tensor &dirs) {
@@ -26,19 +27,6 @@ Tensor SHShader::Query(const Tensor &feats, const Tensor &dirs) {
   Tensor output = mlp_->Query(input);
   float eps = 1e-3f;
   return (1.f + 2.f * eps) / (1.f + torch::exp(-output)) - eps;
-}
-
-int SHShader::LoadStates(const std::vector<Tensor> &states, int idx) {
-  mlp_->params_.data().copy_(states[idx++]);
-  return idx;
-}
-
-std::vector<Tensor> SHShader::States() {
-  std::vector<Tensor> ret;
-
-  ret.push_back(mlp_->params_.data());
-
-  return ret;
 }
 
 std::vector<torch::optim::OptimizerParamGroup> SHShader::OptimParamGroups(float lr) {

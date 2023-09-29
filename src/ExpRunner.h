@@ -40,7 +40,7 @@ public:
 
   YAML::Node config_;
 
-  std::unique_ptr<Dataset> dataset_;
-  std::unique_ptr<Renderer> renderer_;
-  std::unique_ptr<torch::optim::Adam> optimizer_;
+  std::shared_ptr<Dataset> dataset_;
+  std::shared_ptr<Renderer> renderer_;
+  std::shared_ptr<torch::optim::Adam> optimizer_;
 };

@@ -36,14 +36,14 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   var_loss_end_ = config["train"]["var_loss_end"].as<int>();
 
   // Dataset
-  dataset_ = std::make_unique<Dataset>(config);
+  dataset_ = std::make_shared<Dataset>(config);
   dataset_->SaveInferenceParams();
 
   // Renderer
-  renderer_ = std::make_unique<Renderer>(config, dataset_->n_images_);
+  renderer_ = std::make_shared<Renderer>(config, dataset_->n_images_);
 
   // Optimizer
-  optimizer_ = std::make_unique<torch::optim::Adam>(renderer_->OptimParamGroups(learning_rate_));
+  optimizer_ = std::make_shared<torch::optim::Adam>(renderer_->OptimParamGroups(learning_rate_));
 
   if (config["is_continue"].as<bool>()) {
     LoadCheckpoint(base_exp_dir_ + "/checkpoints/latest");
@@ -149,11 +149,7 @@ void ExpRunner::LoadCheckpoint(const std::string& path) {
     UpdateAdaParams();
   }
 
-  {
-    std::vector<Tensor> scene_states;
-    torch::load(scene_states, path + "/renderer.pt");
-    renderer_->LoadStates(scene_states, 0);
-  }
+  torch::load(renderer_, path + "/renderer.pt");
 }
 
 void ExpRunner::SaveCheckpoint() {
@@ -163,7 +159,7 @@ void ExpRunner::SaveCheckpoint() {
   fs::remove_all(base_exp_dir_ + "/checkpoints/latest");
   fs::create_directory(base_exp_dir_ + "/checkpoints/latest");
   // scene
-  torch::save(renderer_->States(), output_dir + "/renderer.pt");
+  torch::save(renderer_, output_dir + "/renderer.pt");
   fs::create_symlink(output_dir + "/renderer.pt", base_exp_dir_ + "/checkpoints/latest/renderer.pt");
   // optimizer
   // torch::save(*(optimizer_), output_dir + "/optimizer.pt");

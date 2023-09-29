@@ -31,15 +31,13 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
     torch::tensor(inference_params["normalizing_center"].as<std::vector<float>>(), CUDAFloat);
   radius_ = inference_params["normalizing_radius"].as<float>();
 
-  renderer_ = std::make_unique<Renderer>(config, n_images_);
+  renderer_ = std::make_shared<Renderer>(config, n_images_);
 
   const std::string checkpoint_path = base_exp_dir + "/checkpoints/latest";
   Tensor scalars;
   torch::load(scalars, checkpoint_path + "/scalars.pt");
 
-  std::vector<Tensor> scene_states;
-  torch::load(scene_states, checkpoint_path + "/renderer.pt");
-  renderer_->LoadStates(scene_states, 0);
+  torch::load(renderer_, checkpoint_path + "/renderer.pt");
 
   // set
   infer_height_ = train_height_ / param.resize_factor;
