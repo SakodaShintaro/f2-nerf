@@ -144,6 +144,9 @@ std::vector<torch::optim::OptimizerParamGroup> Renderer::OptimParamGroups(float 
   std::vector<torch::optim::OptimizerParamGroup> ret;
   for (auto sub_module : modules(false)) {
     auto pipe = dynamic_cast<Pipe *>(sub_module.get());
+    if (!pipe) {
+      continue;
+    }
     auto cur_params = pipe->OptimParamGroups(lr);
     for (const auto& para_group : cur_params) {
       ret.emplace_back(para_group);

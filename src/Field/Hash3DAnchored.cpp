@@ -67,12 +67,12 @@ Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_co
   int mlp_hidden_dim = config["mlp_hidden_dim"].as<int>();
   int mlp_out_dim = config["mlp_out_dim"].as<int>();
   int n_hidden_layers = config["n_hidden_layers"].as<int>();
-  mlp_ = std::make_unique<TCNNWP>(config, N_LEVELS * N_CHANNELS, mlp_out_dim, mlp_hidden_dim, n_hidden_layers);
+  mlp_ = torch::nn::Linear(N_LEVELS * N_CHANNELS, mlp_out_dim);
 
   register_parameter("feat_pool", feat_pool_);
   register_parameter("prim_pool", prim_pool_, false);
   register_parameter("bias_pool", bias_pool_);
-  register_parameter("mlp", mlp_->params_);
+  register_module("mlp", mlp_);
 }
 
 Tensor Hash3DAnchored::Query(const Tensor& points) {
@@ -89,7 +89,7 @@ Tensor Hash3DAnchored::Query(const Tensor& points) {
   Tensor x = points * mask + ~mask * (1 + radius - radius / norm) * points / norm;
 
   Tensor feat = torch::autograd::Hash3DAnchoredFunction::apply(x, feat_pool_, torch::IValue(info))[0];
-  Tensor output = mlp_->Query(feat);
+  Tensor output = mlp_->forward(feat);
   return output;
 }
 
@@ -112,8 +112,7 @@ std::vector<torch::optim::OptimizerParamGroup> Hash3DAnchored::OptimParamGroups(
     opt->eps() = 1e-15;
     opt->weight_decay() = 1e-6;
 
-    std::vector<Tensor> params;
-    params.push_back(mlp_->params_);
+    std::vector<Tensor> params = mlp_->parameters();
     ret.emplace_back(std::move(params), std::move(opt));
   }
 

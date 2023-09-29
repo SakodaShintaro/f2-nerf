@@ -41,6 +41,7 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
 
   // Renderer
   renderer_ = std::make_shared<Renderer>(config, dataset_->n_images_);
+  renderer_->to(torch::kCUDA);
 
   // Optimizer
   optimizer_ = std::make_shared<torch::optim::Adam>(renderer_->OptimParamGroups(learning_rate_));

@@ -5,7 +5,6 @@
 #ifndef SANR_SHSHADER_H
 #define SANR_SHSHADER_H
 
-#include "../Field/TCNNWP.h"
 #include "../Utils/Pipe.h"
 
 #include <torch/torch.h>
@@ -20,7 +19,7 @@ public:
 
   Tensor SHEncode(const Tensor& dirs);
 
-  std::unique_ptr<TCNNWP> mlp_;
+  torch::nn::Sequential mlp_ = nullptr;
 
   int d_in_, d_out_;
   int d_hidden_, n_hiddens_;

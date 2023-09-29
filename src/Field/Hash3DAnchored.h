@@ -5,9 +5,7 @@
 #ifndef SANR_HASH3DANCHORED_H
 #define SANR_HASH3DANCHORED_H
 
-#pragma once
 #include "../Utils/Pipe.h"
-#include "TCNNWP.h"
 
 #include <torch/torch.h>
 #include <yaml-cpp/yaml.h>
@@ -35,7 +33,7 @@ public:
   Tensor prim_pool_;   // [ n_levels, 3 ];
   Tensor bias_pool_;   // [ n_levels, 3 ];
 
-  std::unique_ptr<TCNNWP> mlp_;
+  torch::nn::Linear mlp_ = nullptr;
 
   const YAML::Node config_;
 };
