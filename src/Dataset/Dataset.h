@@ -5,9 +5,7 @@
 #ifndef SANR_DATASET_H
 #define SANR_DATASET_H
 
-#pragma once
 #include "../Common.h"
-#include "../Utils/CameraUtils.h"
 
 #include <torch/torch.h>
 #include <yaml-cpp/yaml.h>
@@ -15,6 +13,19 @@
 #include <string>
 #include <tuple>
 #include <vector>
+
+struct alignas(32) Rays
+{
+  torch::Tensor origins;
+  torch::Tensor dirs;
+};
+
+struct alignas(32) BoundedRays
+{
+  torch::Tensor origins;
+  torch::Tensor dirs;
+  torch::Tensor bounds;  // near, far
+};
 
 class Dataset
 {
