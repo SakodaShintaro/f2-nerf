@@ -17,6 +17,7 @@ from scipy.spatial.transform import Rotation
 import matplotlib.pyplot as plt
 import rosbag2_py
 from interpolate import interpolate_pose_in_time
+import sys
 
 
 def create_reader(input_bag_dir: str, storage_id: str):
@@ -114,8 +115,10 @@ if __name__ == "__main__":
     reader, storage_options, converter_options = create_reader(
         path_to_rosbag, storage_id)
     os.makedirs(output_dir, exist_ok=True)
-    with open(f"{output_dir}/rosbag_info.txt", "w") as f:
-        f.write(f"{path_to_rosbag}\n")
+
+    # save command
+    with open(f"{output_dir}/command.txt", "w") as f:
+        f.write(" ".join(["python3"] + sys.argv) + "\n")
 
     bridge = CvBridge()
     tf_buffer = Buffer()
