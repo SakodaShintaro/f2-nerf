@@ -61,7 +61,6 @@ if __name__ == "__main__":
     bounds = np.array([[1.0, 30.0] for _ in range(n)])
 
     data = np.concatenate([mat, camera_param, dist_param, bounds], axis=1)
-    np.save(os.path.join(target_dir, "cams_meta.npy"), data)
 
     # save as tsv
     df = pd.DataFrame(data, columns=[
