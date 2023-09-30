@@ -18,7 +18,7 @@ Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_
 
   pts_sampler_ = std::make_shared<PtsSampler>();
 
-  scene_field_ = std::make_shared<Field>(root_config);
+  scene_field_ = std::make_shared<Field>();
   register_module("scene_field", scene_field_);
 
   shader_ = std::make_shared<Shader>();

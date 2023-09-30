@@ -15,12 +15,11 @@ TORCH_LIBRARY(dec_hash3d_anchored, m)
   m.class_<Hash3DAnchoredInfo>("Hash3DAnchoredInfo").def(torch::init());
 }
 
-Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_config)
+Hash3DAnchored::Hash3DAnchored()
 {
   ScopeWatch dataset_watch("Hash3DAnchored::Hash3DAnchored");
-  const YAML::Node & config = root_config["field"];
 
-  pool_size_ = (1 << config["log2_table_size"].as<int>()) * N_LEVELS;
+  pool_size_ = (1 << 19) * N_LEVELS;
 
   // Feat pool
   feat_pool_ = (torch::rand({pool_size_, N_CHANNELS}, CUDAFloat) * .2f - 1.f) * 1e-4f;
@@ -53,18 +52,13 @@ Hash3DAnchored::Hash3DAnchored(const YAML::Node & root_config) : config_(root_co
   prim_pool_ = torch::from_blob(prim_selected.data(), 3 * N_LEVELS, CPUInt).to(torch::kCUDA);
   prim_pool_ = prim_pool_.reshape({N_LEVELS, 3}).contiguous();
 
-  if (config["rand_bias"].as<bool>()) {
-    bias_pool_ = (torch::rand({ N_LEVELS, 3 }, CUDAFloat) * 1000.f + 100.f).contiguous();
-  }
-  else {
-    bias_pool_ = torch::zeros({ N_LEVELS, 3 }, CUDAFloat).contiguous();
-  }
+  bias_pool_ = (torch::rand({ N_LEVELS, 3 }, CUDAFloat) * 1000.f + 100.f).contiguous();
 
   local_size_ = pool_size_ / N_LEVELS;
   local_size_ = (local_size_ >> 4) << 4;
 
   // MLP
-  int mlp_out_dim = config["mlp_out_dim"].as<int>();
+  const int mlp_out_dim = 16;
   mlp_ = torch::nn::Linear(N_LEVELS * N_CHANNELS, mlp_out_dim);
 
   register_parameter("feat_pool", feat_pool_);

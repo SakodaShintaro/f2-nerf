@@ -13,12 +13,6 @@ train:
   var_loss_start: 5000
   var_loss_end: 10000
 
-field:
-  type: Hash3DAnchored
-  log2_table_size: 19
-  rand_bias: true
-  mlp_out_dim: 16
-
 renderer:
   # Appearance embedding to handling unstable lighting conditions
   use_app_emb: true

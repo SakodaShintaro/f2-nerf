@@ -19,7 +19,7 @@ class Hash3DAnchored : public torch::nn::Module
 {
   using Tensor = torch::Tensor;
 public:
-  Hash3DAnchored(const YAML::Node & config);
+  Hash3DAnchored();
 
   Tensor Query(const Tensor& points);
 
@@ -33,8 +33,6 @@ public:
   Tensor bias_pool_;   // [ n_levels, 3 ];
 
   torch::nn::Linear mlp_ = nullptr;
-
-  const YAML::Node config_;
 };
 
 class Hash3DAnchoredInfo : public torch::CustomClassHolder {
