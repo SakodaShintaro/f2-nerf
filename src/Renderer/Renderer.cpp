@@ -21,7 +21,7 @@ Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_
   scene_field_ = std::make_shared<Field>(root_config);
   register_module("scene_field", scene_field_);
 
-  shader_ = std::make_shared<Shader>(root_config);
+  shader_ = std::make_shared<Shader>();
   register_module("shader", shader_);
 
   use_app_emb_ = conf["use_app_emb"].as<bool>();

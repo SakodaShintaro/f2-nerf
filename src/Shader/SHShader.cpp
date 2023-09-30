@@ -7,13 +7,11 @@
 
 using Tensor = torch::Tensor;
 
-SHShader::SHShader(const YAML::Node & root_config)
+SHShader::SHShader() : degree_(4)
 {
-  const YAML::Node config = root_config["shader"];
-  const int d_in = config["d_in"].as<int>();
-  const int d_hidden = config["d_hidden"].as<int>();
-  const int d_out = config["d_out"].as<int>();
-  degree_ = config["degree"].as<int>();
+  const int d_in = 32;
+  const int d_hidden = 64;
+  const int d_out = 3;
 
   mlp_ = torch::nn::Sequential(
     torch::nn::Linear(d_in, d_hidden), torch::nn::ReLU(), torch::nn::Linear(d_hidden, d_out));

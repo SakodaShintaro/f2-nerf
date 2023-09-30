@@ -12,7 +12,7 @@ class SHShader : public torch::nn::Module
 {
   using Tensor = torch::Tensor;
 public:
-  SHShader(const YAML::Node & config);
+  SHShader();
   Tensor Query(const Tensor& feats, const Tensor& dirs);
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr);
 
@@ -20,7 +20,7 @@ public:
 
   torch::nn::Sequential mlp_ = nullptr;
 
-  int degree_;
+  const int degree_;
 };
 
 #endif //SANR_SHSHADER_H

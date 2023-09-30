@@ -19,16 +19,6 @@ field:
   rand_bias: true
   mlp_out_dim: 16
 
-shader:
-  type: SHShader
-  d_in: 32
-  d_hidden: 64
-  d_out: 3
-  degree: 4
-
-pts_sampler:
-  sample_l: 3.90625e-3   # 1. / 256.
-
 renderer:
   # Appearance embedding to handling unstable lighting conditions
   use_app_emb: true
