@@ -15,7 +15,10 @@ void test(const std::string & config_path)
   LocalizerCore localizer(param);
   const YAML::Node & config = YAML::LoadFile(config_path);
 
-  Dataset dataset(config);
+  const std::string data_path = config["dataset_path"].as<std::string>();
+  const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
+
+  Dataset dataset(data_path, base_exp_dir);
   const std::string save_dir = config["base_exp_dir"].as<std::string>() + "/test_result/";
   fs::create_directories(save_dir);
 

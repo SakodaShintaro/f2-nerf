@@ -34,8 +34,10 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   var_loss_start_ = config["train"]["var_loss_start"].as<int>();
   var_loss_end_ = config["train"]["var_loss_end"].as<int>();
 
+  const std::string data_path = config["dataset_path"].as<std::string>();
+
   // Dataset
-  dataset_ = std::make_shared<Dataset>(config);
+  dataset_ = std::make_shared<Dataset>(data_path, base_exp_dir_);
   dataset_->SaveInferenceParams();
 
   // Renderer

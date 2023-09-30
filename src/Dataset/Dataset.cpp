@@ -12,14 +12,11 @@ using Tensor = torch::Tensor;
 
 namespace fs = std::experimental::filesystem::v1;
 
-Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
+Dataset::Dataset(const std::string & data_path, const std::string & output_dir) : output_dir_(output_dir)
 {
   ScopeWatch dataset_watch("Dataset::Dataset");
-  const YAML::Node config = root_config["dataset"];
 
-  const auto data_path = config["data_path"].as<std::string>();
   std::cout << "data_path = " << data_path << std::endl;
-  const auto factor = config["factor"].as<float>();
 
   // Load camera pose
   CHECK(fs::exists(data_path + "/cams_meta.tsv"));
@@ -77,7 +74,7 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
   NormalizeScene();
 
   // Relax bounds
-  auto bounds_factor = config["bounds_factor"].as<std::vector<float>>();
+  const std::vector<float> bounds_factor = {0.25, 4.0};
   bounds_ = torch::stack( { bounds_.index({"...", 0}) * bounds_factor[0],
                                  { bounds_.index({"...", 1}) * bounds_factor[1]}}, -1).contiguous();
   bounds_.clamp_(1e-2f, 1e9f);
@@ -104,7 +101,6 @@ Dataset::Dataset(const YAML::Node & root_config) : config_(root_config)
 
 void Dataset::NormalizeScene() {
   // Given poses_ & bounds_, Gen new poses_, bounds_.
-  const auto& config = config_["dataset"];
   Tensor cam_pos = poses_.index({Slc(), Slc(0, 3), 3}).clone();
   center_ = cam_pos.mean(0, false);
   Tensor bias = cam_pos - center_.unsqueeze(0);
@@ -117,8 +113,7 @@ void Dataset::NormalizeScene() {
 
 void Dataset::SaveInferenceParams() const
 {
-  const std::string base_exp_dir = config_["base_exp_dir"].as<std::string>();
-  std::ofstream ofs(base_exp_dir + "/inference_params.yaml");
+  std::ofstream ofs(output_dir_ + "/inference_params.yaml");
   ofs << std::fixed;
   ofs << "n_images: " << n_images_ << std::endl;
   ofs << "height: " << height_ << std::endl;

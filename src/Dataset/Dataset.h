@@ -32,12 +32,10 @@ class Dataset
   using Tensor = torch::Tensor;
 
 public:
-  Dataset(const YAML::Node & config);
+  Dataset(const std::string& data_path, const std::string& output_dir);
 
   void NormalizeScene();
   void SaveInferenceParams() const;
-
-  const YAML::Node config_;
 
   // Img2WorldRay
   static Rays Img2WorldRay(const Tensor & pose, const Tensor & intri, const Tensor & ij);
@@ -53,6 +51,9 @@ public:
   float radius_;
   int height_, width_;
   Tensor image_tensors_;
+
+  // dirs
+  const std::string output_dir_;
 };
 
 #endif  // SANR_DATASET_H

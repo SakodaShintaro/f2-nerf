@@ -39,7 +39,7 @@ def main(conf: DictConfig) -> None:
         f"git diff >> {base_exp_dir}/git_info.txt", shell=True, check=True)
 
     conf = OmegaConf.to_container(conf, resolve=True)
-    conf['dataset']['data_path'] = data_path
+    conf['dataset_path'] = data_path
     conf['base_exp_dir'] = base_exp_dir
 
     save_config_path = os.path.join(base_exp_dir, 'runtime_config.yaml')

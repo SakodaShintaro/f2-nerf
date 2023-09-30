@@ -20,7 +20,3 @@ renderer:
 dataset_path: None
 
 is_continue: false
-
-dataset:
-  factor: 1
-  bounds_factor: [ 0.25, 4.0 ]

@@ -19,11 +19,14 @@ void infer(const std::string & config_path)
 
   constexpr int32_t iteration_num = 10;
 
-  const std::string save_dir = "./inference_result/";
+  const YAML::Node & config = YAML::LoadFile(config_path);
+  const std::string data_path = config["dataset_path"].as<std::string>();
+  const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
+
+  const std::string save_dir = base_exp_dir + "/inference_result/";
   fs::create_directories(save_dir);
 
-  const YAML::Node & config = YAML::LoadFile(config_path);
-  Dataset dataset(config);
+  Dataset dataset(data_path, base_exp_dir);
 
   Timer timer, timer_local;
   timer.start();
