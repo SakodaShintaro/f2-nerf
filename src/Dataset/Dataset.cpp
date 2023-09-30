@@ -115,6 +115,8 @@ void Dataset::SaveInferenceParams() const
 {
   std::ofstream ofs(output_dir_ + "/inference_params.yaml");
   ofs << std::fixed;
+  ofs << "%YAML 1.2" << std::endl;
+  ofs << "---" << std::endl;
   ofs << "n_images: " << n_images_ << std::endl;
   ofs << "height: " << height_ << std::endl;
   ofs << "width: " << width_ << std::endl;

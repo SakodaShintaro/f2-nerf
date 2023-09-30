@@ -4,6 +4,7 @@
 #include "../Utils/StopWatch.h"
 
 #include <Eigen/Geometry>
+#include <opencv2/core.hpp>
 
 #include <gtsam/geometry/Rot3.h>
 
@@ -13,25 +14,39 @@ using Tensor = torch::Tensor;
 
 LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
 {
-  const YAML::Node & config = YAML::LoadFile(param.runtime_config_path);
+  cv::FileStorage config(param.runtime_config_path, cv::FileStorage::READ);
+  if (!config.isOpened()) {
+    throw std::runtime_error("Failed to open " + param.runtime_config_path);
+  }
 
-  const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
+  const std::string base_exp_dir = config["base_exp_dir"].string();
   std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
 
-  const YAML::Node inference_params = YAML::LoadFile(base_exp_dir + "/inference_params.yaml");
-  n_images_ = inference_params["n_images"].as<int>();
-  train_height_ = inference_params["height"].as<int>();
-  train_width_ = inference_params["width"].as<int>();
-  intrinsic_ =
-    torch::tensor(inference_params["intrinsic"].as<std::vector<float>>(), CUDAFloat).view({3, 3});
-  std::vector<float> bounds = inference_params["bounds"].as<std::vector<float>>();
+  cv::FileStorage inference_params(base_exp_dir + "/inference_params.yaml", cv::FileStorage::READ);
+  if (!inference_params.isOpened()) {
+    throw std::runtime_error("Failed to open " + base_exp_dir + "/inference_params.yaml");
+  }
+
+  n_images_ = (int)inference_params["n_images"];
+  train_height_ = (int)inference_params["height"];
+  train_width_ = (int)inference_params["width"];
+
+  std::vector<float> intrinsic_vector;
+  inference_params["intrinsic"] >> intrinsic_vector;
+  intrinsic_ = torch::tensor(intrinsic_vector, torch::kFloat).view({3, 3}).to(torch::kCUDA);
+
+  std::vector<float> bounds;
+  inference_params["bounds"] >> bounds;
   near_ = bounds[0];
   far_ = bounds[1];
-  center_ =
-    torch::tensor(inference_params["normalizing_center"].as<std::vector<float>>(), CUDAFloat);
-  radius_ = inference_params["normalizing_radius"].as<float>();
 
-  const bool use_app_emb = config["renderer"]["use_app_emb"].as<bool>();
+  std::vector<float> normalizing_center;
+  inference_params["normalizing_center"] >> normalizing_center;
+  center_ = torch::tensor(normalizing_center, torch::kFloat).to(torch::kCUDA);
+
+  radius_ = (float)inference_params["normalizing_radius"];
+
+  const bool use_app_emb = (config["renderer"]["use_app_emb"].string() == "true");
   renderer_ = std::make_shared<Renderer>(use_app_emb, n_images_);
 
   const std::string checkpoint_path = base_exp_dir + "/checkpoints/latest";
