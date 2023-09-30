@@ -33,13 +33,9 @@ Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_
 
 
 RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode) {
-#ifdef PROFILE
-  ScopeWatch watch(__func__);
-#endif
   int n_rays = rays_o.sizes()[0];
   SampleResultFlex sample_result = pts_sampler_->GetSamples(rays_o, rays_d, mode);
   int n_all_pts = sample_result.pts.sizes()[0];
-  float sampled_pts_per_ray = float(n_all_pts) / float(n_rays);
   CHECK(sample_result.pts_idx_bounds.max().item<int>() <= n_all_pts);
   CHECK(sample_result.pts_idx_bounds.min().item<int>() >= 0);
 
@@ -48,9 +44,8 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
                                   : torch::ones({n_rays, 3}, CUDAFloat) * .5f);
 
   if (n_all_pts <= 0) {
-    Tensor colors = bg_color;
     return {
-      colors,
+      bg_color,
       torch::zeros({ n_rays, 1 }, CUDAFloat),
       torch::zeros({ n_rays }, CUDAFloat),
       torch::full({ n_rays }, 512.f, CUDAFloat),
