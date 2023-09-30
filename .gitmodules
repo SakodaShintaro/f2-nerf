@@ -1,6 +1,3 @@
-[submodule "External/yaml-cpp"]
-	path = External/yaml-cpp
-	url = https://github.com/jbeder/yaml-cpp
 [submodule "ros2/src/external/tier4_autoware_msgs"]
 	path = ros2/src/external/tier4_autoware_msgs
 	url = https://github.com/tier4/tier4_autoware_msgs.git
