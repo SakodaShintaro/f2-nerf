@@ -5,7 +5,6 @@
 #include <string>
 #include <memory>
 #include <tuple>
-#include <yaml-cpp/yaml.h>
 #include <torch/torch.h>
 #include "Dataset/Dataset.h"
 #include "Renderer/Renderer.h"

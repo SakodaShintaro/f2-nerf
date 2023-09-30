@@ -6,7 +6,6 @@
 #define SANR_SHSHADER_H
 
 #include <torch/torch.h>
-#include <yaml-cpp/yaml.h>
 
 class SHShader : public torch::nn::Module
 {

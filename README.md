@@ -7,7 +7,6 @@ This repository has undergone significant changes from the original fork reposit
 Besides LibTorch, this project is also built upon the following awesome libraries:
 
 - [eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page) for linear algebra computing
-- [yaml-cpp](https://github.com/jbeder/yaml-cpp) for I/O of YAML files
 - [hydra](https://github.com/facebookresearch/hydra) for configuration
 
 Some of the code snippets are inspired from [instant-ngp](https://github.com/NVlabs/instant-ngp), [torch-ngp](https://github.com/ashawkey/torch-ngp) and [ngp-pl](https://github.com/kwea123/ngp_pl).

@@ -6,7 +6,6 @@
 #define SANR_HASH3DANCHORED_H
 
 #include <torch/torch.h>
-#include <yaml-cpp/yaml.h>
 
 #define N_CHANNELS 2
 #define N_LEVELS 16

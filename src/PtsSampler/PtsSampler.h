@@ -7,7 +7,6 @@
 #include "Eigen/Eigen"
 
 #include <torch/torch.h>
-#include <yaml-cpp/yaml.h>
 
 #include <memory>
 
@@ -32,7 +31,6 @@ class PtsSampler
 public:
   PtsSampler();
   SampleResultFlex GetSamples(const Tensor & rays_o, const Tensor & rays_d, RunningMode mode);
-  const YAML::Node config_;
 
   const float sample_l_;
 };

@@ -27,10 +27,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 link_directories(${CMAKE_SOURCE_DIR}/External/libtorch/lib/)
 include_directories(${TORCH_INCLUDE_DIRS})
 
-# YAML
-add_subdirectory(External/yaml-cpp)
-include_directories(External/yaml-cpp/include)
-
 # eigen
 include_directories(External/eigen-3.4.0)
 
@@ -62,7 +58,6 @@ list(APPEND SRC_ALL
 set(ALL_LIBS ${TORCH_LIBRARIES}
         ${TORCH_CUDA_LIBRARIES}
         ${OpenCV_LIBS}
-        yaml-cpp
         stdc++fs
         gtsam)
 

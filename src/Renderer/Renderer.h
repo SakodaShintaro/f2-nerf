@@ -7,7 +7,6 @@
 
 #include <vector>
 #include <memory>
-#include <yaml-cpp/yaml.h>
 #include "../Field/Field.h"
 #include "../Shader/Shader.h"
 #include "../PtsSampler/PtsSampler.h"

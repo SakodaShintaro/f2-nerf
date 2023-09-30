@@ -4,6 +4,8 @@
 #include "../main_functions.hpp"
 
 #include <experimental/filesystem>
+#include <opencv2/core.hpp>
+
 namespace fs = std::experimental::filesystem::v1;
 
 void test(const std::string & config_path)
@@ -13,13 +15,13 @@ void test(const std::string & config_path)
   param.runtime_config_path = config_path;
   param.resize_factor = 8;
   LocalizerCore localizer(param);
-  const YAML::Node & config = YAML::LoadFile(config_path);
+  cv::FileStorage config(config_path, cv::FileStorage::READ);
 
-  const std::string data_path = config["dataset_path"].as<std::string>();
-  const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
+  const std::string data_path = config["dataset_path"].string();
+  const std::string base_exp_dir = config["base_exp_dir"].string();
 
   Dataset dataset(data_path, base_exp_dir);
-  const std::string save_dir = config["base_exp_dir"].as<std::string>() + "/test_result/";
+  const std::string save_dir = config["base_exp_dir"].string() + "/test_result/";
   fs::create_directories(save_dir);
 
   Timer timer;
@@ -51,7 +53,7 @@ void test(const std::string & config_path)
   const float average_time = time_sum / dataset.n_images_;
   const float average_score = score_sum / dataset.n_images_;
 
-  std::ofstream summary(config["base_exp_dir"].as<std::string>() + "/summary.tsv");
+  std::ofstream summary(base_exp_dir + "/summary.tsv");
   summary << std::fixed;
   summary << "average_time\taverage_score" << std::endl;
   summary << average_time << "\t" << average_score << std::endl;

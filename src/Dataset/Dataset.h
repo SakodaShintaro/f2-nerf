@@ -8,7 +8,6 @@
 #include "../Common.h"
 
 #include <torch/torch.h>
-#include <yaml-cpp/yaml.h>
 
 #include <string>
 #include <tuple>

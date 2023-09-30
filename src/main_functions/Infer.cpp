@@ -4,6 +4,8 @@
 #include "../main_functions.hpp"
 
 #include <experimental/filesystem>
+#include <opencv2/core.hpp>
+
 namespace fs = std::experimental::filesystem::v1;
 
 enum Dir { kUp, kUpRight, kRight, kDownRight, kDown, kDownLeft, kLeft, kUpLeft, kDirNum };
@@ -19,9 +21,9 @@ void infer(const std::string & config_path)
 
   constexpr int32_t iteration_num = 10;
 
-  const YAML::Node & config = YAML::LoadFile(config_path);
-  const std::string data_path = config["dataset_path"].as<std::string>();
-  const std::string base_exp_dir = config["base_exp_dir"].as<std::string>();
+  cv::FileStorage config(config_path, cv::FileStorage::READ);
+  const std::string data_path = config["dataset_path"].string();
+  const std::string base_exp_dir = config["base_exp_dir"].string();
 
   const std::string save_dir = base_exp_dir + "/inference_result/";
   fs::create_directories(save_dir);
