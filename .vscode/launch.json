@@ -40,7 +40,7 @@
             "program": "${workspaceFolder}/build-Debug/main",
             "args": [
                 "train",
-                "../exp/20230902_awsim_15kph/runtime_config.yaml"
+                "../exp/20230930_15kph/runtime_config.yaml"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build-Debug",
