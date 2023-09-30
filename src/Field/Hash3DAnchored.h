@@ -5,8 +5,6 @@
 #ifndef SANR_HASH3DANCHORED_H
 #define SANR_HASH3DANCHORED_H
 
-#include "../Utils/Pipe.h"
-
 #include <torch/torch.h>
 #include <yaml-cpp/yaml.h>
 
@@ -17,14 +15,15 @@
 // 8
 #define RES_BASE_POW_2 3.f
 
-class Hash3DAnchored : public Pipe {
+class Hash3DAnchored : public torch::nn::Module
+{
   using Tensor = torch::Tensor;
 public:
   Hash3DAnchored(const YAML::Node & config);
 
   Tensor Query(const Tensor& points);
 
-  std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
+  std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr);
 
   int pool_size_;
   int local_size_;

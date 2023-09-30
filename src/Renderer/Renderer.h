@@ -5,11 +5,9 @@
 #ifndef SANR_RENDERER_H
 #define SANR_RENDERER_H
 
-#pragma once
 #include <vector>
 #include <memory>
 #include <yaml-cpp/yaml.h>
-#include "../Utils/Pipe.h"
 #include "../Field/Field.h"
 #include "../Shader/Shader.h"
 #include "../PtsSampler/PtsSampler.h"
@@ -23,14 +21,15 @@ struct RenderResult {
   Tensor idx_start_end;
 };
 
-class Renderer : public Pipe {
+class Renderer : public torch::nn::Module
+{
   using Tensor = torch::Tensor;
 
 public:
   Renderer(const YAML::Node & config, int n_images);
   RenderResult Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode);
 
-  std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr) override;
+  std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr);
 
   const YAML::Node config_;
   std::shared_ptr<PtsSampler> pts_sampler_;

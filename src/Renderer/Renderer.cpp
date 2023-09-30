@@ -122,29 +122,27 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   return { colors, disparity, depth, weights, idx_start_end };
 }
 
-
-std::vector<torch::optim::OptimizerParamGroup> Renderer::OptimParamGroups(float lr) {
+std::vector<torch::optim::OptimizerParamGroup> Renderer::OptimParamGroups(float lr)
+{
   std::vector<torch::optim::OptimizerParamGroup> ret;
-  for (auto sub_module : modules(false)) {
-    auto pipe = dynamic_cast<Pipe *>(sub_module.get());
-    if (!pipe) {
-      continue;
-    }
-    auto cur_params = pipe->OptimParamGroups(lr);
-    for (const auto& para_group : cur_params) {
-      ret.emplace_back(para_group);
-    }
+
+  // scene_field_
+  for (const auto & para_group : scene_field_->OptimParamGroups(lr)) {
+    ret.emplace_back(para_group);
   }
 
-  {
-    auto opt = std::make_unique<torch::optim::AdamOptions>(lr);
-    opt->betas() = {0.9, 0.99};
-    opt->eps() = 1e-15;
-    opt->weight_decay() = 1e-6;
-
-    std::vector<Tensor> params;
-    params.push_back(app_emb_);
-    ret.emplace_back(std::move(params), std::move(opt));
+  // shader_
+  for (const auto & para_group : shader_->OptimParamGroups(lr)) {
+    ret.emplace_back(para_group);
   }
+
+  // app_emb_
+  auto opt = std::make_unique<torch::optim::AdamOptions>(lr);
+  opt->betas() = {0.9, 0.99};
+  opt->eps() = 1e-15;
+  opt->weight_decay() = 1e-6;
+  std::vector<Tensor> params{app_emb_};
+  ret.emplace_back(std::move(params), std::move(opt));
+
   return ret;
 }
