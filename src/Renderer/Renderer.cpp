@@ -62,18 +62,11 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   // First, inference - early stop
   SampleResultFlex sample_result_early_stop;
   {
-    Tensor pts  = sample_result.pts;
-    Tensor dirs = sample_result.dirs;
-
-    Tensor scene_feat = scene_field_->Query(pts);
+    Tensor scene_feat = scene_field_->Query(sample_result.pts);
     Tensor sampled_density = DensityAct(scene_feat.index({ Slc(), Slc(0, 1) }));
-
-    Tensor sampled_dt = sample_result.dt;
-    Tensor sampled_t = (sample_result.t + 1e-2f).contiguous();
-    Tensor sec_density = sampled_density.index({Slc(), 0}) * sampled_dt;
+    Tensor sec_density = sampled_density.index({Slc(), 0}) * sample_result.dt;
     Tensor alphas = 1.f - torch::exp(-sec_density);
-    Tensor idx_start_end = sample_result.pts_idx_bounds;
-    Tensor acc_density = FlexOps::AccumulateSum(sec_density, idx_start_end, false);
+    Tensor acc_density = FlexOps::AccumulateSum(sec_density, sample_result.pts_idx_bounds, false);
     Tensor trans = torch::exp(-acc_density);
     Tensor weights = trans * alphas;
     Tensor mask = trans > 1e-4f;
@@ -95,12 +88,9 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     CHECK_EQ(sample_result_early_stop.pts_idx_bounds.max().item<int>(), sample_result_early_stop.pts.size(0));
   }
 
-  Tensor pts  = sample_result_early_stop.pts;
-  Tensor dirs = sample_result_early_stop.dirs;
-  n_all_pts = pts.size(0);
+  n_all_pts = sample_result_early_stop.pts.size(0);
 
-  Tensor scene_feat = scene_field_->Query(pts);
-
+  Tensor scene_feat = scene_field_->Query(sample_result_early_stop.pts);
   Tensor sampled_density = DensityAct(scene_feat.index({ Slc(), Slc(0, 1) }));
 
   Tensor shading_feat = torch::cat({
@@ -112,11 +102,9 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     shading_feat = CustomOps::ScatterAdd(app_emb_, all_emb_idx, shading_feat);
   }
 
-  Tensor sampled_colors = shader_->Query(shading_feat, dirs);
-
-  Tensor sampled_dt = sample_result_early_stop.dt;
+  Tensor sampled_colors = shader_->Query(shading_feat, sample_result_early_stop.dirs);
   Tensor sampled_t = (sample_result_early_stop.t + 1e-2f).contiguous();
-  Tensor sec_density = sampled_density.index({Slc(), 0}) * sampled_dt;
+  Tensor sec_density = sampled_density.index({Slc(), 0}) * sample_result_early_stop.dt;
   Tensor alphas = 1.f - torch::exp(-sec_density);
   Tensor idx_start_end = sample_result_early_stop.pts_idx_bounds;
   Tensor acc_density = FlexOps::AccumulateSum(sec_density, idx_start_end, false);
