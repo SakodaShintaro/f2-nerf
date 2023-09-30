@@ -41,7 +41,8 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   dataset_->SaveInferenceParams();
 
   // Renderer
-  renderer_ = std::make_shared<Renderer>(config, dataset_->n_images_);
+  const bool use_app_emb = config["renderer"]["use_app_emb"].as<bool>();
+  renderer_ = std::make_shared<Renderer>(use_app_emb, dataset_->n_images_);
   renderer_->to(torch::kCUDA);
 
   // Optimizer

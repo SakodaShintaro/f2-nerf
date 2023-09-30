@@ -31,7 +31,8 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
     torch::tensor(inference_params["normalizing_center"].as<std::vector<float>>(), CUDAFloat);
   radius_ = inference_params["normalizing_radius"].as<float>();
 
-  renderer_ = std::make_shared<Renderer>(config, n_images_);
+  const bool use_app_emb = config["renderer"]["use_app_emb"].as<bool>();
+  renderer_ = std::make_shared<Renderer>(use_app_emb, n_images_);
 
   const std::string checkpoint_path = base_exp_dir + "/checkpoints/latest";
   Tensor scalars;

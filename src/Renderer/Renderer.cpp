@@ -13,9 +13,8 @@
 using Tensor = torch::Tensor;
 namespace F = torch::nn::functional;
 
-Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_config) {
-  const YAML::Node conf = root_config["renderer"];
-
+Renderer::Renderer(bool use_app_emb, int n_images) : use_app_emb_(use_app_emb)
+{
   pts_sampler_ = std::make_shared<PtsSampler>();
 
   scene_field_ = std::make_shared<Field>();
@@ -24,13 +23,11 @@ Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_
   shader_ = std::make_shared<Shader>();
   register_module("shader", shader_);
 
-  use_app_emb_ = conf["use_app_emb"].as<bool>();
   // WARNING: Hard code here.
   app_emb_ = torch::randn({ n_images, 16 }, CUDAFloat) * .1f;
   app_emb_.requires_grad_(true);
   register_parameter("app_emb", app_emb_);
 }
-
 
 RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode) {
   int n_rays = rays_o.sizes()[0];
