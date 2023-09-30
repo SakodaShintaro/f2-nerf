@@ -13,11 +13,8 @@
 
 using Tensor = torch::Tensor;
 
-PtsSampler::PtsSampler(const YAML::Node & root_config)
+PtsSampler::PtsSampler() : sample_l_(1.0 / 256)
 {
-  ScopeWatch watch("PtsSampler::PtsSampler");
-  const YAML::Node & config = root_config["pts_sampler"];
-  sample_l_ = config["sample_l"].as<float>();
 }
 
 SampleResultFlex PtsSampler::GetSamples(
@@ -61,7 +58,5 @@ SampleResultFlex PtsSampler::GetSamples(
   Tensor sampled_dirs =
     rays_d.expand({-1, MAX_SAMPLE_PER_RAY, -1}).reshape({n_all_pts, 3}).contiguous();
 
-  return {
-    sampled_pts, sampled_dirs, sampled_distances, sampled_t, pts_idx_start_end
-  };
+  return {sampled_pts, sampled_dirs, sampled_distances, sampled_t, pts_idx_start_end};
 }

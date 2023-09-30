@@ -30,9 +30,9 @@ class PtsSampler
   using Tensor = torch::Tensor;
 
 public:
-  PtsSampler(const YAML::Node & config);
+  PtsSampler();
   SampleResultFlex GetSamples(const Tensor & rays_o, const Tensor & rays_d, RunningMode mode);
   const YAML::Node config_;
 
-  float sample_l_;
+  const float sample_l_;
 };

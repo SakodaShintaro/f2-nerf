@@ -16,7 +16,7 @@ namespace F = torch::nn::functional;
 Renderer::Renderer(const YAML::Node & root_config, int n_images) : config_(root_config) {
   const YAML::Node conf = root_config["renderer"];
 
-  pts_sampler_ = std::make_shared<PtsSampler>(root_config);
+  pts_sampler_ = std::make_shared<PtsSampler>();
 
   scene_field_ = std::make_shared<Field>(root_config);
   register_module("scene_field", scene_field_);
