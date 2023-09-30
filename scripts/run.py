@@ -45,6 +45,14 @@ def main(conf: DictConfig) -> None:
     save_config_path = os.path.join(base_exp_dir, 'runtime_config.yaml')
     OmegaConf.save(conf, save_config_path)
 
+    # ファイルをテキストとして読み込み、ヘッダを追加して再保存
+    with open(save_config_path, 'r') as file:
+        content = file.read()
+
+    header = "%YAML 1.2\n---\n"
+    with open(save_config_path, 'w') as file:
+        file.write(header + content)
+
     binary_path = f"{base_dir}/build/main"
     assert os.path.exists(binary_path) and os.path.isfile(binary_path)
     subprocess.run(f"{binary_path} train {save_config_path}", shell=True, check=True)

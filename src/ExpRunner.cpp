@@ -3,52 +3,66 @@
 //
 
 #include "ExpRunner.h"
-#include <experimental/filesystem>  // GCC 7.5?
-#include <fmt/core.h>
-#include "Utils/Utils.h"
-#include "Utils/StopWatch.h"
+
 #include "Utils/CustomOps/CustomOps.h"
+#include "Utils/StopWatch.h"
+#include "Utils/Utils.h"
+
+#include <experimental/filesystem>
+#include <opencv2/core.hpp>
+
+#include <fmt/core.h>
 
 namespace fs = std::experimental::filesystem::v1;
 using Tensor = torch::Tensor;
 
-
 ExpRunner::ExpRunner(const std::string& conf_path) {
-  const YAML::Node & config = YAML::LoadFile(conf_path);
-  config_ = config;
+  fs::path p(conf_path);
+  fs::path canonical_path = fs::canonical(p);
+  const std::string path = canonical_path.string();
+  cv::FileStorage fs(path, cv::FileStorage::READ);
+  if (!fs.isOpened()) {
+    throw std::runtime_error("Failed to open " + conf_path);
+  }
 
-  base_exp_dir_ = config["base_exp_dir"].as<std::string>();
-
+  fs["base_exp_dir"] >> base_exp_dir_;
   fs::create_directories(base_exp_dir_);
 
-  pts_batch_size_ = config["train"]["pts_batch_size"].as<int>();
-  end_iter_ = config["train"]["end_iter"].as<int>();
-  vis_freq_ = config["train"]["vis_freq"].as<int>();
-  report_freq_ = config["train"]["report_freq"].as<int>();
-  save_freq_ = config["train"]["save_freq"].as<int>();
-  learning_rate_ = config["train"]["learning_rate"].as<float>();
-  learning_rate_alpha_ = config["train"]["learning_rate_alpha"].as<float>();
-  learning_rate_warm_up_end_iter_ = config["train"]["learning_rate_warm_up_end_iter"].as<int>();
-  disp_loss_weight_ = config["train"]["disp_loss_weight"].as<float>();
-  var_loss_weight_ = config["train"]["var_loss_weight"].as<float>();
-  var_loss_start_ = config["train"]["var_loss_start"].as<int>();
-  var_loss_end_ = config["train"]["var_loss_end"].as<int>();
+  const cv::FileNode train_config = fs["train"];
+  pts_batch_size_ = (int)train_config["pts_batch_size"];
+  end_iter_ = (int)train_config["end_iter"];
+  vis_freq_ = (int)train_config["vis_freq"];
+  report_freq_ = (int)train_config["report_freq"];
+  save_freq_ = (int)train_config["save_freq"];
+  learning_rate_ = (float)train_config["learning_rate"];
+  learning_rate_alpha_ = (float)train_config["learning_rate_alpha"];
+  learning_rate_warm_up_end_iter_ = (int)train_config["learning_rate_warm_up_end_iter"];
+  disp_loss_weight_ = (float)train_config["disp_loss_weight"];
+  var_loss_weight_ = (float)train_config["var_loss_weight"];
+  var_loss_start_ = (int)train_config["var_loss_start"];
+  var_loss_end_ = (int)train_config["var_loss_end"];
 
-  const std::string data_path = config["dataset_path"].as<std::string>();
+  std::string data_path;
+  fs["dataset_path"] >> data_path;
 
   // Dataset
   dataset_ = std::make_shared<Dataset>(data_path, base_exp_dir_);
   dataset_->SaveInferenceParams();
 
   // Renderer
-  const bool use_app_emb = config["renderer"]["use_app_emb"].as<bool>();
+  std::string use_app_emb_str;
+  fs["renderer"]["use_app_emb"] >> use_app_emb_str;
+  const bool use_app_emb = (use_app_emb_str == "true");
   renderer_ = std::make_shared<Renderer>(use_app_emb, dataset_->n_images_);
   renderer_->to(torch::kCUDA);
 
   // Optimizer
   optimizer_ = std::make_shared<torch::optim::Adam>(renderer_->OptimParamGroups(learning_rate_));
 
-  if (config["is_continue"].as<bool>()) {
+  std::string is_continue_str;
+  fs["is_continue"] >> is_continue_str;
+  const bool is_continue = (is_continue_str == "true");
+  if (is_continue) {
     LoadCheckpoint(base_exp_dir_ + "/checkpoints/latest");
   }
 }

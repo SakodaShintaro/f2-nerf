@@ -38,8 +38,6 @@ public:
   float learning_rate_, learning_rate_alpha_, learning_rate_warm_up_end_iter_;
   float var_loss_weight_, disp_loss_weight_;
 
-  YAML::Node config_;
-
   std::shared_ptr<Dataset> dataset_;
   std::shared_ptr<Renderer> renderer_;
   std::shared_ptr<torch::optim::Adam> optimizer_;
