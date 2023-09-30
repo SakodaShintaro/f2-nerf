@@ -146,7 +146,7 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
   Tensor prev = initial_pose.detach().clone();
   std::vector<Tensor> results;
   initial_pose = initial_pose.requires_grad_(true);
-  torch::optim::Adam optimizer({initial_pose}, 1 * 1e-2);
+  torch::optim::Adam optimizer({initial_pose}, 1 * 1e-3);
   for (int64_t i = 0; i < iteration_num; i++) {
     auto [rays_o, rays_d, bounds] = rays_from_pose(initial_pose);
     auto [pred_colors, pred_disps] = render_all_rays(rays_o, rays_d, bounds);

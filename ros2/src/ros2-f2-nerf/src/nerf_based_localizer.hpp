@@ -86,9 +86,8 @@ private:
 
   bool is_activated_;
 
-  bool is_awsim_ = false;
-
   LocalizerCore localizer_core_;
+  const int optimization_mode_;
 };
 
 #endif  // NERF_BASED_LOCALIZER_HPP_

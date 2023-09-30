@@ -12,3 +12,4 @@ nerf_based_localizer:
     base_score: -1.0
     output_covariance: 0.000225
     resize_factor: 10
+    optimization_mode: 0
