@@ -76,7 +76,17 @@ Dataset::Dataset(const std::string & data_path, const std::string & output_dir)
     bounds_ = torch::stack(bounds, 0).contiguous().to(torch::kCUDA);
   }
 
-  NormalizeScene();
+  // normalize scene
+  {
+    Tensor cam_pos = poses_.index({Slc(), Slc(0, 3), 3}).clone();
+    center_ = cam_pos.mean(0, false);
+    Tensor bias = cam_pos - center_.unsqueeze(0);
+    radius_ = torch::linalg_norm(bias, 2, -1, false).max().item<float>();
+    cam_pos = (cam_pos - center_.unsqueeze(0)) / radius_;
+    poses_.index_put_({Slc(), Slc(0, 3), 3}, cam_pos);
+    poses_ = poses_.contiguous();
+    bounds_ = (bounds_ / radius_).contiguous();
+  }
 
   // Relax bounds
   const std::vector<float> bounds_factor = {0.25, 4.0};
@@ -105,19 +115,6 @@ Dataset::Dataset(const std::string & data_path, const std::string & output_dir)
   height_ = images[0].size(0);
   width_ = images[0].size(1);
   image_tensors_ = torch::stack(images, 0).contiguous();
-}
-
-void Dataset::NormalizeScene()
-{
-  // Given poses_ & bounds_, Gen new poses_, bounds_.
-  Tensor cam_pos = poses_.index({Slc(), Slc(0, 3), 3}).clone();
-  center_ = cam_pos.mean(0, false);
-  Tensor bias = cam_pos - center_.unsqueeze(0);
-  radius_ = torch::linalg_norm(bias, 2, -1, false).max().item<float>();
-  cam_pos = (cam_pos - center_.unsqueeze(0)) / radius_;
-  poses_.index_put_({Slc(), Slc(0, 3), 3}, cam_pos);
-  poses_ = poses_.contiguous();
-  bounds_ = (bounds_ / radius_).contiguous();
 }
 
 void Dataset::SaveInferenceParams() const

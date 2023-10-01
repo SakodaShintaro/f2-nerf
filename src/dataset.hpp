@@ -33,7 +33,6 @@ class Dataset
 public:
   Dataset(const std::string & data_path, const std::string & output_dir);
 
-  void NormalizeScene();
   void SaveInferenceParams() const;
 
   // Img2WorldRay
