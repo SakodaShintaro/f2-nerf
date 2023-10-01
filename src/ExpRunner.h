@@ -6,7 +6,7 @@
 #include <memory>
 #include <tuple>
 #include <torch/torch.h>
-#include "Dataset/Dataset.h"
+#include "dataset/dataset.hpp"
 #include "Renderer/Renderer.h"
 
 class ExpRunner {

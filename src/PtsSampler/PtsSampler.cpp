@@ -4,7 +4,7 @@
 
 #include "PtsSampler.h"
 
-#include "../Dataset/Dataset.h"
+#include "../dataset/dataset.hpp"
 #include "../Utils/StopWatch.h"
 #include "../Utils/Utils.h"
 
