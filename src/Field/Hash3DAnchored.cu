@@ -11,8 +11,8 @@ using Tensor = torch::Tensor;
 template<typename T>
 __global__ void Hash3DAnchoredForwardKernel(int n_points, int local_size,
                                             T* feat_pool, int* prim_pool,
-                                            Wec3f* bias_pool,
-                                            Wec3f* points_ptr,
+                                            Eigen::Vector3f* bias_pool,
+                                            Eigen::Vector3f* points_ptr,
                                             T* out_feat) {
   int pts_idx = blockIdx.x * blockDim.x + threadIdx.x;
   int level_idx = blockIdx.y;
@@ -23,7 +23,7 @@ __global__ void Hash3DAnchoredForwardKernel(int n_points, int local_size,
   points_ptr  = points_ptr + pts_idx;
   out_feat = out_feat + pts_idx * (N_LEVELS * N_CHANNELS);
 
-  Wec3f pt = points_ptr[0];
+  Eigen::Vector3f pt = points_ptr[0];
   float mul = exp2f((RES_FINE_POW_2 - RES_BASE_POW_2) * float(level_idx) / float(N_LEVELS - 1) + RES_BASE_POW_2);
   pt *= mul;
   unsigned prim_a, prim_b, prim_c;
@@ -78,8 +78,8 @@ template<typename T>
 __global__ void Hash3DAnchoredBackwardKernel(int n_points, int local_size,
                                              T* feat_pool,
                                              int* prim_pool,
-                                             Wec3f* bias_pool,
-                                             Wec3f* points_ptr,
+                                             Eigen::Vector3f* bias_pool,
+                                             Eigen::Vector3f* points_ptr,
                                              T* grad_in, // [ n_points, n_levels, n_channels ]
                                              T* grad_points, // [ n_points, 3 ]
                                              T* grad_embeds  // [ pool_size, n_channels ]
@@ -92,7 +92,7 @@ __global__ void Hash3DAnchoredBackwardKernel(int n_points, int local_size,
   feat_pool = feat_pool + local_size * level_idx;
   points_ptr = points_ptr + pts_idx;
   grad_in = grad_in + (N_LEVELS * N_CHANNELS) * pts_idx + level_idx * N_CHANNELS;
-  Wec3f pt = points_ptr[0];
+  Eigen::Vector3f pt = points_ptr[0];
   float mul = exp2f((RES_FINE_POW_2 - RES_BASE_POW_2) * float(level_idx) / float(N_LEVELS - 1) + RES_BASE_POW_2);
   pt *= mul;
   unsigned prim_a, prim_b, prim_c;
@@ -190,8 +190,8 @@ variable_list Hash3DAnchoredFunction::forward(AutogradContext* ctx,
       n_points, info_ptr->hash3d_->local_size_,
       RE_INTER(FlexType*, feat_pool_true.data_ptr()),
       prim_pool.data_ptr<int>(),
-      RE_INTER(Wec3f*, bias_pool.data_ptr()),
-      RE_INTER(Wec3f*, points.data_ptr()),
+      RE_INTER(Eigen::Vector3f*, bias_pool.data_ptr()),
+      RE_INTER(Eigen::Vector3f*, points.data_ptr()),
       RE_INTER(FlexType*, out_feat.data_ptr()));
 
   return { out_feat.to(torch::kFloat32) };
@@ -225,8 +225,8 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext* ctx, variable_li
       n_points, info_ptr->hash3d_->local_size_,
       RE_INTER(FlexType*, feat_pool_true.data_ptr()),
       prim_pool.data_ptr<int>(),
-      RE_INTER(Wec3f*, bias_pool.data_ptr()),
-      RE_INTER(Wec3f*, points.data_ptr()),
+      RE_INTER(Eigen::Vector3f*, bias_pool.data_ptr()),
+      RE_INTER(Eigen::Vector3f*, points.data_ptr()),
       RE_INTER(FlexType*, grad_in.data_ptr()),
       RE_INTER(FlexType*, points_grad.data_ptr()),
       RE_INTER(FlexType*, embeds_grad.data_ptr()));

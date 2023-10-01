@@ -36,7 +36,7 @@ Dataset::Dataset(const std::string & data_path, const std::string & output_dir) 
       const int INTRINSIC_NUM = 9;   //(3, 3)
       const int DISTORTION_NUM = 4;  //(k1, k2, p1, p2)
       const int BOUNDS_NUM = 2;      //(near, far)
-      CHECK_EQ(tokens.size(), POSE_NUM + INTRINSIC_NUM + DISTORTION_NUM + BOUNDS_NUM);
+      CHECK(tokens.size() == POSE_NUM + INTRINSIC_NUM + DISTORTION_NUM + BOUNDS_NUM);
       Tensor pose = torch::zeros({3, 4}, torch::kFloat32);
       for (int i = 0; i < POSE_NUM; i++) {
         pose.index_put_({i / 4, i % 4}, std::stof(tokens[i]));

@@ -51,8 +51,8 @@ public:
     idx = idx.contiguous();
     int n_all = idx.size(0);
     int n_channels = emb.size(1);
-    CHECK_EQ(n_all, to_add.size(0));
-    CHECK_EQ(n_channels, to_add.size(1));
+    CHECK(n_all == to_add.size(0));
+    CHECK(n_channels == to_add.size(1));
 
     const unsigned thread_cap = 512;
     dim3 grid_dim  = { unsigned(n_all + thread_cap - 1) / thread_cap, unsigned(n_channels), 1 };

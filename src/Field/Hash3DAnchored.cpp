@@ -47,7 +47,7 @@ Hash3DAnchored::Hash3DAnchored()
     prim_selected.push_back(val);
   }
 
-  CHECK_EQ(prim_selected.size(), 3 * N_LEVELS);
+  CHECK(prim_selected.size() == 3 * N_LEVELS);
 
   prim_pool_ = torch::from_blob(prim_selected.data(), 3 * N_LEVELS, CPUInt).to(torch::kCUDA);
   prim_pool_ = prim_pool_.reshape({N_LEVELS, 3}).contiguous();

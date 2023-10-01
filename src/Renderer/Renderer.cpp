@@ -49,7 +49,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
       Tensor()
     };
   }
-  CHECK_EQ(rays_o.sizes()[0], sample_result.pts_idx_bounds.sizes()[0]);
+  CHECK(rays_o.sizes()[0] == sample_result.pts_idx_bounds.sizes()[0]);
 
   auto DensityAct = [](Tensor x) -> Tensor {
     const float shift = 3.f;
@@ -82,7 +82,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     idx_bounds.index_put_({Slc(), 1}, cum_num);
     sample_result_early_stop.pts_idx_bounds = idx_bounds;
 
-    CHECK_EQ(sample_result_early_stop.pts_idx_bounds.max().item<int>(), sample_result_early_stop.pts.size(0));
+    CHECK(sample_result_early_stop.pts_idx_bounds.max().item<int>() == sample_result_early_stop.pts.size(0));
   }
 
   n_all_pts = sample_result_early_stop.pts.size(0);
@@ -114,7 +114,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   Tensor disparity = FlexOps::Sum(weights / sampled_t, idx_start_end);
   Tensor depth = FlexOps::Sum(weights * sampled_t, idx_start_end) / (1.f - last_trans + 1e-4f);
 
-  CHECK_NOT_NAN(colors);
+  CHECK(std::isfinite((colors).mean().item<float>()));
 
   return { colors, disparity, depth, weights, idx_start_end };
 }

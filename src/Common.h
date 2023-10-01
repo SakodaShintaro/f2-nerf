@@ -17,19 +17,15 @@
 #define CPUFloat torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU)
 #define CPULong torch::TensorOptions().dtype(torch::kLong).device(torch::kCPU)
 #define CPUInt torch::TensorOptions().dtype(torch::kInt).device(torch::kCPU)
-#define CPUUInt8 torch::TensorOptions().dtype(torch::kUInt8).device(torch::kCPU)
 
 #ifdef HALF_PRECISION
 #define CUDAFlex CUDAHalf
-#define CPUFlex CPUHalf
 #define FlexType __half
 #else
 #define CUDAFlex CUDAFloat
-#define CPUFlex CPUFloat
 #define FlexType float
 #endif
 
-#define CHECK_NOT_NAN(x) CHECK(std::isfinite((x).mean().item<float>()))
 #define CK_CONT(x) CHECK(x.is_contiguous())
 
 #define DivUp(x, y)  (((x) + (y) - 1) / (y))
@@ -38,8 +34,3 @@
 #define LIN_GRID_DIM(x) { unsigned(DivUp((x), THREAD_CAP)), 1, 1 }
 #define LINEAR_IDX() (blockIdx.x * blockDim.x + threadIdx.x)
 #define RE_INTER(x, y) reinterpret_cast<x>(y)
-
-// Use "W" instead of "V" to avoid conflict of OpenCV :-).
-#define Wec3f Eigen::Vector3f
-
-#define CHECK_EQ(a, b) CHECK((a) == (b))
