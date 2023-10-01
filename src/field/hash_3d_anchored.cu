@@ -217,9 +217,11 @@ variable_list Hash3DAnchoredFunction::forward(
   Tensor feat_pool_true = feat_pool.to(torch::kFloat16).contiguous();
 
   Hash3DAnchoredForwardKernel<FlexType><<<grid_dim, block_dim>>>(
-    n_points, info_ptr->hash3d_->local_size_, RE_INTER(FlexType *, feat_pool_true.data_ptr()),
-    prim_pool.data_ptr<int>(), RE_INTER(Eigen::Vector3f *, bias_pool.data_ptr()),
-    RE_INTER(Eigen::Vector3f *, points.data_ptr()), RE_INTER(FlexType *, out_feat.data_ptr()));
+    n_points, info_ptr->hash3d_->local_size_,
+    reinterpret_cast<FlexType *>(feat_pool_true.data_ptr()), prim_pool.data_ptr<int>(),
+    reinterpret_cast<Eigen::Vector3f *>(bias_pool.data_ptr()),
+    reinterpret_cast<Eigen::Vector3f *>(points.data_ptr()),
+    reinterpret_cast<FlexType *>(out_feat.data_ptr()));
 
   return {out_feat.to(torch::kFloat32)};
 }
@@ -250,10 +252,13 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext * ctx, variable_l
   Tensor embeds_grad = torch::zeros({pool_size, N_CHANNELS}, CUDAFlex);
 
   Hash3DAnchoredBackwardKernel<FlexType><<<grid_dim, block_dim>>>(
-    n_points, info_ptr->hash3d_->local_size_, RE_INTER(FlexType *, feat_pool_true.data_ptr()),
-    prim_pool.data_ptr<int>(), RE_INTER(Eigen::Vector3f *, bias_pool.data_ptr()),
-    RE_INTER(Eigen::Vector3f *, points.data_ptr()), RE_INTER(FlexType *, grad_in.data_ptr()),
-    RE_INTER(FlexType *, points_grad.data_ptr()), RE_INTER(FlexType *, embeds_grad.data_ptr()));
+    n_points, info_ptr->hash3d_->local_size_,
+    reinterpret_cast<FlexType *>(feat_pool_true.data_ptr()), prim_pool.data_ptr<int>(),
+    reinterpret_cast<Eigen::Vector3f *>(bias_pool.data_ptr()),
+    reinterpret_cast<Eigen::Vector3f *>(points.data_ptr()),
+    reinterpret_cast<FlexType *>(grad_in.data_ptr()),
+    reinterpret_cast<FlexType *>(points_grad.data_ptr()),
+    reinterpret_cast<FlexType *>(embeds_grad.data_ptr()));
 
   points_grad = points_grad.to(torch::kFloat32) / grad_scale;
   embeds_grad = embeds_grad.to(torch::kFloat32) / grad_scale;
