@@ -48,7 +48,7 @@ include(${ROOT_DIR}/src/field/field.cmake)
 include(${ROOT_DIR}/src/dataset/dataset.cmake)
 include(${ROOT_DIR}/src/points_sampler/points_sampler.cmake)
 include(${ROOT_DIR}/src/renderer/renderer.cmake)
-include(${ROOT_DIR}/src/Shader/shader.cmake)
+include(${ROOT_DIR}/src/shader/shader.cmake)
 include(${ROOT_DIR}/src/Utils/utils.cmake)
 include(${ROOT_DIR}/src/localizer/localizer.cmake)
 

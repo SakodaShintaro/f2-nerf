@@ -5,7 +5,7 @@
 #ifndef SANR_RENDERER_H
 #define SANR_RENDERER_H
 
-#include "../Shader/Shader.h"
+#include "../shader/sh_shader.hpp"
 #include "../field/hash_3d_anchored.hpp"
 #include "../points_sampler/points_sampler.hpp"
 
@@ -33,7 +33,7 @@ public:
 
   std::shared_ptr<PtsSampler> pts_sampler_;
   std::shared_ptr<Hash3DAnchored> scene_field_;
-  std::shared_ptr<Shader> shader_;
+  std::shared_ptr<SHShader> shader_;
 
   const bool use_app_emb_;
   Tensor app_emb_;

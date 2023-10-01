@@ -2,7 +2,7 @@
 // Created by ppwang on 2022/10/8.
 //
 
-#include "SHShader.h"
+#include "sh_shader.hpp"
 #include "../Common.h"
 
 using Tensor = torch::Tensor;

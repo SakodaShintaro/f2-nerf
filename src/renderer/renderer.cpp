@@ -20,7 +20,7 @@ Renderer::Renderer(bool use_app_emb, int n_images) : use_app_emb_(use_app_emb)
   scene_field_ = std::make_shared<Hash3DAnchored>();
   register_module("scene_field", scene_field_);
 
-  shader_ = std::make_shared<Shader>();
+  shader_ = std::make_shared<SHShader>();
   register_module("shader", shader_);
 
   // WARNING: Hard code here.
