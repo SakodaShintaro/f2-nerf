@@ -7,7 +7,7 @@
 #include <tuple>
 #include <torch/torch.h>
 #include "dataset/dataset.hpp"
-#include "Renderer/Renderer.h"
+#include "renderer/renderer.hpp"
 
 class ExpRunner {
   using Tensor = torch::Tensor;

@@ -2,7 +2,7 @@
 #define LOCALIZER_HPP_
 
 #include "../dataset/dataset.hpp"
-#include "../Renderer/Renderer.h"
+#include "../renderer/renderer.hpp"
 
 #include <torch/torch.h>
 
