@@ -15,7 +15,6 @@ public:
   ExpRunner(const std::string& conf_path);
 
   void Train();
-  void RenderAllImages();
 
   void LoadCheckpoint(const std::string& path);
   void SaveCheckpoint();
