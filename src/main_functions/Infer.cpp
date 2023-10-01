@@ -1,5 +1,5 @@
-#include "../Utils/StopWatch.h"
-#include "../Utils/Utils.h"
+#include "../utils/stop_watch.hpp"
+#include "../utils/utils.hpp"
 #include "../localizer/localizer.hpp"
 #include "../main_functions.hpp"
 

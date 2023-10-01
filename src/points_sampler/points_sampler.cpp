@@ -4,8 +4,8 @@
 
 #include "points_sampler.hpp"
 
-#include "../Utils/StopWatch.h"
-#include "../Utils/Utils.h"
+#include "../utils/stop_watch.hpp"
+#include "../utils/utils.hpp"
 #include "../dataset/dataset.hpp"
 
 #include <algorithm>

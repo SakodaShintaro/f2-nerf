@@ -1,7 +1,7 @@
 #include "nerf_based_localizer.hpp"
 
-#include "../../src/Utils/StopWatch.h"
-#include "../../src/Utils/Utils.h"
+#include "../../src/utils/stop_watch.hpp"
+#include "../../src/utils/utils.hpp"
 
 #include <Eigen/Eigen>
 #include <experimental/filesystem>

@@ -4,11 +4,11 @@
 
 #include "renderer.hpp"
 #include "../Common.h"
-#include "../Utils/Utils.h"
-#include "../Utils/StopWatch.h"
-#include "../Utils/CustomOps/CustomOps.h"
-#include "../Utils/CustomOps/FlexOps.h"
-#include "../Utils/CustomOps/Scatter.h"
+#include "../utils/utils.hpp"
+#include "../utils/stop_watch.hpp"
+#include "../utils/CustomOps/CustomOps.hpp"
+#include "../utils/CustomOps/FlexOps.hpp"
+#include "../utils/CustomOps/Scatter.hpp"
 
 using Tensor = torch::Tensor;
 namespace F = torch::nn::functional;

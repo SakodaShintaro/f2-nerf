@@ -2,7 +2,7 @@
 // Created by ppwang on 2022/5/18.
 //
 
-#include "StopWatch.h"
+#include "stop_watch.hpp"
 #include <iostream>
 #include <torch/torch.h>
 

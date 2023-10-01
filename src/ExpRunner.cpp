@@ -4,9 +4,9 @@
 
 #include "ExpRunner.h"
 
-#include "Utils/CustomOps/CustomOps.h"
-#include "Utils/StopWatch.h"
-#include "Utils/Utils.h"
+#include "utils/CustomOps/CustomOps.hpp"
+#include "utils/stop_watch.hpp"
+#include "utils/utils.hpp"
 
 #include <experimental/filesystem>
 #include <opencv2/core.hpp>

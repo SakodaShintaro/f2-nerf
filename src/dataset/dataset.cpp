@@ -5,8 +5,8 @@
 #include <iostream>
 #include <fmt/core.h>
 #include <experimental/filesystem>
-#include "../Utils/Utils.h"
-#include "../Utils/StopWatch.h"
+#include "../utils/utils.hpp"
+#include "../utils/stop_watch.hpp"
 
 using Tensor = torch::Tensor;
 

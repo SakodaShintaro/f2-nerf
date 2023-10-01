@@ -42,7 +42,7 @@ include(src/dataset/dataset.cmake)
 include(src/points_sampler/points_sampler.cmake)
 include(src/renderer/renderer.cmake)
 include(src/shader/shader.cmake)
-include(src/Utils/utils.cmake)
+include(src/utils/utils.cmake)
 include(src/localizer/localizer.cmake)
 
 list(APPEND SRC_ALL
