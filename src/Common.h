@@ -18,14 +18,6 @@
 #define CPULong torch::TensorOptions().dtype(torch::kLong).device(torch::kCPU)
 #define CPUInt torch::TensorOptions().dtype(torch::kInt).device(torch::kCPU)
 
-#ifdef HALF_PRECISION
-#define CUDAFlex CUDAHalf
-#define FlexType __half
-#else
-#define CUDAFlex CUDAFloat
-#define FlexType float
-#endif
-
 #define DivUp(x, y)  (((x) + (y) - 1) / (y))
 #define THREAD_CAP 512u
 #define LIN_BLOCK_DIM(x) { THREAD_CAP, 1, 1 }

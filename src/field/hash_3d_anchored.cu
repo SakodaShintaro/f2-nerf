@@ -8,6 +8,14 @@
 
 using Tensor = torch::Tensor;
 
+#ifdef HALF_PRECISION
+#define CUDAFlex CUDAHalf
+#define FlexType __half
+#else
+#define CUDAFlex CUDAFloat
+#define FlexType float
+#endif
+
 template<typename T>
 __global__ void Hash3DAnchoredForwardKernel(int n_points, int local_size,
                                             T* feat_pool, int* prim_pool,
