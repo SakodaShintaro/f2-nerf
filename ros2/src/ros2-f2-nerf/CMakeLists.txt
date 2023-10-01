@@ -44,23 +44,12 @@ set(ALL_LIBS ${TORCH_LIBRARIES}
              gtsam)
 
 set(PROJECT_SOURCE_DIR ${ROOT_DIR})
-include(${ROOT_DIR}/src/field/field.cmake)
-include(${ROOT_DIR}/src/dataset/dataset.cmake)
-include(${ROOT_DIR}/src/points_sampler/points_sampler.cmake)
-include(${ROOT_DIR}/src/renderer/renderer.cmake)
-include(${ROOT_DIR}/src/shader/shader.cmake)
-include(${ROOT_DIR}/src/utils/utils.cmake)
-include(${ROOT_DIR}/src/localizer/localizer.cmake)
+file(GLOB SRC_ALL
+  ${ROOT_DIR}/src/*.cpp
+  ${ROOT_DIR}/src/*.cu
+  ${ROOT_DIR}/src/CustomOps/*.cpp
+  ${ROOT_DIR}/src/CustomOps/*.cu)
 
-list(APPEND SRC_ALL
-        ${SRC_FIELD}
-        ${SRC_DATASET}
-        ${SRC_GEOMETRY}
-        ${SRC_PTS_SAMPLER}
-        ${SRC_RENDERER}
-        ${SRC_SHADER}
-        ${SRC_UTILS}
-        ${SRC_LOCALIZER})
 set(PROJECT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 message(STATUS "SRC_ALL: ${SRC_ALL}")

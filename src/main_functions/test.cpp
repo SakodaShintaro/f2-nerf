@@ -1,6 +1,6 @@
-#include "../localizer/localizer.hpp"
-#include "../utils/stop_watch.hpp"
-#include "../utils/utils.hpp"
+#include "../localizer.hpp"
+#include "../stop_watch.hpp"
+#include "../utils.hpp"
 #include "main_functions.hpp"
 
 #include <experimental/filesystem>

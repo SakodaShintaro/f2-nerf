@@ -1,7 +1,7 @@
 #include "localizer.hpp"
 
-#include "../../src/dataset/dataset.hpp"
-#include "../utils/stop_watch.hpp"
+#include "dataset.hpp"
+#include "stop_watch.hpp"
 
 #include <Eigen/Geometry>
 #include <opencv2/core.hpp>

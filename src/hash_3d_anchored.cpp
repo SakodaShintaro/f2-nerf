@@ -4,8 +4,8 @@
 
 #include "hash_3d_anchored.hpp"
 
-#include "../common.hpp"
-#include "../utils/stop_watch.hpp"
+#include "common.hpp"
+#include "stop_watch.hpp"
 
 #include <torch/torch.h>
 

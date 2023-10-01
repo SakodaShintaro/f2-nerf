@@ -1,5 +1,5 @@
-#include "../localizer/localizer.hpp"
-#include "../utils/utils.hpp"
+#include "../localizer.hpp"
+#include "../utils.hpp"
 #include "main_functions.hpp"
 
 #include <fcntl.h>

@@ -3,7 +3,7 @@
 //
 
 #include "CustomOps.hpp"
-#include "../../common.hpp"
+#include "../common.hpp"
 
 #define SCALE (16.f)
 

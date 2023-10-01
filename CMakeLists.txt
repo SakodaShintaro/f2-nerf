@@ -37,23 +37,9 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 # GTSAM
 find_package(GTSAM REQUIRED)
 
-include(src/field/field.cmake)
-include(src/dataset/dataset.cmake)
-include(src/points_sampler/points_sampler.cmake)
-include(src/renderer/renderer.cmake)
-include(src/shader/shader.cmake)
-include(src/utils/utils.cmake)
-include(src/localizer/localizer.cmake)
-
-list(APPEND SRC_ALL
-        ${SRC_FIELD}
-        ${SRC_DATASET}
-        ${SRC_GEOMETRY}
-        ${SRC_PTS_SAMPLER}
-        ${SRC_RENDERER}
-        ${SRC_SHADER}
-        ${SRC_UTILS}
-        ${SRC_LOCALIZER})
+file(GLOB_RECURSE SRC_ALL
+        src/*.cpp
+        src/*.cu)
 
 set(ALL_LIBS ${TORCH_LIBRARIES}
         ${TORCH_CUDA_LIBRARIES}
@@ -62,11 +48,6 @@ set(ALL_LIBS ${TORCH_LIBRARIES}
         gtsam)
 
 # ------------------------------------ Add executables ---------------------------------------
-add_executable(main main.cpp
-        src/main_functions/train_manager.cpp
-        src/main_functions/infer.cpp
-        src/main_functions/test.cpp
-        src/main_functions/walk.cpp
-        ${SRC_ALL})
+add_executable(main main.cpp ${SRC_ALL})
 target_link_libraries(main ${ALL_LIBS})
 set_property(TARGET main PROPERTY CXX_STANDARD 17)

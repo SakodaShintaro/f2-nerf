@@ -4,9 +4,9 @@
 
 #include "points_sampler.hpp"
 
-#include "../dataset/dataset.hpp"
-#include "../utils/stop_watch.hpp"
-#include "../utils/utils.hpp"
+#include "dataset.hpp"
+#include "stop_watch.hpp"
+#include "utils.hpp"
 
 #include <algorithm>
 #include <random>

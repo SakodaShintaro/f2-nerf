@@ -4,12 +4,12 @@
 
 #include "renderer.hpp"
 
-#include "../common.hpp"
-#include "../utils/CustomOps/CustomOps.hpp"
-#include "../utils/CustomOps/FlexOps.hpp"
-#include "../utils/CustomOps/Scatter.hpp"
-#include "../utils/stop_watch.hpp"
-#include "../utils/utils.hpp"
+#include "CustomOps/CustomOps.hpp"
+#include "CustomOps/FlexOps.hpp"
+#include "CustomOps/Scatter.hpp"
+#include "common.hpp"
+#include "stop_watch.hpp"
+#include "utils.hpp"
 
 using Tensor = torch::Tensor;
 namespace F = torch::nn::functional;

@@ -3,8 +3,8 @@
 //
 #include "dataset.hpp"
 
-#include "../utils/stop_watch.hpp"
-#include "../utils/utils.hpp"
+#include "stop_watch.hpp"
+#include "utils.hpp"
 
 #include <experimental/filesystem>
 

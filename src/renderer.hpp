@@ -5,9 +5,9 @@
 #ifndef F2_NERF__RENDERER_HPP_
 #define F2_NERF__RENDERER_HPP_
 
-#include "../field/hash_3d_anchored.hpp"
-#include "../points_sampler/points_sampler.hpp"
-#include "../shader/sh_shader.hpp"
+#include "hash_3d_anchored.hpp"
+#include "points_sampler.hpp"
+#include "sh_shader.hpp"
 
 #include <memory>
 #include <vector>
