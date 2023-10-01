@@ -94,7 +94,7 @@ RenderResult Renderer::Render(
 
   Tensor shading_feat = torch::cat(
     {torch::ones_like(scene_feat.index({Slc(), Slc(0, 1)}), CUDAFloat),
-     scene_feat.index({Slc(), Slc(1, None)})},
+     scene_feat.index({Slc(), Slc(1, torch::indexing::None)})},
     1);
 
   if (mode == RunningMode::TRAIN && use_app_emb_) {

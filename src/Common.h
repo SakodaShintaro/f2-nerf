@@ -7,10 +7,8 @@
 
 #include <torch/torch.h>
 
-#define None torch::indexing::None
-#define Slc torch::indexing::Slice
-
-#define CUDAFloat torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA)
+using Slc = torch::indexing::Slice;
+const auto CUDAFloat = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA);
 
 #define DivUp(x, y)  (((x) + (y) - 1) / (y))
 #define THREAD_CAP 512u
