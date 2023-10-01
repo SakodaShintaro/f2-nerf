@@ -5,7 +5,6 @@
 
 void walk(const std::string & config_path);
 void test(const std::string & config_path);
-void test_field(const std::string & config_path);
 void infer(const std::string & config_path);
 
 #endif  // F2_NERF__MAIN_FUNCTIONS_HPP_

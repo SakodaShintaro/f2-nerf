@@ -63,11 +63,10 @@ set(ALL_LIBS ${TORCH_LIBRARIES}
 
 # ------------------------------------ Add executables ---------------------------------------
 add_executable(main main.cpp
-        src/train_manager.cpp
-        src/main_functions/Infer.cpp
-        src/main_functions/Test.cpp
-        src/main_functions/TestField.cpp
-        src/main_functions/Walk.cpp
+        src/main_functions/train_manager.cpp
+        src/main_functions/infer.cpp
+        src/main_functions/test.cpp
+        src/main_functions/walk.cpp
         ${SRC_ALL})
 target_link_libraries(main ${ALL_LIBS})
 set_property(TARGET main PROPERTY CXX_STANDARD 17)

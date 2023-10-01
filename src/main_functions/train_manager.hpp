@@ -5,8 +5,8 @@
 #ifndef F2_NERF__TRAIN_MANAGER_HPP_
 #define F2_NERF__TRAIN_MANAGER_HPP_
 
-#include "dataset/dataset.hpp"
-#include "renderer/renderer.hpp"
+#include "../dataset/dataset.hpp"
+#include "../renderer/renderer.hpp"
 
 #include <torch/torch.h>
 

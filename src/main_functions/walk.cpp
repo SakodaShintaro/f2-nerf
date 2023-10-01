@@ -1,6 +1,6 @@
 #include "../localizer/localizer.hpp"
-#include "../main_functions.hpp"
 #include "../utils/utils.hpp"
+#include "main_functions.hpp"
 
 #include <fcntl.h>
 #include <stdio.h>
