@@ -16,7 +16,8 @@
 namespace fs = std::experimental::filesystem::v1;
 using Tensor = torch::Tensor;
 
-ExpRunner::ExpRunner(const std::string& conf_path) {
+ExpRunner::ExpRunner(const std::string & conf_path)
+{
   fs::path p(conf_path);
   fs::path canonical_path = fs::canonical(p);
   const std::string path = canonical_path.string();
@@ -67,7 +68,8 @@ ExpRunner::ExpRunner(const std::string& conf_path) {
   }
 }
 
-void ExpRunner::Train() {
+void ExpRunner::Train()
+{
   std::ofstream ofs_log(base_exp_dir_ + "/train_log.txt");
 
   StopWatch clock;
@@ -82,9 +84,9 @@ void ExpRunner::Train() {
     int cur_batch_size = int(pts_batch_size_ / sampled_pts_per_ray_) >> 4 << 4;
     auto [train_rays, gt_colors, emb_idx] = dataset_->RandRaysData(cur_batch_size);
 
-    Tensor& rays_o = train_rays.origins;
-    Tensor& rays_d = train_rays.dirs;
-    Tensor& bounds = train_rays.bounds;
+    Tensor & rays_o = train_rays.origins;
+    Tensor & rays_d = train_rays.dirs;
+    Tensor & bounds = train_rays.bounds;
 
     auto render_result = renderer_->Render(rays_o, rays_d, emb_idx, RunningMode::TRAIN);
     Tensor pred_colors = render_result.colors.index({Slc(0, cur_batch_size)});
@@ -101,13 +103,12 @@ void ExpRunner::Train() {
     float var_loss_weight = 0.f;
     if (iter_step_ > var_loss_end_) {
       var_loss_weight = var_loss_weight_;
-    }
-    else if (iter_step_ > var_loss_start_) {
-      var_loss_weight = float(iter_step_ - var_loss_start_) / float(var_loss_end_ - var_loss_start_) * var_loss_weight_;
+    } else if (iter_step_ > var_loss_start_) {
+      var_loss_weight = float(iter_step_ - var_loss_start_) /
+                        float(var_loss_end_ - var_loss_start_) * var_loss_weight_;
     }
 
-    Tensor loss = color_loss + var_loss * var_loss_weight +
-                  disparity_loss * disp_loss_weight_;
+    Tensor loss = color_loss + var_loss * var_loss_weight + disparity_loss * disp_loss_weight_;
 
     float mse = (pred_colors - gt_colors).square().mean().item<float>();
     float psnr = 20.f * std::log10(1 / std::sqrt(mse));
@@ -155,7 +156,8 @@ void ExpRunner::Train() {
   std::cout << "Train done" << std::endl;
 }
 
-void ExpRunner::LoadCheckpoint(const std::string& path) {
+void ExpRunner::LoadCheckpoint(const std::string & path)
+{
   {
     Tensor scalars;
     torch::load(scalars, path + "/scalars.pt");
@@ -166,7 +168,8 @@ void ExpRunner::LoadCheckpoint(const std::string& path) {
   torch::load(renderer_, path + "/renderer.pt");
 }
 
-void ExpRunner::SaveCheckpoint() {
+void ExpRunner::SaveCheckpoint()
+{
   std::stringstream ss;
   ss << base_exp_dir_ << "/checkpoints/" << std::setw(8) << std::setfill('0') << iter_step_;
   std::string output_dir = ss.str();
@@ -176,42 +179,49 @@ void ExpRunner::SaveCheckpoint() {
   fs::create_directory(base_exp_dir_ + "/checkpoints/latest");
   // scene
   torch::save(renderer_, output_dir + "/renderer.pt");
-  fs::create_symlink(output_dir + "/renderer.pt", base_exp_dir_ + "/checkpoints/latest/renderer.pt");
+  fs::create_symlink(
+    output_dir + "/renderer.pt", base_exp_dir_ + "/checkpoints/latest/renderer.pt");
   // optimizer
   // torch::save(*(optimizer_), output_dir + "/optimizer.pt");
   // other scalars
-  Tensor scalars = torch::empty({1}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
+  Tensor scalars =
+    torch::empty({1}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
   scalars.index_put_({0}, float(iter_step_));
   torch::save(scalars, output_dir + "/scalars.pt");
   fs::create_symlink(output_dir + "/scalars.pt", base_exp_dir_ + "/checkpoints/latest/scalars.pt");
 }
 
-void ExpRunner::UpdateAdaParams() {
+void ExpRunner::UpdateAdaParams()
+{
   // Update learning rate
   float lr_factor;
   if (iter_step_ >= learning_rate_warm_up_end_iter_) {
     float progress = float(iter_step_ - learning_rate_warm_up_end_iter_) /
                      float(end_iter_ - learning_rate_warm_up_end_iter_);
-    lr_factor = (1.f - learning_rate_alpha_) * (std::cos(progress * float(M_PI)) * .5f + .5f) + learning_rate_alpha_;
-  }
-  else {
+    lr_factor = (1.f - learning_rate_alpha_) * (std::cos(progress * float(M_PI)) * .5f + .5f) +
+                learning_rate_alpha_;
+  } else {
     lr_factor = float(iter_step_) / float(learning_rate_warm_up_end_iter_);
   }
   float lr = learning_rate_ * lr_factor;
-  for (auto& g : optimizer_->param_groups()) {
+  for (auto & g : optimizer_->param_groups()) {
     g.options().set_lr(lr);
   }
 }
 
-std::tuple<Tensor,  Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode) {
+std::tuple<Tensor, Tensor> ExpRunner::RenderWholeImage(
+  Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode)
+{
   torch::NoGradGuard no_grad_guard;
   rays_o = rays_o.to(torch::kCPU);
   rays_d = rays_d.to(torch::kCPU);
   bounds = bounds.to(torch::kCPU);
   const int n_rays = rays_d.sizes()[0];
 
-  Tensor pred_colors = torch::zeros({n_rays, 3}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
-  Tensor pred_disp = torch::zeros({n_rays, 1}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
+  Tensor pred_colors =
+    torch::zeros({n_rays, 3}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
+  Tensor pred_disp =
+    torch::zeros({n_rays, 1}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
 
   const int ray_batch_size = 8192;
   for (int i = 0; i < n_rays; i += ray_batch_size) {
@@ -229,21 +239,23 @@ std::tuple<Tensor,  Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Tensor ra
   }
   pred_disp = pred_disp / pred_disp.max();
 
-  return { pred_colors, pred_disp };
+  return {pred_colors, pred_disp};
 }
 
-void ExpRunner::VisualizeImage(int idx) {
+void ExpRunner::VisualizeImage(int idx)
+{
   torch::NoGradGuard no_grad_guard;
 
-  auto [ rays_o, rays_d, bounds ] = dataset_->RaysOfCamera(idx);
-  auto [ pred_colors, pred_disps ] = RenderWholeImage(rays_o, rays_d, bounds, RunningMode::VALIDATE);
+  auto [rays_o, rays_d, bounds] = dataset_->RaysOfCamera(idx);
+  auto [pred_colors, pred_disps] = RenderWholeImage(rays_o, rays_d, bounds, RunningMode::VALIDATE);
 
   int H = dataset_->height_;
   int W = dataset_->width_;
 
-  Tensor img_tensor = torch::cat({dataset_->image_tensors_[idx].to(torch::kCPU).reshape({H, W, 3}),
-                                  pred_colors.reshape({H, W, 3}),
-                                  pred_disps.reshape({H, W, 1}).repeat({1, 1, 3})}, 1);
+  Tensor img_tensor = torch::cat(
+    {dataset_->image_tensors_[idx].to(torch::kCPU).reshape({H, W, 3}),
+     pred_colors.reshape({H, W, 3}), pred_disps.reshape({H, W, 1}).repeat({1, 1, 3})},
+    1);
   fs::create_directories(base_exp_dir_ + "/images");
   std::stringstream ss;
   ss << iter_step_ << "_" << idx << ".png";

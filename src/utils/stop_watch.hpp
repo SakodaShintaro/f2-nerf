@@ -8,7 +8,8 @@
 #include <chrono>
 #include <string>
 
-class StopWatch {
+class StopWatch
+{
 public:
   StopWatch();
   ~StopWatch() = default;
@@ -16,9 +17,10 @@ public:
   std::chrono::steady_clock::time_point t_point_;
 };
 
-class ScopeWatch {
+class ScopeWatch
+{
 public:
-  ScopeWatch(const std::string& scope_name);
+  ScopeWatch(const std::string & scope_name);
   ~ScopeWatch();
   std::chrono::steady_clock::time_point t_point_;
   std::string scope_name_;

@@ -46,8 +46,7 @@ Hash3DAnchored::Hash3DAnchored()
     int val;
     do {
       val = torch::randint(min_local_prim, max_local_prim, {1}, CPUInt).item<int>();
-    }
-    while (!is_prim(val));
+    } while (!is_prim(val));
     prim_selected.push_back(val);
   }
 
@@ -56,7 +55,7 @@ Hash3DAnchored::Hash3DAnchored()
   prim_pool_ = torch::from_blob(prim_selected.data(), 3 * N_LEVELS, CPUInt).to(torch::kCUDA);
   prim_pool_ = prim_pool_.reshape({N_LEVELS, 3}).contiguous();
 
-  bias_pool_ = (torch::rand({ N_LEVELS, 3 }, CUDAFloat) * 1000.f + 100.f).contiguous();
+  bias_pool_ = (torch::rand({N_LEVELS, 3}, CUDAFloat) * 1000.f + 100.f).contiguous();
 
   local_size_ = pool_size_ / N_LEVELS;
   local_size_ = (local_size_ >> 4) << 4;
@@ -71,7 +70,8 @@ Hash3DAnchored::Hash3DAnchored()
   register_module("mlp", mlp_);
 }
 
-Tensor Hash3DAnchored::Query(const Tensor& points) {
+Tensor Hash3DAnchored::Query(const Tensor & points)
+{
 #ifdef PROFILE
   ScopeWatch watch(__func__);
 #endif
@@ -84,7 +84,8 @@ Tensor Hash3DAnchored::Query(const Tensor& points) {
   Tensor mask = (norm <= radius);
   Tensor x = points * mask + ~mask * (1 + radius - radius / norm) * points / norm;
 
-  Tensor feat = torch::autograd::Hash3DAnchoredFunction::apply(x, feat_pool_, torch::IValue(info))[0];
+  Tensor feat =
+    torch::autograd::Hash3DAnchoredFunction::apply(x, feat_pool_, torch::IValue(info))[0];
   Tensor output = mlp_->forward(feat);
   return output;
 }
@@ -98,7 +99,7 @@ std::vector<torch::optim::OptimizerParamGroup> Hash3DAnchored::OptimParamGroups(
     opt->betas() = {0.9, 0.99};
     opt->eps() = 1e-15;
 
-    std::vector<Tensor> params = { feat_pool_ };
+    std::vector<Tensor> params = {feat_pool_};
     ret.emplace_back(std::move(params), std::move(opt));
   }
 

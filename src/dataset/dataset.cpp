@@ -2,17 +2,22 @@
 // Created by ppwang on 2022/5/7.
 //
 #include "dataset.hpp"
-#include <iostream>
-#include <fmt/core.h>
-#include <experimental/filesystem>
-#include "../utils/utils.hpp"
+
 #include "../utils/stop_watch.hpp"
+#include "../utils/utils.hpp"
+
+#include <experimental/filesystem>
+
+#include <fmt/core.h>
+
+#include <iostream>
 
 using Tensor = torch::Tensor;
 
 namespace fs = std::experimental::filesystem::v1;
 
-Dataset::Dataset(const std::string & data_path, const std::string & output_dir) : output_dir_(output_dir)
+Dataset::Dataset(const std::string & data_path, const std::string & output_dir)
+: output_dir_(output_dir)
 {
   ScopeWatch dataset_watch("Dataset::Dataset");
 
@@ -75,8 +80,11 @@ Dataset::Dataset(const std::string & data_path, const std::string & output_dir) 
 
   // Relax bounds
   const std::vector<float> bounds_factor = {0.25, 4.0};
-  bounds_ = torch::stack( { bounds_.index({"...", 0}) * bounds_factor[0],
-                                 { bounds_.index({"...", 1}) * bounds_factor[1]}}, -1).contiguous();
+  bounds_ = torch::stack(
+              {bounds_.index({"...", 0}) * bounds_factor[0],
+               {bounds_.index({"...", 1}) * bounds_factor[1]}},
+              -1)
+              .contiguous();
   bounds_.clamp_(1e-2f, 1e9f);
 
   std::vector<Tensor> images;
@@ -95,11 +103,12 @@ Dataset::Dataset(const std::string & data_path, const std::string & output_dir) 
 
   // Prepare training images
   height_ = images[0].size(0);
-  width_  = images[0].size(1);
+  width_ = images[0].size(1);
   image_tensors_ = torch::stack(images, 0).contiguous();
 }
 
-void Dataset::NormalizeScene() {
+void Dataset::NormalizeScene()
+{
   // Given poses_ & bounds_, Gen new poses_, bounds_.
   Tensor cam_pos = poses_.index({Slc(), Slc(0, 3), 3}).clone();
   center_ = cam_pos.mean(0, false);
@@ -143,11 +152,10 @@ void Dataset::SaveInferenceParams() const
   ofs << "normalizing_radius: " << radius_ << std::endl;
 }
 
-Rays Dataset::Img2WorldRay(const Tensor& pose,
-                           const Tensor& intri,
-                           const Tensor& ij) {
+Rays Dataset::Img2WorldRay(const Tensor & pose, const Tensor & intri, const Tensor & ij)
+{
   Tensor i = ij.index({"...", 0}).to(torch::kFloat32) + .5f;
-  Tensor j = ij.index({"...", 1}).to(torch::kFloat32) + .5f; // Shift half pixel;
+  Tensor j = ij.index({"...", 1}).to(torch::kFloat32) + .5f;  // Shift half pixel;
 
   Tensor cx = intri.index({Slc(), 0, 2});
   Tensor cy = intri.index({Slc(), 1, 2});
@@ -162,34 +170,35 @@ Rays Dataset::Img2WorldRay(const Tensor& pose,
   Tensor ori_tensor = pose.index({Slc(), Slc(0, 3), Slc(0, 3)});
   Tensor pos_tensor = pose.index({Slc(), Slc(0, 3), 3});
   Tensor rays_d = torch::matmul(ori_tensor, dir_tensor).squeeze();
-  Tensor rays_o = pos_tensor.expand({ rays_d.sizes()[0], 3 }).contiguous();
+  Tensor rays_o = pos_tensor.expand({rays_d.sizes()[0], 3}).contiguous();
 
-  return { rays_o, rays_d };
+  return {rays_o, rays_d};
 }
 
-BoundedRays Dataset::RaysOfCamera(int idx, int reso_level) {
+BoundedRays Dataset::RaysOfCamera(int idx, int reso_level)
+{
   int H = height_;
   int W = width_;
   Tensor ii = torch::linspace(0.f, H - 1.f, H, CUDAFloat);
   Tensor jj = torch::linspace(0.f, W - 1.f, W, CUDAFloat);
-  auto ij = torch::meshgrid({ ii, jj }, "ij");
+  auto ij = torch::meshgrid({ii, jj}, "ij");
   Tensor i = ij[0].reshape({-1});
   Tensor j = ij[1].reshape({-1});
 
   float near = bounds_.index({idx, 0}).item<float>();
-  float far  = bounds_.index({idx, 1}).item<float>();
+  float far = bounds_.index({idx, 1}).item<float>();
 
-  Tensor bounds = torch::stack({
-                                   torch::full({ H * W }, near, CUDAFloat),
-                                   torch::full({ H * W }, far,  CUDAFloat)
-                               }, -1).contiguous();
+  Tensor bounds =
+    torch::stack({torch::full({H * W}, near, CUDAFloat), torch::full({H * W}, far, CUDAFloat)}, -1)
+      .contiguous();
 
   auto [rays_o, rays_d] =
     Img2WorldRay(poses_[idx].unsqueeze(0), intri_[idx].unsqueeze(0), torch::stack({i, j}, -1));
-  return { rays_o, rays_d, bounds };
+  return {rays_o, rays_d, bounds};
 }
 
-std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size) {
+std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size)
+{
   const auto CPULong = torch::TensorOptions().dtype(torch::kLong).device(torch::kCPU);
   Tensor cam_indices = torch::randint(n_images_, {batch_size}, CPULong);
   Tensor i = torch::randint(0, height_, batch_size, CPULong);

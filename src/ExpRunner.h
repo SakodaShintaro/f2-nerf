@@ -5,21 +5,25 @@
 #ifndef F2_NERF__EXP_RUNNER_HPP_
 #define F2_NERF__EXP_RUNNER_HPP_
 
-#include <string>
-#include <memory>
-#include <tuple>
-#include <torch/torch.h>
 #include "dataset/dataset.hpp"
 #include "renderer/renderer.hpp"
 
-class ExpRunner {
+#include <torch/torch.h>
+
+#include <memory>
+#include <string>
+#include <tuple>
+
+class ExpRunner
+{
   using Tensor = torch::Tensor;
+
 public:
-  ExpRunner(const std::string& conf_path);
+  ExpRunner(const std::string & conf_path);
 
   void Train();
 
-  void LoadCheckpoint(const std::string& path);
+  void LoadCheckpoint(const std::string & path);
   void SaveCheckpoint();
   void UpdateAdaParams();
   std::tuple<Tensor, Tensor> RenderWholeImage(

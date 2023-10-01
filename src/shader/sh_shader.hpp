@@ -10,12 +10,13 @@
 class SHShader : public torch::nn::Module
 {
   using Tensor = torch::Tensor;
+
 public:
   SHShader();
-  Tensor Query(const Tensor& feats, const Tensor& dirs);
+  Tensor Query(const Tensor & feats, const Tensor & dirs);
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr);
 
-  Tensor SHEncode(const Tensor& dirs);
+  Tensor SHEncode(const Tensor & dirs);
 
   torch::nn::Sequential mlp_ = nullptr;
 

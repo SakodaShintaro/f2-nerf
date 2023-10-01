@@ -2,8 +2,9 @@
 // Created by ppwang on 2023/4/4.
 //
 
-#include "../Common.h"
 #include "utils.hpp"
+
+#include "../Common.h"
 
 #include <opencv2/opencv.hpp>
 

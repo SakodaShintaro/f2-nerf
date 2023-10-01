@@ -3,12 +3,13 @@
 //
 
 #include "renderer.hpp"
+
 #include "../Common.h"
-#include "../utils/utils.hpp"
-#include "../utils/stop_watch.hpp"
 #include "../utils/CustomOps/CustomOps.hpp"
 #include "../utils/CustomOps/FlexOps.hpp"
 #include "../utils/CustomOps/Scatter.hpp"
+#include "../utils/stop_watch.hpp"
+#include "../utils/utils.hpp"
 
 using Tensor = torch::Tensor;
 namespace F = torch::nn::functional;
@@ -24,12 +25,14 @@ Renderer::Renderer(bool use_app_emb, int n_images) : use_app_emb_(use_app_emb)
   register_module("shader", shader_);
 
   // WARNING: Hard code here.
-  app_emb_ = torch::randn({ n_images, 16 }, CUDAFloat) * .1f;
+  app_emb_ = torch::randn({n_images, 16}, CUDAFloat) * .1f;
   app_emb_.requires_grad_(true);
   register_parameter("app_emb", app_emb_);
 }
 
-RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode) {
+RenderResult Renderer::Render(
+  const Tensor & rays_o, const Tensor & rays_d, const Tensor & emb_idx, RunningMode mode)
+{
   int n_rays = rays_o.sizes()[0];
   SampleResultFlex sample_result = pts_sampler_->GetSamples(rays_o, rays_d, mode);
   int n_all_pts = sample_result.pts.sizes()[0];
@@ -42,12 +45,8 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
 
   if (n_all_pts <= 0) {
     return {
-      bg_color,
-      torch::zeros({ n_rays, 1 }, CUDAFloat),
-      torch::zeros({ n_rays }, CUDAFloat),
-      torch::full({ n_rays }, 512.f, CUDAFloat),
-      Tensor()
-    };
+      bg_color, torch::zeros({n_rays, 1}, CUDAFloat), torch::zeros({n_rays}, CUDAFloat),
+      torch::full({n_rays}, 512.f, CUDAFloat), Tensor()};
   }
   CHECK(rays_o.sizes()[0] == sample_result.pts_idx_bounds.sizes()[0]);
 
@@ -60,7 +59,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
   SampleResultFlex sample_result_early_stop;
   {
     Tensor scene_feat = scene_field_->Query(sample_result.pts);
-    Tensor sampled_density = DensityAct(scene_feat.index({ Slc(), Slc(0, 1) }));
+    Tensor sampled_density = DensityAct(scene_feat.index({Slc(), Slc(0, 1)}));
     Tensor sec_density = sampled_density.index({Slc(), 0}) * sample_result.dt;
     Tensor alphas = 1.f - torch::exp(-sec_density);
     Tensor acc_density = FlexOps::AccumulateSum(sec_density, sample_result.pts_idx_bounds, false);
@@ -77,25 +76,30 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
     Tensor mask_2d = mask.reshape({n_rays, MAX_SAMPLE_PER_RAY});
     Tensor num = mask_2d.sum(1);
     Tensor cum_num = torch::cumsum(num, 0);
-    Tensor idx_bounds = torch::zeros({n_rays, 2}, torch::TensorOptions().dtype(torch::kInt).device(torch::kCUDA));
+    Tensor idx_bounds =
+      torch::zeros({n_rays, 2}, torch::TensorOptions().dtype(torch::kInt).device(torch::kCUDA));
     idx_bounds.index_put_({Slc(), 0}, cum_num - num);
     idx_bounds.index_put_({Slc(), 1}, cum_num);
     sample_result_early_stop.pts_idx_bounds = idx_bounds;
 
-    CHECK(sample_result_early_stop.pts_idx_bounds.max().item<int>() == sample_result_early_stop.pts.size(0));
+    CHECK(
+      sample_result_early_stop.pts_idx_bounds.max().item<int>() ==
+      sample_result_early_stop.pts.size(0));
   }
 
   n_all_pts = sample_result_early_stop.pts.size(0);
 
   Tensor scene_feat = scene_field_->Query(sample_result_early_stop.pts);
-  Tensor sampled_density = DensityAct(scene_feat.index({ Slc(), Slc(0, 1) }));
+  Tensor sampled_density = DensityAct(scene_feat.index({Slc(), Slc(0, 1)}));
 
-  Tensor shading_feat = torch::cat({
-    torch::ones_like(scene_feat.index({Slc(), Slc(0, 1)}), CUDAFloat),
-    scene_feat.index({Slc(), Slc(1, None)})}, 1);
+  Tensor shading_feat = torch::cat(
+    {torch::ones_like(scene_feat.index({Slc(), Slc(0, 1)}), CUDAFloat),
+     scene_feat.index({Slc(), Slc(1, None)})},
+    1);
 
   if (mode == RunningMode::TRAIN && use_app_emb_) {
-    Tensor all_emb_idx = CustomOps::ScatterIdx(n_all_pts, sample_result_early_stop.pts_idx_bounds, emb_idx);
+    Tensor all_emb_idx =
+      CustomOps::ScatterIdx(n_all_pts, sample_result_early_stop.pts_idx_bounds, emb_idx);
     shading_feat = CustomOps::ScatterAdd(app_emb_, all_emb_idx, shading_feat);
   }
 
@@ -116,7 +120,7 @@ RenderResult Renderer::Render(const Tensor& rays_o, const Tensor& rays_d, const 
 
   CHECK(std::isfinite((colors).mean().item<float>()));
 
-  return { colors, disparity, depth, weights, idx_start_end };
+  return {colors, disparity, depth, weights, idx_start_end};
 }
 
 std::vector<torch::optim::OptimizerParamGroup> Renderer::OptimParamGroups(float lr)

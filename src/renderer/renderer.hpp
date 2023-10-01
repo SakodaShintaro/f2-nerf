@@ -5,14 +5,15 @@
 #ifndef F2_NERF__RENDERER_HPP_
 #define F2_NERF__RENDERER_HPP_
 
-#include "../shader/sh_shader.hpp"
 #include "../field/hash_3d_anchored.hpp"
 #include "../points_sampler/points_sampler.hpp"
+#include "../shader/sh_shader.hpp"
 
 #include <memory>
 #include <vector>
 
-struct RenderResult {
+struct RenderResult
+{
   using Tensor = torch::Tensor;
   Tensor colors;
   Tensor disparity;
@@ -27,7 +28,8 @@ class Renderer : public torch::nn::Module
 
 public:
   Renderer(bool use_app_emb, int n_images);
-  RenderResult Render(const Tensor& rays_o, const Tensor& rays_d, const Tensor& emb_idx, RunningMode mode);
+  RenderResult Render(
+    const Tensor & rays_o, const Tensor & rays_d, const Tensor & emb_idx, RunningMode mode);
 
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr);
 
@@ -39,4 +41,4 @@ public:
   Tensor app_emb_;
 };
 
-#endif // F2_NERF__RENDERER_HPP_
+#endif  // F2_NERF__RENDERER_HPP_

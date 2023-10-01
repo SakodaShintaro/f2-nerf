@@ -31,7 +31,7 @@ class Dataset
   using Tensor = torch::Tensor;
 
 public:
-  Dataset(const std::string& data_path, const std::string& output_dir);
+  Dataset(const std::string & data_path, const std::string & output_dir);
 
   void NormalizeScene();
   void SaveInferenceParams() const;
