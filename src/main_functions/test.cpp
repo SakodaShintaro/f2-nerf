@@ -20,8 +20,8 @@ void test(const std::string & config_path)
   const std::string data_path = config["dataset_path"].string();
   const std::string base_exp_dir = config["base_exp_dir"].string();
 
-  Dataset dataset(data_path, base_exp_dir);
-  const std::string save_dir = config["base_exp_dir"].string() + "/test_result/";
+  Dataset dataset(data_path);
+  const std::string save_dir = base_exp_dir + "/test_result/";
   fs::create_directories(save_dir);
 
   Timer timer;

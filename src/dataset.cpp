@@ -16,8 +16,7 @@ using Tensor = torch::Tensor;
 
 namespace fs = std::experimental::filesystem::v1;
 
-Dataset::Dataset(const std::string & data_path, const std::string & output_dir)
-: output_dir_(output_dir)
+Dataset::Dataset(const std::string & data_path)
 {
   ScopeWatch dataset_watch("Dataset::Dataset");
 
@@ -71,12 +70,12 @@ Dataset::Dataset(const std::string & data_path, const std::string & output_dir)
 
     n_images_ = poses.size();
     poses_ = torch::stack(poses, 0).contiguous().to(torch::kCUDA);
-    intri_ = torch::stack(intrinsics, 0).contiguous().to(torch::kCUDA);
+    intrinsics_ = torch::stack(intrinsics, 0).contiguous().to(torch::kCUDA);
     dist_params_ = torch::stack(dist_params, 0).contiguous().to(torch::kCUDA);
     bounds_ = torch::stack(bounds, 0).contiguous().to(torch::kCUDA);
   }
 
-  // normalize scene
+  // Normalize scene
   {
     Tensor cam_pos = poses_.index({Slc(), Slc(0, 3), 3}).clone();
     center_ = cam_pos.mean(0, false);
@@ -117,9 +116,9 @@ Dataset::Dataset(const std::string & data_path, const std::string & output_dir)
   image_tensors_ = torch::stack(images, 0).contiguous();
 }
 
-void Dataset::SaveInferenceParams() const
+void Dataset::save_inference_params(const std::string & output_dir) const
 {
-  std::ofstream ofs(output_dir_ + "/inference_params.yaml");
+  std::ofstream ofs(output_dir + "/inference_params.yaml");
   ofs << std::fixed;
   ofs << "%YAML 1.2" << std::endl;
   ofs << "---" << std::endl;
@@ -128,17 +127,17 @@ void Dataset::SaveInferenceParams() const
   ofs << "width: " << width_ << std::endl;
 
   ofs << "intrinsic: [";
-  ofs << intri_[0][0][0].item() << ", ";
-  ofs << intri_[0][0][1].item() << ", ";
-  ofs << intri_[0][0][2].item() << "," << std::endl;
+  ofs << intrinsics_[0][0][0].item() << ", ";
+  ofs << intrinsics_[0][0][1].item() << ", ";
+  ofs << intrinsics_[0][0][2].item() << "," << std::endl;
   ofs << "            ";
-  ofs << intri_[0][1][0].item() << ", ";
-  ofs << intri_[0][1][1].item() << ", ";
-  ofs << intri_[0][1][2].item() << "," << std::endl;
+  ofs << intrinsics_[0][1][0].item() << ", ";
+  ofs << intrinsics_[0][1][1].item() << ", ";
+  ofs << intrinsics_[0][1][2].item() << "," << std::endl;
   ofs << "            ";
-  ofs << intri_[0][2][0].item() << ", ";
-  ofs << intri_[0][2][1].item() << ", ";
-  ofs << intri_[0][2][2].item() << "]" << std::endl;
+  ofs << intrinsics_[0][2][0].item() << ", ";
+  ofs << intrinsics_[0][2][1].item() << ", ";
+  ofs << intrinsics_[0][2][2].item() << "]" << std::endl;
 
   ofs << "bounds: [" << bounds_[0][0].item();
   ofs << ", " << bounds_[0][1].item() << "]" << std::endl;
@@ -149,15 +148,16 @@ void Dataset::SaveInferenceParams() const
   ofs << "normalizing_radius: " << radius_ << std::endl;
 }
 
-Rays Dataset::Img2WorldRay(const Tensor & pose, const Tensor & intri, const Tensor & ij)
+Rays Dataset::get_rays_from_pose(const Tensor & pose, const Tensor & intrinsic, const Tensor & ij)
 {
+  // Shift half pixel
   Tensor i = ij.index({"...", 0}).to(torch::kFloat32) + .5f;
-  Tensor j = ij.index({"...", 1}).to(torch::kFloat32) + .5f;  // Shift half pixel;
+  Tensor j = ij.index({"...", 1}).to(torch::kFloat32) + .5f;
 
-  Tensor cx = intri.index({Slc(), 0, 2});
-  Tensor cy = intri.index({Slc(), 1, 2});
-  Tensor fx = intri.index({Slc(), 0, 0});
-  Tensor fy = intri.index({Slc(), 1, 1});
+  Tensor cx = intrinsic.index({Slc(), 0, 2});
+  Tensor cy = intrinsic.index({Slc(), 1, 2});
+  Tensor fx = intrinsic.index({Slc(), 0, 0});
+  Tensor fy = intrinsic.index({Slc(), 1, 1});
 
   Tensor u_tensor = ((j - cx) / fx).unsqueeze(-1);
   Tensor v_tensor = -((i - cy) / fy).unsqueeze(-1);
@@ -172,7 +172,7 @@ Rays Dataset::Img2WorldRay(const Tensor & pose, const Tensor & intri, const Tens
   return {rays_o, rays_d};
 }
 
-BoundedRays Dataset::RaysOfCamera(int idx, int reso_level)
+BoundedRays Dataset::get_all_rays_of_camera(int idx)
 {
   int H = height_;
   int W = width_;
@@ -189,12 +189,12 @@ BoundedRays Dataset::RaysOfCamera(int idx, int reso_level)
     torch::stack({torch::full({H * W}, near, CUDAFloat), torch::full({H * W}, far, CUDAFloat)}, -1)
       .contiguous();
 
-  auto [rays_o, rays_d] =
-    Img2WorldRay(poses_[idx].unsqueeze(0), intri_[idx].unsqueeze(0), torch::stack({i, j}, -1));
+  auto [rays_o, rays_d] = get_rays_from_pose(
+    poses_[idx].unsqueeze(0), intrinsics_[idx].unsqueeze(0), torch::stack({i, j}, -1));
   return {rays_o, rays_d, bounds};
 }
 
-std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size)
+std::tuple<BoundedRays, Tensor, Tensor> Dataset::sample_random_rays(int batch_size)
 {
   const auto CPULong = torch::TensorOptions().dtype(torch::kLong).device(torch::kCPU);
   Tensor cam_indices = torch::randint(n_images_, {batch_size}, CPULong);
@@ -211,8 +211,8 @@ std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size)
   ij = ij.to(torch::kInt32);
 
   Tensor selected_poses = torch::index_select(poses_, 0, cam_indices);
-  Tensor selected_intri = torch::index_select(intri_, 0, cam_indices);
-  auto [rays_o, rays_d] = Img2WorldRay(selected_poses, selected_intri, ij);
+  Tensor selected_intrinsics = torch::index_select(intrinsics_, 0, cam_indices);
+  auto [rays_o, rays_d] = get_rays_from_pose(selected_poses, selected_intrinsics, ij);
 
   Tensor bounds = bounds_.index({cam_indices.to(torch::kLong)}).contiguous();
   return {{rays_o, rays_d, bounds}, gt_colors, cam_indices.to(torch::kInt32).contiguous()};

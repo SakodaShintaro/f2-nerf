@@ -31,27 +31,23 @@ class Dataset
   using Tensor = torch::Tensor;
 
 public:
-  Dataset(const std::string & data_path, const std::string & output_dir);
+  Dataset(const std::string & data_path);
 
-  void SaveInferenceParams() const;
+  void save_inference_params(const std::string & output_dir) const;
 
-  // Img2WorldRay
-  static Rays Img2WorldRay(const Tensor & pose, const Tensor & intri, const Tensor & ij);
+  static Rays get_rays_from_pose(const Tensor & pose, const Tensor & intrinsic, const Tensor & ij);
 
-  // Rays
-  BoundedRays RaysOfCamera(int idx, int reso_level = 1);
-  std::tuple<BoundedRays, Tensor, Tensor> RandRaysData(int batch_size);
+  BoundedRays get_all_rays_of_camera(int idx);
+
+  std::tuple<BoundedRays, Tensor, Tensor> sample_random_rays(int batch_size);
 
   // variables
   int n_images_ = 0;
-  Tensor poses_, intri_, dist_params_, bounds_;
+  Tensor poses_, intrinsics_, dist_params_, bounds_;
   Tensor center_;
   float radius_;
   int height_, width_;
   Tensor image_tensors_;
-
-  // dirs
-  const std::string output_dir_;
 };
 
 #endif  // F2_NERF__DATASET_HPP_

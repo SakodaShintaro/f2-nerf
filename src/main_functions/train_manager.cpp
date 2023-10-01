@@ -47,8 +47,8 @@ TrainManager::TrainManager(const std::string & conf_path)
   fs["dataset_path"] >> data_path;
 
   // Dataset
-  dataset_ = std::make_shared<Dataset>(data_path, base_exp_dir_);
-  dataset_->SaveInferenceParams();
+  dataset_ = std::make_shared<Dataset>(data_path);
+  dataset_->save_inference_params(base_exp_dir_);
 
   // Renderer
   std::string use_app_emb_str;
@@ -82,7 +82,7 @@ void TrainManager::Train()
   for (; iter_step_ < end_iter_;) {
     constexpr float sampled_pts_per_ray_ = 512.f;
     int cur_batch_size = int(pts_batch_size_ / sampled_pts_per_ray_) >> 4 << 4;
-    auto [train_rays, gt_colors, emb_idx] = dataset_->RandRaysData(cur_batch_size);
+    auto [train_rays, gt_colors, emb_idx] = dataset_->sample_random_rays(cur_batch_size);
 
     Tensor & rays_o = train_rays.origins;
     Tensor & rays_d = train_rays.dirs;
@@ -246,7 +246,7 @@ void TrainManager::VisualizeImage(int idx)
 {
   torch::NoGradGuard no_grad_guard;
 
-  auto [rays_o, rays_d, bounds] = dataset_->RaysOfCamera(idx);
+  auto [rays_o, rays_d, bounds] = dataset_->get_all_rays_of_camera(idx);
   auto [pred_colors, pred_disps] = RenderWholeImage(rays_o, rays_d, bounds, RunningMode::VALIDATE);
 
   int H = dataset_->height_;

@@ -28,7 +28,7 @@ void infer(const std::string & config_path)
   const std::string save_dir = base_exp_dir + "/inference_result/";
   fs::create_directories(save_dir);
 
-  Dataset dataset(data_path, base_exp_dir);
+  Dataset dataset(data_path);
 
   Timer timer, timer_local;
   timer.start();
