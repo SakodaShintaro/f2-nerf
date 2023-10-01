@@ -1,5 +1,5 @@
-#include "src/ExpRunner.h"
 #include "src/main_functions.hpp"
+#include "src/train_manager.hpp"
 
 #include <torch/torch.h>
 
@@ -19,8 +19,8 @@ int main(int argc, char * argv[])
   const std::string command = argv[1];
   const std::string conf_path = argv[2];
   if (command == "train") {
-    auto exp_runner = std::make_unique<ExpRunner>(conf_path);
-    exp_runner->Train();
+    auto train_manager = std::make_unique<TrainManager>(conf_path);
+    train_manager->Train();
   } else if (command == "infer") {
     infer(conf_path);
   } else if (command == "walk") {

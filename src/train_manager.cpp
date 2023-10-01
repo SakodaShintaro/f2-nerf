@@ -2,7 +2,7 @@
 // Created by ppwang on 2022/5/6.
 //
 
-#include "ExpRunner.h"
+#include "train_manager.hpp"
 
 #include "utils/CustomOps/CustomOps.hpp"
 #include "utils/stop_watch.hpp"
@@ -16,7 +16,7 @@
 namespace fs = std::experimental::filesystem::v1;
 using Tensor = torch::Tensor;
 
-ExpRunner::ExpRunner(const std::string & conf_path)
+TrainManager::TrainManager(const std::string & conf_path)
 {
   fs::path p(conf_path);
   fs::path canonical_path = fs::canonical(p);
@@ -68,7 +68,7 @@ ExpRunner::ExpRunner(const std::string & conf_path)
   }
 }
 
-void ExpRunner::Train()
+void TrainManager::Train()
 {
   std::ofstream ofs_log(base_exp_dir_ + "/train_log.txt");
 
@@ -156,7 +156,7 @@ void ExpRunner::Train()
   std::cout << "Train done" << std::endl;
 }
 
-void ExpRunner::LoadCheckpoint(const std::string & path)
+void TrainManager::LoadCheckpoint(const std::string & path)
 {
   {
     Tensor scalars;
@@ -168,7 +168,7 @@ void ExpRunner::LoadCheckpoint(const std::string & path)
   torch::load(renderer_, path + "/renderer.pt");
 }
 
-void ExpRunner::SaveCheckpoint()
+void TrainManager::SaveCheckpoint()
 {
   std::stringstream ss;
   ss << base_exp_dir_ << "/checkpoints/" << std::setw(8) << std::setfill('0') << iter_step_;
@@ -191,7 +191,7 @@ void ExpRunner::SaveCheckpoint()
   fs::create_symlink(output_dir + "/scalars.pt", base_exp_dir_ + "/checkpoints/latest/scalars.pt");
 }
 
-void ExpRunner::UpdateAdaParams()
+void TrainManager::UpdateAdaParams()
 {
   // Update learning rate
   float lr_factor;
@@ -209,7 +209,7 @@ void ExpRunner::UpdateAdaParams()
   }
 }
 
-std::tuple<Tensor, Tensor> ExpRunner::RenderWholeImage(
+std::tuple<Tensor, Tensor> TrainManager::RenderWholeImage(
   Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode)
 {
   torch::NoGradGuard no_grad_guard;
@@ -242,7 +242,7 @@ std::tuple<Tensor, Tensor> ExpRunner::RenderWholeImage(
   return {pred_colors, pred_disp};
 }
 
-void ExpRunner::VisualizeImage(int idx)
+void TrainManager::VisualizeImage(int idx)
 {
   torch::NoGradGuard no_grad_guard;
 

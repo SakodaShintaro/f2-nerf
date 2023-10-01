@@ -2,8 +2,8 @@
 // Created by ppwang on 2022/5/6.
 //
 
-#ifndef F2_NERF__EXP_RUNNER_HPP_
-#define F2_NERF__EXP_RUNNER_HPP_
+#ifndef F2_NERF__TRAIN_MANAGER_HPP_
+#define F2_NERF__TRAIN_MANAGER_HPP_
 
 #include "dataset/dataset.hpp"
 #include "renderer/renderer.hpp"
@@ -14,12 +14,12 @@
 #include <string>
 #include <tuple>
 
-class ExpRunner
+class TrainManager
 {
   using Tensor = torch::Tensor;
 
 public:
-  ExpRunner(const std::string & conf_path);
+  TrainManager(const std::string & conf_path);
 
   void Train();
 
@@ -47,4 +47,4 @@ public:
   std::shared_ptr<torch::optim::Adam> optimizer_;
 };
 
-#endif  // F2_NERF__EXP_RUNNER_HPP_
+#endif  // F2_NERF__TRAIN_MANAGER_HPP_

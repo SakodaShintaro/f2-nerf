@@ -63,7 +63,7 @@ set(ALL_LIBS ${TORCH_LIBRARIES}
 
 # ------------------------------------ Add executables ---------------------------------------
 add_executable(main main.cpp
-        src/ExpRunner.cpp
+        src/train_manager.cpp
         src/main_functions/Infer.cpp
         src/main_functions/Test.cpp
         src/main_functions/TestField.cpp
