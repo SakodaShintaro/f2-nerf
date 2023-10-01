@@ -5,11 +5,12 @@
 #ifndef SANR_RENDERER_H
 #define SANR_RENDERER_H
 
-#include <vector>
-#include <memory>
-#include "../Field/Field.h"
-#include "../Shader/Shader.h"
 #include "../PtsSampler/PtsSampler.h"
+#include "../Shader/Shader.h"
+#include "../field/hash_3d_anchored.hpp"
+
+#include <memory>
+#include <vector>
 
 struct RenderResult {
   using Tensor = torch::Tensor;
@@ -31,7 +32,7 @@ public:
   std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr);
 
   std::shared_ptr<PtsSampler> pts_sampler_;
-  std::shared_ptr<Field> scene_field_;
+  std::shared_ptr<Hash3DAnchored> scene_field_;
   std::shared_ptr<Shader> shader_;
 
   const bool use_app_emb_;

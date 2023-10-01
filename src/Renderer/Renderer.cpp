@@ -17,7 +17,7 @@ Renderer::Renderer(bool use_app_emb, int n_images) : use_app_emb_(use_app_emb)
 {
   pts_sampler_ = std::make_shared<PtsSampler>();
 
-  scene_field_ = std::make_shared<Field>();
+  scene_field_ = std::make_shared<Hash3DAnchored>();
   register_module("scene_field", scene_field_);
 
   shader_ = std::make_shared<Shader>();

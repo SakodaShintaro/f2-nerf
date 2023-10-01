@@ -2,10 +2,12 @@
 // Created by ppwang on 2022/7/17.
 //
 
-#include "Hash3DAnchored.h"
-#include <torch/torch.h>
+#include "hash_3d_anchored.hpp"
+
 #include "../Common.h"
 #include "../Utils/StopWatch.h"
+
+#include <torch/torch.h>
 
 using Tensor = torch::Tensor;
 

@@ -37,7 +37,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 # GTSAM
 find_package(GTSAM REQUIRED)
 
-include(src/Field/field.cmake)
+include(src/field/field.cmake)
 include(src/dataset/dataset.cmake)
 include(src/PtsSampler/pts_sampler.cmake)
 include(src/Renderer/renderer.cmake)

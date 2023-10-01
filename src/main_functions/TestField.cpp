@@ -1,9 +1,9 @@
-#include "../Field/Field.h"
+#include "../field/hash_3d_anchored.hpp"
 #include "../main_functions.hpp"
 
 void test_field(const std::string & config_path)
 {
-  Field field;
+  Hash3DAnchored field;
   const int64_t bs = 524288;
   torch::Tensor input = torch::randn({bs, 3}).cuda();
   torch::Tensor output = field.Query(input);

@@ -1,7 +1,7 @@
 //
 // Created by ppwang on 2022/7/17.
 //
-#include "Hash3DAnchored.h"
+#include "hash_3d_anchored.hpp"
 #include <torch/torch.h>
 #include "../Common.h"
 #include <Eigen/Eigen>
