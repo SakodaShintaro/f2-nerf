@@ -26,8 +26,6 @@
 #define FlexType float
 #endif
 
-#define CK_CONT(x) CHECK(x.is_contiguous())
-
 #define DivUp(x, y)  (((x) + (y) - 1) / (y))
 #define THREAD_CAP 512u
 #define LIN_BLOCK_DIM(x) { THREAD_CAP, 1, 1 }

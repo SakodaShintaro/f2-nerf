@@ -99,8 +99,8 @@ public:
   static variable_list forward(AutogradContext *ctx,
                                Tensor val,
                                Tensor idx_start_end) {
-    CK_CONT(val);
-    CK_CONT(idx_start_end);
+    CHECK(val.is_contiguous());
+    CHECK(idx_start_end.is_contiguous());
     int n_outs = idx_start_end.size(0);
     Tensor sum;
     dim3 grid_dim  = LIN_GRID_DIM(n_outs);
@@ -157,8 +157,8 @@ public:
                                Tensor val,
                                Tensor idx_start_end,
                                torch::IValue include_this_ivalue) {
-    CK_CONT(val);
-    CK_CONT(idx_start_end);
+    CHECK(val.is_contiguous());
+    CHECK(idx_start_end.is_contiguous());
     bool include_this = include_this_ivalue.toBool();
     int n_all = val.size(0);
     int n_outs = idx_start_end.size(0);

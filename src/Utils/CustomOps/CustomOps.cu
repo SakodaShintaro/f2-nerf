@@ -72,8 +72,8 @@ public:
   static variable_list forward(AutogradContext *ctx,
                                Tensor weights,
                                Tensor idx_start_end) {
-    CK_CONT(weights);
-    CK_CONT(idx_start_end);
+    CHECK(weights.is_contiguous());
+    CHECK(idx_start_end.is_contiguous());
     int n_outs = idx_start_end.size(0);
     Tensor out_vars = torch::empty({ n_outs }, CUDAFloat);
     dim3 grid_dim  = LIN_GRID_DIM(n_outs);

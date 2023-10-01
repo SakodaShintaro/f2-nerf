@@ -106,7 +106,7 @@ __global__ void SHKenerl(
 }
 
 Tensor SHShader::SHEncode(const Tensor &dirs) {
-  CK_CONT(dirs);
+  CHECK(dirs.is_contiguous());
   int n_pts = dirs.size(0);
   Tensor out = torch::empty({ n_pts, degree_ * degree_ }, CUDAFloat);
   dim3 grid_dim = LIN_GRID_DIM(n_pts);
