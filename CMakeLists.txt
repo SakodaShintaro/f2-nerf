@@ -39,7 +39,7 @@ find_package(GTSAM REQUIRED)
 
 include(src/field/field.cmake)
 include(src/dataset/dataset.cmake)
-include(src/PtsSampler/pts_sampler.cmake)
+include(src/points_sampler/points_sampler.cmake)
 include(src/Renderer/renderer.cmake)
 include(src/Shader/shader.cmake)
 include(src/Utils/utils.cmake)

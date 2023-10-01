@@ -5,9 +5,9 @@
 #ifndef SANR_RENDERER_H
 #define SANR_RENDERER_H
 
-#include "../PtsSampler/PtsSampler.h"
 #include "../Shader/Shader.h"
 #include "../field/hash_3d_anchored.hpp"
+#include "../points_sampler/points_sampler.hpp"
 
 #include <memory>
 #include <vector>

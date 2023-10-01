@@ -46,7 +46,7 @@ set(ALL_LIBS ${TORCH_LIBRARIES}
 set(PROJECT_SOURCE_DIR ${ROOT_DIR})
 include(${ROOT_DIR}/src/field/field.cmake)
 include(${ROOT_DIR}/src/dataset/dataset.cmake)
-include(${ROOT_DIR}/src/PtsSampler/pts_sampler.cmake)
+include(${ROOT_DIR}/src/points_sampler/points_sampler.cmake)
 include(${ROOT_DIR}/src/Renderer/renderer.cmake)
 include(${ROOT_DIR}/src/Shader/shader.cmake)
 include(${ROOT_DIR}/src/Utils/utils.cmake)

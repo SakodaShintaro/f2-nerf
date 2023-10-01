@@ -2,11 +2,11 @@
 // Created by ppwang on 2022/9/26.
 //
 
-#include "PtsSampler.h"
+#include "points_sampler.hpp"
 
-#include "../dataset/dataset.hpp"
 #include "../Utils/StopWatch.h"
 #include "../Utils/Utils.h"
+#include "../dataset/dataset.hpp"
 
 #include <algorithm>
 #include <random>
