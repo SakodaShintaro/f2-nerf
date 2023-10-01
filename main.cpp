@@ -20,7 +20,7 @@ int main(int argc, char * argv[])
   const std::string conf_path = argv[2];
   if (command == "train") {
     auto exp_runner = std::make_unique<ExpRunner>(conf_path);
-    exp_runner->Execute();
+    exp_runner->Train();
   } else if (command == "infer") {
     infer(conf_path);
   } else if (command == "walk") {

@@ -14,7 +14,6 @@ class ExpRunner {
 public:
   ExpRunner(const std::string& conf_path);
 
-  void Execute();
   void Train();
   void RenderAllImages();
 

@@ -249,7 +249,3 @@ void ExpRunner::VisualizeImage(int idx) {
   ss << iter_step_ << "_" << idx << ".png";
   Utils::WriteImageTensor(base_exp_dir_ + "/images/" + ss.str(), img_tensor);
 }
-
-void ExpRunner::Execute() {
-  Train();
-}
