@@ -1,5 +1,5 @@
-#ifndef LOCALIZER_HPP_
-#define LOCALIZER_HPP_
+#ifndef F2_NERF__LOCALIZER_HPP_
+#define F2_NERF__LOCALIZER_HPP_
 
 #include "../dataset/dataset.hpp"
 #include "../renderer/renderer.hpp"
@@ -79,4 +79,4 @@ private:
   float radius_;
 };
 
-#endif  // LOCALIZER_HPP_
+#endif  // F2_NERF__LOCALIZER_HPP_

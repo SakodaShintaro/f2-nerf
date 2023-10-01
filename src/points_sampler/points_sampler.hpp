@@ -2,7 +2,9 @@
 // Created by ppwang on 2022/6/20.
 //
 
-#pragma once
+#ifndef F2_NERF__POINTS_SAMPLER_HPP_
+#define F2_NERF__POINTS_SAMPLER_HPP_
+
 #include "../Common.h"
 #include "Eigen/Eigen"
 
@@ -34,3 +36,5 @@ public:
 
   const float sample_l_;
 };
+
+#endif  // F2_NERF__POINTS_SAMPLER_HPP_

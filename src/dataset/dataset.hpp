@@ -2,8 +2,8 @@
 // Created by ppwang on 2022/5/7.
 //
 
-#ifndef SANR_DATASET_H
-#define SANR_DATASET_H
+#ifndef F2_NERF__DATASET_HPP_
+#define F2_NERF__DATASET_HPP_
 
 #include "../Common.h"
 
@@ -55,4 +55,4 @@ public:
   const std::string output_dir_;
 };
 
-#endif  // SANR_DATASET_H
+#endif  // F2_NERF__DATASET_HPP_

@@ -2,8 +2,8 @@
 // Created by ppwang on 2022/5/7.
 //
 
-#ifndef SANR_RENDERER_H
-#define SANR_RENDERER_H
+#ifndef F2_NERF__RENDERER_HPP_
+#define F2_NERF__RENDERER_HPP_
 
 #include "../shader/sh_shader.hpp"
 #include "../field/hash_3d_anchored.hpp"
@@ -39,4 +39,4 @@ public:
   Tensor app_emb_;
 };
 
-#endif //SANR_RENDERER_H
+#endif // F2_NERF__RENDERER_HPP_

@@ -2,8 +2,8 @@
 // Created by ppwang on 2022/7/17.
 //
 
-#ifndef SANR_HASH3DANCHORED_H
-#define SANR_HASH3DANCHORED_H
+#ifndef F2_NERF__HASH_3D_ANCHORED_HPP_
+#define F2_NERF__HASH_3D_ANCHORED_HPP_
 
 #include <torch/torch.h>
 
@@ -53,4 +53,4 @@ public:
 
 }
 
-#endif //SANR_HASH3DANCHORED_H
+#endif // F2_NERF__HASH_3D_ANCHORED_HPP_

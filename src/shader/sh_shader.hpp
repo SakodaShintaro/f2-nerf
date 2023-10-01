@@ -2,8 +2,8 @@
 // Created by ppwang on 2022/10/8.
 //
 
-#ifndef SANR_SHSHADER_H
-#define SANR_SHSHADER_H
+#ifndef F2_NERF__SH_SHADER_HPP_
+#define F2_NERF__SH_SHADER_HPP_
 
 #include <torch/torch.h>
 
@@ -22,4 +22,4 @@ public:
   const int degree_;
 };
 
-#endif //SANR_SHSHADER_H
+#endif  // F2_NERF__SH_SHADER_HPP_

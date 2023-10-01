@@ -1,7 +1,10 @@
 //
 // Created by ppwang on 2022/5/18.
 //
-#pragma once
+
+#ifndef F2_NERF__STOP_WATCH_HPP_
+#define F2_NERF__STOP_WATCH_HPP_
+
 #include <chrono>
 #include <string>
 
@@ -35,3 +38,5 @@ public:
 private:
   std::chrono::steady_clock::time_point start_time_;
 };
+
+#endif  // F2_NERF__STOP_WATCH_HPP_

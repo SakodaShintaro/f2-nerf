@@ -1,7 +1,10 @@
 //
 // Created by ppwang on 2022/5/6.
 //
-#pragma once
+
+#ifndef F2_NERF__EXP_RUNNER_HPP_
+#define F2_NERF__EXP_RUNNER_HPP_
+
 #include <string>
 #include <memory>
 #include <tuple>
@@ -39,3 +42,5 @@ public:
   std::shared_ptr<Renderer> renderer_;
   std::shared_ptr<torch::optim::Adam> optimizer_;
 };
+
+#endif  // F2_NERF__EXP_RUNNER_HPP_
