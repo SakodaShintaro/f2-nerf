@@ -282,6 +282,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
   Timer timer;
 
   const int pixel_num = param_.render_pixel_num;
+  const auto CUDALong = torch::TensorOptions().dtype(torch::kLong).device(torch::kCUDA);
 
   // Pick rays by constant interval
   // const int step = H * W / pixel_num;

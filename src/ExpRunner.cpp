@@ -180,7 +180,7 @@ void ExpRunner::SaveCheckpoint() {
   // optimizer
   // torch::save(*(optimizer_), output_dir + "/optimizer.pt");
   // other scalars
-  Tensor scalars = torch::empty({1}, CPUFloat);
+  Tensor scalars = torch::empty({1}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
   scalars.index_put_({0}, float(iter_step_));
   torch::save(scalars, output_dir + "/scalars.pt");
   fs::create_symlink(output_dir + "/scalars.pt", base_exp_dir_ + "/checkpoints/latest/scalars.pt");
@@ -210,8 +210,8 @@ std::tuple<Tensor,  Tensor> ExpRunner::RenderWholeImage(Tensor rays_o, Tensor ra
   bounds = bounds.to(torch::kCPU);
   const int n_rays = rays_d.sizes()[0];
 
-  Tensor pred_colors = torch::zeros({n_rays, 3}, CPUFloat);
-  Tensor pred_disp = torch::zeros({n_rays, 1}, CPUFloat);
+  Tensor pred_colors = torch::zeros({n_rays, 3}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
+  Tensor pred_disp = torch::zeros({n_rays, 1}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
 
   const int ray_batch_size = 8192;
   for (int i = 0; i < n_rays; i += ray_batch_size) {

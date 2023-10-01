@@ -9,10 +9,10 @@
 using Tensor = torch::Tensor;
 
 #ifdef HALF_PRECISION
-#define CUDAFlex CUDAHalf
+#define CUDAFlex torch::TensorOptions().dtype(torch::kFloat16).device(torch::kCUDA)
 #define FlexType __half
 #else
-#define CUDAFlex CUDAFloat
+#define CUDAFlex torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA)
 #define FlexType float
 #endif
 

@@ -120,7 +120,7 @@ __global__ void ScatterIdxKernal(int n_rays, int* idx_start_end, int* emb_idx, i
 }
 
 Tensor CustomOps::ScatterIdx(int n_all_pts, Tensor idx_start_end, Tensor emb_idx) {
-  Tensor ret = torch::empty({ n_all_pts }, CUDAInt);
+  Tensor ret = torch::empty({ n_all_pts }, torch::TensorOptions().dtype(torch::kInt).device(torch::kCUDA));
   int n_rays = idx_start_end.size(0);
   dim3 grid_dim = LIN_GRID_DIM(n_rays);
   dim3 block_dim = LIN_BLOCK_DIM(n_rays);

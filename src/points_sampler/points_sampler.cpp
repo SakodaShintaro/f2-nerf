@@ -49,7 +49,7 @@ SampleResultFlex PtsSampler::GetSamples(
   sampled_pts = sampled_pts.view({n_all_pts, 3});
   sampled_distances = sampled_distances.view({n_all_pts}).contiguous();
 
-  Tensor pts_idx_start_end = torch::ones({n_rays, 2}, CUDAInt) * MAX_SAMPLE_PER_RAY;
+  Tensor pts_idx_start_end = torch::ones({n_rays, 2}, torch::TensorOptions().dtype(torch::kInt).device(torch::kCUDA)) * MAX_SAMPLE_PER_RAY;
   Tensor pts_num = pts_idx_start_end.index({Slc(), 0});
   Tensor cum_num = torch::cumsum(pts_num, 0);
   pts_idx_start_end.index_put_({Slc(), 0}, cum_num - pts_num);

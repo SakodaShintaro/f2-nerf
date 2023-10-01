@@ -40,6 +40,8 @@ Hash3DAnchored::Hash3DAnchored()
   int min_local_prim = 1 << 28;
   int max_local_prim = 1 << 30;
 
+  const auto CPUInt = torch::TensorOptions().dtype(torch::kInt).device(torch::kCPU);
+
   for (int i = 0; i < 3 * N_LEVELS; i++) {
     int val;
     do {

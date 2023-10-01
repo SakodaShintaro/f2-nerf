@@ -190,6 +190,7 @@ BoundedRays Dataset::RaysOfCamera(int idx, int reso_level) {
 }
 
 std::tuple<BoundedRays, Tensor, Tensor> Dataset::RandRaysData(int batch_size) {
+  const auto CPULong = torch::TensorOptions().dtype(torch::kLong).device(torch::kCPU);
   Tensor cam_indices = torch::randint(n_images_, {batch_size}, CPULong);
   Tensor i = torch::randint(0, height_, batch_size, CPULong);
   Tensor j = torch::randint(0, width_, batch_size, CPULong);
