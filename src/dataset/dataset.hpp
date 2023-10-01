@@ -5,7 +5,7 @@
 #ifndef F2_NERF__DATASET_HPP_
 #define F2_NERF__DATASET_HPP_
 
-#include "../Common.h"
+#include "../common.hpp"
 
 #include <torch/torch.h>
 

@@ -4,7 +4,7 @@
 
 #include "renderer.hpp"
 
-#include "../Common.h"
+#include "../common.hpp"
 #include "../utils/CustomOps/CustomOps.hpp"
 #include "../utils/CustomOps/FlexOps.hpp"
 #include "../utils/CustomOps/Scatter.hpp"

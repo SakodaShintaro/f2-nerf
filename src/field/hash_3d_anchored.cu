@@ -1,7 +1,7 @@
 //
 // Created by ppwang on 2022/7/17.
 //
-#include "../Common.h"
+#include "../common.hpp"
 #include "hash_3d_anchored.hpp"
 
 #include <Eigen/Eigen>

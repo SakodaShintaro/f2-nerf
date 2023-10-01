@@ -8,7 +8,7 @@
 #endif //SANR_FLEXOPS_H
 
 #include <torch/torch.h>
-#include "../../Common.h"
+#include "../../common.hpp"
 
 namespace FlexOps {
 

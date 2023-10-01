@@ -4,7 +4,7 @@
 
 #include "utils.hpp"
 
-#include "../Common.h"
+#include "../common.hpp"
 
 #include <opencv2/opencv.hpp>
 

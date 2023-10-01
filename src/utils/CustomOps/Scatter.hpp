@@ -6,7 +6,7 @@
 #define SANR_SCATTER_H
 
 #include <torch/torch.h>
-#include "../../Common.h"
+#include "../../common.hpp"
 
 class Scatter {
 };

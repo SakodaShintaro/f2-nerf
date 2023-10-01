@@ -4,7 +4,7 @@
 
 #include "sh_shader.hpp"
 
-#include "../Common.h"
+#include "../common.hpp"
 
 using Tensor = torch::Tensor;
 

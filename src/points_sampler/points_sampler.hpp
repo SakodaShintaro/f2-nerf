@@ -5,7 +5,7 @@
 #ifndef F2_NERF__POINTS_SAMPLER_HPP_
 #define F2_NERF__POINTS_SAMPLER_HPP_
 
-#include "../Common.h"
+#include "../common.hpp"
 #include "Eigen/Eigen"
 
 #include <torch/torch.h>
