@@ -5,6 +5,7 @@ ROOT_DIR=$(readlink -f $(dirname $0)/../)
 DATASET_PATH=$(readlink -f $1)
 
 cd ${ROOT_DIR}
+cmake . -B build
 cmake --build build --config RelWithDebInfo -j8
 
 cd ${ROOT_DIR}/ros2

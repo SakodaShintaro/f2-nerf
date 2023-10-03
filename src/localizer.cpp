@@ -290,8 +290,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
   std::vector<Tensor> rays_o_vec;
   std::vector<Tensor> rays_d_vec;
   for (const Tensor & pose : poses) {
-    auto [rays_o, rays_d] =
-      Dataset::get_rays_from_pose(pose.unsqueeze(0), intrinsic_.unsqueeze(0), ij);
+    auto [rays_o, rays_d] = get_rays_from_pose(pose.unsqueeze(0), intrinsic_.unsqueeze(0), ij);
     rays_o_vec.push_back(rays_o);
     rays_d_vec.push_back(rays_d);
   }
@@ -395,8 +394,8 @@ BoundedRays LocalizerCore::rays_from_pose(const Tensor & pose)
   Tensor i = ij[0].reshape({-1});
   Tensor j = ij[1].reshape({-1});
 
-  auto [rays_o, rays_d] = Dataset::get_rays_from_pose(
-    pose.unsqueeze(0), intrinsic_.unsqueeze(0), torch::stack({i, j}, -1));
+  auto [rays_o, rays_d] =
+    get_rays_from_pose(pose.unsqueeze(0), intrinsic_.unsqueeze(0), torch::stack({i, j}, -1));
 
   Tensor bounds = torch::stack(
                     {torch::full({infer_height_ * infer_width_}, near_, CUDAFloat),

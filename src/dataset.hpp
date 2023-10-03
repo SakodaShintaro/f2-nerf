@@ -6,25 +6,13 @@
 #define F2_NERF__DATASET_HPP_
 
 #include "common.hpp"
+#include "rays.hpp"
 
 #include <torch/torch.h>
 
 #include <string>
 #include <tuple>
 #include <vector>
-
-struct alignas(32) Rays
-{
-  torch::Tensor origins;
-  torch::Tensor dirs;
-};
-
-struct alignas(32) BoundedRays
-{
-  torch::Tensor origins;
-  torch::Tensor dirs;
-  torch::Tensor bounds;  // near, far
-};
 
 class Dataset
 {
@@ -34,8 +22,6 @@ public:
   Dataset(const std::string & data_path);
 
   void save_inference_params(const std::string & output_dir) const;
-
-  static Rays get_rays_from_pose(const Tensor & pose, const Tensor & intrinsic, const Tensor & ij);
 
   BoundedRays get_all_rays_of_camera(int idx);
 
