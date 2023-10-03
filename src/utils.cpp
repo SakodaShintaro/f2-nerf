@@ -54,3 +54,11 @@ Tensor utils::resize_image(Tensor image, const int resize_height, const int resi
   image = image.permute({1, 2, 0});
   return image;
 }
+
+float utils::calc_loss(Tensor pred_image, Tensor gt_image)
+{
+  Tensor diff = pred_image - gt_image;
+  Tensor loss = (diff * diff).mean(-1);
+  Tensor score = loss.numel() / (loss.sum() + 1e-6f);
+  return score.mean().item<float>();
+}

@@ -287,8 +287,8 @@ NerfBasedLocalizer::localize(
       fs::create_directories("./result_images/trial/particles_images/");
 
       for (int32_t i = 0; i < particles.size(); i++) {
-        auto [score, nerf_image] =
-          localizer_core_.pred_image_and_calc_score(particles[i].pose, image_tensor);
+        torch::Tensor nerf_image = localizer_core_.render_image(particles[i].pose);
+        float score = utils::calc_loss(nerf_image, image_tensor);
         std::stringstream ss;
         ss << "./result_images/trial/particles_images/";
         save_image(nerf_image, ss.str(), i);
@@ -304,8 +304,8 @@ NerfBasedLocalizer::localize(
     optimized_pose = optimized_poses.back();
   }
 
-  auto [score, nerf_image] =
-    localizer_core_.pred_image_and_calc_score(optimized_pose, image_tensor);
+  torch::Tensor nerf_image = localizer_core_.render_image(optimized_pose);
+  float score = utils::calc_loss(nerf_image, image_tensor);
 
   RCLCPP_INFO_STREAM(this->get_logger(), "score = " << score);
   previous_score_ = score;

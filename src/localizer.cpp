@@ -193,39 +193,11 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
 Tensor LocalizerCore::render_image(const Tensor & pose)
 {
   torch::NoGradGuard no_grad_guard;
-  BoundedRays rays = rays_from_pose(pose);
-  const int ray_num = rays.origins.size(0);
-  constexpr int kBatchSize = 5000;
-  std::vector<torch::Tensor> pred_colors_list;
-  for (int i = 0; i < ray_num; i += kBatchSize) {
-    const auto [pred_colors, pred_disp] = renderer_->render_all_rays(
-      rays.origins.index({Slc(i, i + kBatchSize)}), rays.dirs.index({Slc(i, i + kBatchSize)}),
-      rays.bounds.index({Slc(i, i + kBatchSize)}));
-    pred_colors_list.push_back(pred_colors);
-  }
-  torch::Tensor pred_colors = torch::cat(pred_colors_list, 0);
-  pred_colors = pred_colors.clip(0.0f, 1.0f);
-  torch::Tensor image = pred_colors.view({infer_height_, infer_width_, 3});
-  return image;
-}
-
-std::tuple<float, Tensor> LocalizerCore::pred_image_and_calc_score(
-  const Tensor & pose, const Tensor & image)
-{
-  torch::NoGradGuard no_grad_guard;
-  Timer timer;
   auto [rays_o, rays_d, bounds] = rays_from_pose(pose);
-  timer.start();
-  auto [pred_colors, pred_disps] = renderer_->render_all_rays(rays_o, rays_d, bounds);
-
-  Tensor pred_img = pred_colors.view({infer_height_, infer_width_, 3});
-  pred_img = pred_img.clip(0.f, 1.f);
-  pred_img = pred_img.to(image.device());
-
-  Tensor diff = pred_img - image.view({infer_height_, infer_width_, 3});
-  Tensor loss = (diff * diff).mean(-1).sum();
-  Tensor score = (infer_height_ * infer_width_) / (loss + 1e-6f);
-  return {score.mean().item<float>(), pred_img};
+  auto [image, _] = renderer_->render_all_rays(rays_o, rays_d, bounds);
+  image = image.clip(0.0f, 1.0f);
+  image = image.view({infer_height_, infer_width_, 3});
+  return image;
 }
 
 Tensor LocalizerCore::normalize_position(Tensor pose)

@@ -50,6 +50,7 @@ void infer(const std::string & config_path)
     torch::Tensor image_tensor = dataset.image_tensors_[i];
 
     image_tensor = utils::resize_image(image_tensor, core.infer_height(), core.infer_width());
+    image_tensor = image_tensor.to(torch::kCUDA);
     utils::write_image_tensor(curr_dir + "image_01_gt.png", image_tensor);
 
     std::ofstream ofs(curr_dir + "/position.tsv");
@@ -65,8 +66,8 @@ void infer(const std::string & config_path)
     };
 
     // Before noise
-    auto [score_before, nerf_image_before] =
-      core.pred_image_and_calc_score(initial_pose, image_tensor);
+    torch::Tensor nerf_image_before = core.render_image(initial_pose);
+    float score_before = utils::calc_loss(nerf_image_before, image_tensor);
     utils::write_image_tensor(curr_dir + "image_02_before.png", nerf_image_before);
     output("original", initial_pose, score_before);
 
@@ -75,8 +76,8 @@ void infer(const std::string & config_path)
       torch::Tensor curr_pose = initial_pose.clone();
       curr_pose[0][3] += noise * kDx[d];
       curr_pose[2][3] += noise * kDz[d];
-      auto [score_noised, nerf_image_noised] =
-        core.pred_image_and_calc_score(curr_pose, image_tensor);
+      torch::Tensor nerf_image_noised = core.render_image(curr_pose);
+      float score_noised = utils::calc_loss(nerf_image_noised, image_tensor);
       utils::write_image_tensor(
         curr_dir + "image_03_noised" + std::to_string(d) + ".png", nerf_image_noised);
       output("noised_" + std::to_string(d), curr_pose, score_noised);
@@ -88,8 +89,8 @@ void infer(const std::string & config_path)
       optimize_times.push_back(timer_local.elapsed_seconds());
       for (int32_t itr = 0; itr < optimized_poses.size(); itr++) {
         torch::Tensor optimized_pose = optimized_poses[itr];
-        auto [score_after, nerf_image_after] =
-          core.pred_image_and_calc_score(optimized_pose, image_tensor);
+        torch::Tensor nerf_image_after = core.render_image(optimized_pose);
+        float score_after = utils::calc_loss(nerf_image_after, image_tensor);
         const std::string suffix =
           (std::stringstream() << d << "_" << std::setfill('0') << std::setw(2) << itr).str();
         utils::write_image_tensor(curr_dir + "image_04_after_" + suffix + ".png", nerf_image_after);

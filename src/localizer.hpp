@@ -34,7 +34,6 @@ public:
   LocalizerCore(const LocalizerCoreParam & param);
 
   Tensor render_image(const Tensor & pose);
-  std::tuple<float, Tensor> pred_image_and_calc_score(const Tensor & pose, const Tensor & image);
   std::vector<Particle> random_search(
     Tensor initial_pose, Tensor image_tensor, int64_t particle_num, float noise_coeff);
   std::vector<Tensor> optimize_pose(
