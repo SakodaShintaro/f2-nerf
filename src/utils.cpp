@@ -12,7 +12,7 @@
 
 using Tensor = torch::Tensor;
 
-Tensor Utils::ReadImageTensor(const std::string & path)
+Tensor Utils::read_image_tensor(const std::string & path)
 {
   cv::Mat img = cv::imread(path, cv::IMREAD_UNCHANGED);
   cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
@@ -22,7 +22,7 @@ Tensor Utils::ReadImageTensor(const std::string & path)
   return img_tensor;
 }
 
-bool Utils::WriteImageTensor(const std::string & path, Tensor img)
+bool Utils::write_image_tensor(const std::string & path, Tensor img)
 {
   img = img.contiguous();
   img = (img * 255.f).clamp(0, 255).to(torch::kUInt8).to(torch::kCPU);

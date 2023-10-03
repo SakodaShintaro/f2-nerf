@@ -30,11 +30,11 @@ Renderer::Renderer(bool use_app_emb, int n_images) : use_app_emb_(use_app_emb)
   register_parameter("app_emb", app_emb_);
 }
 
-RenderResult Renderer::Render(
+RenderResult Renderer::render(
   const Tensor & rays_o, const Tensor & rays_d, const Tensor & emb_idx, RunningMode mode)
 {
   int n_rays = rays_o.sizes()[0];
-  SampleResultFlex sample_result = pts_sampler_->GetSamples(rays_o, rays_d, mode);
+  SampleResultFlex sample_result = pts_sampler_->get_samples(rays_o, rays_d, mode);
   int n_all_pts = sample_result.pts.sizes()[0];
   CHECK(sample_result.pts_idx_bounds.max().item<int>() <= n_all_pts);
   CHECK(sample_result.pts_idx_bounds.min().item<int>() >= 0);
@@ -58,7 +58,7 @@ RenderResult Renderer::Render(
   // First, inference - early stop
   SampleResultFlex sample_result_early_stop;
   {
-    Tensor scene_feat = scene_field_->Query(sample_result.pts);
+    Tensor scene_feat = scene_field_->query(sample_result.pts);
     Tensor sampled_density = DensityAct(scene_feat.index({Slc(), Slc(0, 1)}));
     Tensor sec_density = sampled_density.index({Slc(), 0}) * sample_result.dt;
     Tensor alphas = 1.f - torch::exp(-sec_density);
@@ -89,7 +89,7 @@ RenderResult Renderer::Render(
 
   n_all_pts = sample_result_early_stop.pts.size(0);
 
-  Tensor scene_feat = scene_field_->Query(sample_result_early_stop.pts);
+  Tensor scene_feat = scene_field_->query(sample_result_early_stop.pts);
   Tensor sampled_density = DensityAct(scene_feat.index({Slc(), Slc(0, 1)}));
 
   Tensor shading_feat = torch::cat(
@@ -103,7 +103,7 @@ RenderResult Renderer::Render(
     shading_feat = CustomOps::ScatterAdd(app_emb_, all_emb_idx, shading_feat);
   }
 
-  Tensor sampled_colors = shader_->Query(shading_feat, sample_result_early_stop.dirs);
+  Tensor sampled_colors = shader_->query(shading_feat, sample_result_early_stop.dirs);
   Tensor sampled_t = (sample_result_early_stop.t + 1e-2f).contiguous();
   Tensor sec_density = sampled_density.index({Slc(), 0}) * sample_result_early_stop.dt;
   Tensor alphas = 1.f - torch::exp(-sec_density);
@@ -123,17 +123,17 @@ RenderResult Renderer::Render(
   return {colors, disparity, depth, weights, idx_start_end};
 }
 
-std::vector<torch::optim::OptimizerParamGroup> Renderer::OptimParamGroups(float lr)
+std::vector<torch::optim::OptimizerParamGroup> Renderer::optim_param_groups(float lr)
 {
   std::vector<torch::optim::OptimizerParamGroup> ret;
 
   // scene_field_
-  for (const auto & para_group : scene_field_->OptimParamGroups(lr)) {
+  for (const auto & para_group : scene_field_->optim_param_groups(lr)) {
     ret.emplace_back(para_group);
   }
 
   // shader_
-  for (const auto & para_group : shader_->OptimParamGroups(lr)) {
+  for (const auto & para_group : shader_->optim_param_groups(lr)) {
     ret.emplace_back(para_group);
   }
 

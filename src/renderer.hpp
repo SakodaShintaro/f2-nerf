@@ -28,10 +28,11 @@ class Renderer : public torch::nn::Module
 
 public:
   Renderer(bool use_app_emb, int n_images);
-  RenderResult Render(
+
+  RenderResult render(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & emb_idx, RunningMode mode);
 
-  std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr);
+  std::vector<torch::optim::OptimizerParamGroup> optim_param_groups(float lr);
 
   std::shared_ptr<PtsSampler> pts_sampler_;
   std::shared_ptr<Hash3DAnchored> scene_field_;

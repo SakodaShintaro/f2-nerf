@@ -19,16 +19,16 @@ SHShader::SHShader() : degree_(4)
   register_module("mlp", mlp_);
 }
 
-Tensor SHShader::Query(const Tensor & feats, const Tensor & dirs)
+Tensor SHShader::query(const Tensor & feats, const Tensor & dirs)
 {
-  Tensor enc = SHEncode(dirs);
+  Tensor enc = encode(dirs);
   Tensor input = torch::cat({feats, enc}, -1);
   Tensor output = mlp_->forward(input);
   float eps = 1e-3f;
   return (1.f + 2.f * eps) / (1.f + torch::exp(-output)) - eps;
 }
 
-std::vector<torch::optim::OptimizerParamGroup> SHShader::OptimParamGroups(float lr)
+std::vector<torch::optim::OptimizerParamGroup> SHShader::optim_param_groups(float lr)
 {
   auto opt = std::make_unique<torch::optim::AdamOptions>(lr);
   opt->betas() = {0.9, 0.99};

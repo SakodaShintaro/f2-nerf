@@ -7,12 +7,8 @@
 
 #include <torch/torch.h>
 
-#define N_CHANNELS 2
-#define N_LEVELS 16
-// 1024
-#define RES_FINE_POW_2 10.f
-// 8
-#define RES_BASE_POW_2 3.f
+static constexpr int64_t N_CHANNELS = 2;
+static constexpr int64_t N_LEVELS = 16;
 
 class Hash3DAnchored : public torch::nn::Module
 {
@@ -21,9 +17,9 @@ class Hash3DAnchored : public torch::nn::Module
 public:
   Hash3DAnchored();
 
-  Tensor Query(const Tensor & points);
+  Tensor query(const Tensor & points);
 
-  std::vector<torch::optim::OptimizerParamGroup> OptimParamGroups(float lr);
+  std::vector<torch::optim::OptimizerParamGroup> optim_param_groups(float lr);
 
   int pool_size_;
   int local_size_;

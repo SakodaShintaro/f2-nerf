@@ -8,15 +8,6 @@
 #include <chrono>
 #include <string>
 
-class StopWatch
-{
-public:
-  StopWatch();
-  ~StopWatch() = default;
-  double TimeDuration();
-  std::chrono::steady_clock::time_point t_point_;
-};
-
 class ScopeWatch
 {
 public:

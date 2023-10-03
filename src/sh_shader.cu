@@ -105,7 +105,7 @@ __global__ void SHKenerl(
   write_sh();
 }
 
-Tensor SHShader::SHEncode(const Tensor &dirs) {
+Tensor SHShader::encode(const Tensor &dirs) {
   CHECK(dirs.is_contiguous());
   int n_pts = dirs.size(0);
   Tensor out = torch::empty({ n_pts, degree_ * degree_ }, CUDAFloat);

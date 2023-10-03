@@ -5,8 +5,8 @@
 #ifndef F2_NERF__POINTS_SAMPLER_HPP_
 #define F2_NERF__POINTS_SAMPLER_HPP_
 
-#include "common.hpp"
 #include "Eigen/Eigen"
+#include "common.hpp"
 
 #include <torch/torch.h>
 
@@ -32,9 +32,9 @@ class PtsSampler
 
 public:
   PtsSampler();
-  SampleResultFlex GetSamples(const Tensor & rays_o, const Tensor & rays_d, RunningMode mode);
+  SampleResultFlex get_samples(const Tensor & rays_o, const Tensor & rays_d, RunningMode mode);
 
-  const float sample_l_;
+  static constexpr float SAMPLE_L = 1.0 / 256;
 };
 
 #endif  // F2_NERF__POINTS_SAMPLER_HPP_

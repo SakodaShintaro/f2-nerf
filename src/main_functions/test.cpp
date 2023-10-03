@@ -47,7 +47,7 @@ void test(const std::string & config_path)
 
     std::stringstream ss;
     ss << save_dir << std::setfill('0') << std::setw(8) << i << ".png";
-    Utils::WriteImageTensor(ss.str(), nerf_image);
+    Utils::write_image_tensor(ss.str(), nerf_image);
   }
 
   const float average_time = time_sum / dataset.n_images_;

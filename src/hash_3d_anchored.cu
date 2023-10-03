@@ -10,6 +10,9 @@
 
 using Tensor = torch::Tensor;
 
+constexpr float RES_FINE_POW_2 = 10.f;
+constexpr float RES_BASE_POW_2 = 3.f;
+
 #ifdef HALF_PRECISION
 #define CUDAFlex torch::TensorOptions().dtype(torch::kFloat16).device(torch::kCUDA)
 #define FlexType __half

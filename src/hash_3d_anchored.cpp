@@ -70,7 +70,7 @@ Hash3DAnchored::Hash3DAnchored()
   register_module("mlp", mlp_);
 }
 
-Tensor Hash3DAnchored::Query(const Tensor & points)
+Tensor Hash3DAnchored::query(const Tensor & points)
 {
 #ifdef PROFILE
   ScopeWatch watch(__func__);
@@ -90,7 +90,7 @@ Tensor Hash3DAnchored::Query(const Tensor & points)
   return output;
 }
 
-std::vector<torch::optim::OptimizerParamGroup> Hash3DAnchored::OptimParamGroups(float lr)
+std::vector<torch::optim::OptimizerParamGroup> Hash3DAnchored::optim_param_groups(float lr)
 {
   std::vector<torch::optim::OptimizerParamGroup> ret;
 

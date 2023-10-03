@@ -7,22 +7,24 @@
 
 #include <torch/torch.h>
 
-namespace torch::autograd {
+namespace torch::autograd
+{
 
-class TruncExp : public Function<TruncExp> {
+class TruncExp : public Function<TruncExp>
+{
 public:
-  static variable_list forward(AutogradContext *ctx,
-                               Tensor input);
+  static variable_list forward(AutogradContext * ctx, Tensor input);
 
-  static variable_list backward(AutogradContext *ctx, variable_list grad_output);
+  static variable_list backward(AutogradContext * ctx, variable_list grad_output);
 };
 
-}
+}  // namespace torch::autograd
 
-namespace CustomOps {
+namespace CustomOps
+{
 
 torch::Tensor WeightVar(torch::Tensor weights, torch::Tensor idx_start_end);
 
 }
 
-#endif //SANR_CUSTOMOPS_H
+#endif  // SANR_CUSTOMOPS_H

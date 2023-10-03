@@ -205,7 +205,7 @@ std::tuple<Tensor, Tensor> LocalizerCore::render_all_rays(
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).contiguous();
     Tensor cur_bounds = bounds.index({Slc(i, i_high)}).contiguous();
 
-    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, Tensor(), RunningMode::VALIDATE);
+    auto render_result = renderer_->render(cur_rays_o, cur_rays_d, Tensor(), RunningMode::VALIDATE);
     Tensor colors = render_result.colors;
     Tensor disp = render_result.disparity.squeeze();
 

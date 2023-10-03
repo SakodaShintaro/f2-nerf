@@ -48,7 +48,7 @@ void render(LocalizerCore & localizer, torch::Tensor pose)
   std::cout << "pose:\n" << pose << std::endl;
   torch::Tensor pose_camera = localizer.world2camera(pose);
   torch::Tensor image = localizer.render_image(pose_camera);
-  Utils::WriteImageTensor("image.png", image);
+  Utils::write_image_tensor("image.png", image);
   std::cout << "WASDで移動, E:上昇, Q下降, J:左回転, K:下回転, L:右回転, I:上回転, O:ROll+, U:ROll-"
             << std::endl;
 }

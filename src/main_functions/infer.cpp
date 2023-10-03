@@ -50,7 +50,7 @@ void infer(const std::string & config_path)
     torch::Tensor image_tensor = dataset.image_tensors_[i];
 
     image_tensor = core.resize_image(image_tensor);
-    Utils::WriteImageTensor(curr_dir + "image_01_gt.png", image_tensor);
+    Utils::write_image_tensor(curr_dir + "image_01_gt.png", image_tensor);
 
     std::ofstream ofs(curr_dir + "/position.tsv");
     ofs << std::fixed;
@@ -67,7 +67,7 @@ void infer(const std::string & config_path)
     // Before noise
     auto [score_before, nerf_image_before] =
       core.pred_image_and_calc_score(initial_pose, image_tensor);
-    Utils::WriteImageTensor(curr_dir + "image_02_before.png", nerf_image_before);
+    Utils::write_image_tensor(curr_dir + "image_02_before.png", nerf_image_before);
     output("original", initial_pose, score_before);
 
     // Added noise
@@ -77,7 +77,7 @@ void infer(const std::string & config_path)
       curr_pose[2][3] += noise * kDz[d];
       auto [score_noised, nerf_image_noised] =
         core.pred_image_and_calc_score(curr_pose, image_tensor);
-      Utils::WriteImageTensor(
+      Utils::write_image_tensor(
         curr_dir + "image_03_noised" + std::to_string(d) + ".png", nerf_image_noised);
       output("noised_" + std::to_string(d), curr_pose, score_noised);
 
@@ -92,7 +92,7 @@ void infer(const std::string & config_path)
           core.pred_image_and_calc_score(optimized_pose, image_tensor);
         const std::string suffix =
           (std::stringstream() << d << "_" << std::setfill('0') << std::setw(2) << itr).str();
-        Utils::WriteImageTensor(curr_dir + "image_04_after_" + suffix + ".png", nerf_image_after);
+        Utils::write_image_tensor(curr_dir + "image_04_after_" + suffix + ".png", nerf_image_after);
         output("optimized_" + suffix, optimized_pose, score_after);
       }
     }

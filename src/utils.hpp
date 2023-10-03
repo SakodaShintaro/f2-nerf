@@ -13,8 +13,8 @@ namespace Utils
 {
 using Tensor = torch::Tensor;
 
-Tensor ReadImageTensor(const std::string & path);
-bool WriteImageTensor(const std::string & path, Tensor img);
+Tensor read_image_tensor(const std::string & path);
+bool write_image_tensor(const std::string & path, Tensor img);
 
 }  // namespace Utils
 

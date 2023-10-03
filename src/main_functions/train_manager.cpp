@@ -58,7 +58,7 @@ TrainManager::TrainManager(const std::string & conf_path)
   renderer_->to(torch::kCUDA);
 
   // Optimizer
-  optimizer_ = std::make_shared<torch::optim::Adam>(renderer_->OptimParamGroups(learning_rate_));
+  optimizer_ = std::make_shared<torch::optim::Adam>(renderer_->optim_param_groups(learning_rate_));
 
   std::string is_continue_str;
   fs["is_continue"] >> is_continue_str;
@@ -72,7 +72,6 @@ void TrainManager::Train()
 {
   std::ofstream ofs_log(base_exp_dir_ + "/train_log.txt");
 
-  StopWatch clock;
   Timer timer;
   timer.start();
 
@@ -88,7 +87,7 @@ void TrainManager::Train()
     Tensor & rays_d = train_rays.dirs;
     Tensor & bounds = train_rays.bounds;
 
-    auto render_result = renderer_->Render(rays_o, rays_d, emb_idx, RunningMode::TRAIN);
+    auto render_result = renderer_->render(rays_o, rays_d, emb_idx, RunningMode::TRAIN);
     Tensor pred_colors = render_result.colors.index({Slc(0, cur_batch_size)});
     Tensor disparity = render_result.disparity;
     Tensor color_loss = torch::sqrt((pred_colors - gt_colors).square() + 1e-4f).mean();
@@ -230,7 +229,7 @@ std::tuple<Tensor, Tensor> TrainManager::RenderWholeImage(
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
     Tensor cur_bounds = bounds.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
 
-    auto render_result = renderer_->Render(cur_rays_o, cur_rays_d, Tensor(), mode);
+    auto render_result = renderer_->render(cur_rays_o, cur_rays_d, Tensor(), mode);
     Tensor colors = render_result.colors.detach().to(torch::kCPU);
     Tensor disp = render_result.disparity.detach().to(torch::kCPU).squeeze();
 
@@ -259,5 +258,5 @@ void TrainManager::VisualizeImage(int idx)
   fs::create_directories(base_exp_dir_ + "/images");
   std::stringstream ss;
   ss << iter_step_ << "_" << idx << ".png";
-  Utils::WriteImageTensor(base_exp_dir_ + "/images/" + ss.str(), img_tensor);
+  Utils::write_image_tensor(base_exp_dir_ + "/images/" + ss.str(), img_tensor);
 }

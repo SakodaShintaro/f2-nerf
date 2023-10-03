@@ -13,11 +13,11 @@
 
 using Tensor = torch::Tensor;
 
-PtsSampler::PtsSampler() : sample_l_(1.0 / 256)
+PtsSampler::PtsSampler()
 {
 }
 
-SampleResultFlex PtsSampler::GetSamples(
+SampleResultFlex PtsSampler::get_samples(
   const Tensor & rays_o_raw, const Tensor & rays_d_raw, RunningMode mode)
 {
   Tensor rays_o = rays_o_raw.contiguous();
@@ -35,7 +35,7 @@ SampleResultFlex PtsSampler::GetSamples(
     rays_noise = ((torch::rand({n_all_pts}, CUDAFloat) - .5f) + 1.f).contiguous();
   }
   rays_noise = rays_noise.view({n_rays, MAX_SAMPLE_PER_RAY}).contiguous();
-  Tensor cum_noise = torch::cumsum(rays_noise, 1) * sample_l_;
+  Tensor cum_noise = torch::cumsum(rays_noise, 1) * SAMPLE_L;
   Tensor sampled_t = cum_noise.reshape({n_all_pts}).contiguous();
 
   rays_o = rays_o.view({n_rays, 1, 3}).contiguous();
