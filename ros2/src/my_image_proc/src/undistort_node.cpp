@@ -14,6 +14,7 @@
 
 #include "cv_decompress.hpp"
 #include "timer.hpp"
+
 #include <opencv4/opencv2/calib3d.hpp>
 #include <opencv4/opencv2/core.hpp>
 #include <opencv4/opencv2/imgproc.hpp>
@@ -27,15 +28,18 @@
 
 #include <optional>
 
-class UndistortNode : public rclcpp::Node {
+class UndistortNode : public rclcpp::Node
+{
 public:
   using CompressedImage = sensor_msgs::msg::CompressedImage;
   using CameraInfo = sensor_msgs::msg::CameraInfo;
   using Image = sensor_msgs::msg::Image;
 
   UndistortNode()
-      : Node("undistort"), OUTPUT_WIDTH(declare_parameter("width", 120)),
-        OVERRIDE_FRAME_ID(declare_parameter("override_frame_id", "")) {
+  : Node("undistort"),
+    OUTPUT_WIDTH(declare_parameter("width", 120)),
+    OVERRIDE_FRAME_ID(declare_parameter("override_frame_id", ""))
+  {
     using std::placeholders::_1;
 
     rclcpp::QoS qos{10};
@@ -45,10 +49,8 @@ public:
 
     auto on_image = std::bind(&UndistortNode::on_image, this, _1);
     auto on_info = std::bind(&UndistortNode::on_info, this, _1);
-    sub_image_ = create_subscription<CompressedImage>("src_image", qos,
-                                                      std::move(on_image));
-    sub_info_ =
-        create_subscription<CameraInfo>("src_info", qos, std::move(on_info));
+    sub_image_ = create_subscription<CompressedImage>("src_image", qos, std::move(on_image));
+    sub_info_ = create_subscription<CameraInfo>("src_info", qos, std::move(on_info));
 
     pub_info_ = create_publisher<CameraInfo>("resized_info", 10);
     pub_image_ = create_publisher<Image>("resized_image", 10);
@@ -67,22 +69,21 @@ private:
 
   cv::Mat undistort_map_x, undistort_map_y;
 
-  void make_remap_lut() {
-    if (!info_.has_value())
-      return;
+  void make_remap_lut()
+  {
+    if (!info_.has_value()) return;
     cv::Mat K = cv::Mat(cv::Size(3, 3), CV_64FC1, (void *)(info_->k.data()));
     cv::Mat D = cv::Mat(cv::Size(5, 1), CV_64FC1, (void *)(info_->d.data()));
     cv::Size size(info_->width, info_->height);
 
     cv::Size new_size = size;
     if (OUTPUT_WIDTH > 0)
-      new_size = cv::Size(OUTPUT_WIDTH,
-                          1.0f * OUTPUT_WIDTH / size.width * size.height);
+      new_size = cv::Size(OUTPUT_WIDTH, 1.0f * OUTPUT_WIDTH / size.width * size.height);
 
     cv::Mat new_K = cv::getOptimalNewCameraMatrix(K, D, size, 0, new_size);
 
-    cv::initUndistortRectifyMap(K, D, cv::Mat(), new_K, new_size, CV_32FC1,
-                                undistort_map_x, undistort_map_y);
+    cv::initUndistortRectifyMap(
+      K, D, cv::Mat(), new_K, new_size, CV_32FC1, undistort_map_x, undistort_map_y);
 
     scaled_info_ = sensor_msgs::msg::CameraInfo{};
     scaled_info_->k.at(0) = new_K.at<double>(0, 0);
@@ -95,24 +96,21 @@ private:
     scaled_info_->height = new_size.height;
   }
 
-  void on_image(const CompressedImage &msg) {
-    if (!info_.has_value())
-      return;
-    if (undistort_map_x.empty())
-      make_remap_lut();
+  void on_image(const CompressedImage & msg)
+  {
+    if (!info_.has_value()) return;
+    if (undistort_map_x.empty()) make_remap_lut();
 
     Timer timer;
     cv::Mat image = decompress_to_cv_mat(msg);
 
     cv::Mat undistorted_image;
-    cv::remap(image, undistorted_image, undistort_map_x, undistort_map_y,
-              cv::INTER_LINEAR);
+    cv::remap(image, undistorted_image, undistort_map_x, undistort_map_y, cv::INTER_LINEAR);
 
     // Publish CameraInfo
     {
       scaled_info_->header = info_->header;
-      if (OVERRIDE_FRAME_ID != "")
-        scaled_info_->header.frame_id = OVERRIDE_FRAME_ID;
+      if (OVERRIDE_FRAME_ID != "") scaled_info_->header.frame_id = OVERRIDE_FRAME_ID;
       pub_info_->publish(scaled_info_.value());
     }
 
@@ -132,10 +130,11 @@ private:
     RCLCPP_INFO_STREAM(get_logger(), "image undistort: " << timer);
   }
 
-  void on_info(const CameraInfo &msg) { info_ = msg; }
+  void on_info(const CameraInfo & msg) { info_ = msg; }
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char * argv[])
+{
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<UndistortNode>());
   rclcpp::shutdown();

@@ -21,11 +21,11 @@
 
 #include <iostream>
 
-cv::Mat
-decompress_image(const sensor_msgs::msg::CompressedImage &compressed_img) {
+cv::Mat decompress_image(const sensor_msgs::msg::CompressedImage & compressed_img)
+{
   cv::Mat raw_image;
 
-  const std::string &format = compressed_img.format;
+  const std::string & format = compressed_img.format;
   const std::string encoding = format.substr(0, format.find(";"));
 
   constexpr int DECODE_GRAY = 0;
@@ -47,27 +47,25 @@ decompress_image(const sensor_msgs::msg::CompressedImage &compressed_img) {
     cv::cvtColor(raw_image, raw_image, cv::COLOR_BayerGR2BGR);
   else {
     std::cerr << encoding << " is not supported encoding" << std::endl;
-    std::cerr << "Please implement additional decoding in " << __FUNCTION__
-              << std::endl;
+    std::cerr << "Please implement additional decoding in " << __FUNCTION__ << std::endl;
     exit(EXIT_FAILURE);
   }
   return raw_image;
 }
 
-cv::Mat
-decompress_to_cv_mat(const sensor_msgs::msg::CompressedImage &compressed_img) {
+cv::Mat decompress_to_cv_mat(const sensor_msgs::msg::CompressedImage & compressed_img)
+{
   return decompress_image(compressed_img);
 }
 
-cv::Mat decompress_to_cv_mat(const sensor_msgs::msg::Image &img) {
-  return cv_bridge::toCvCopy(std::make_shared<sensor_msgs::msg::Image>(img),
-                             img.encoding)
-      ->image;
+cv::Mat decompress_to_cv_mat(const sensor_msgs::msg::Image & img)
+{
+  return cv_bridge::toCvCopy(std::make_shared<sensor_msgs::msg::Image>(img), img.encoding)->image;
 }
 
-sensor_msgs::msg::Image::ConstSharedPtr
-decompress_to_ros_msg(const sensor_msgs::msg::CompressedImage &compressed_img,
-                      const std::string &encoding) {
+sensor_msgs::msg::Image::ConstSharedPtr decompress_to_ros_msg(
+  const sensor_msgs::msg::CompressedImage & compressed_img, const std::string & encoding)
+{
   cv_bridge::CvImage cv_image;
   cv_image.image = decompress_image(compressed_img);
   cv_image.encoding = encoding;

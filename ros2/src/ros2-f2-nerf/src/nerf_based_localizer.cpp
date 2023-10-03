@@ -166,7 +166,7 @@ void NerfBasedLocalizer::save_image(
   ss << prefix;
   ss << std::setfill('0') << std::setw(8) << save_id;
   ss << ".png";
-  Utils::WriteImageTensor(ss.str(), image_tensor);
+  Utils::write_image_tensor(ss.str(), image_tensor);
 }
 
 void NerfBasedLocalizer::service(
