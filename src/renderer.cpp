@@ -123,6 +123,37 @@ RenderResult Renderer::render(
   return {colors, disparity, depth, weights, idx_start_end};
 }
 
+std::tuple<Tensor, Tensor> Renderer::render_all_rays(
+  const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds)
+{
+  const int n_rays = rays_d.sizes()[0];
+
+  std::vector<Tensor> pred_colors;
+  std::vector<Tensor> pred_disp;
+
+  const int ray_batch_size = (1 << 16);
+  for (int i = 0; i < n_rays; i += ray_batch_size) {
+    int i_high = std::min(i + ray_batch_size, n_rays);
+    Tensor cur_rays_o = rays_o.index({Slc(i, i_high)}).contiguous();
+    Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).contiguous();
+    Tensor cur_bounds = bounds.index({Slc(i, i_high)}).contiguous();
+
+    RenderResult render_result = render(cur_rays_o, cur_rays_d, Tensor(), RunningMode::VALIDATE);
+    Tensor colors = render_result.colors;
+    Tensor disp = render_result.disparity.squeeze();
+
+    pred_colors.push_back(colors);
+    pred_disp.push_back(disp.unsqueeze(-1));
+  }
+
+  Tensor pred_colors_ts = torch::cat(pred_colors, 0);
+  Tensor pred_disp_ts = torch::cat(pred_disp, 0);
+
+  pred_disp_ts = pred_disp_ts / pred_disp_ts.max();
+
+  return {pred_colors_ts, pred_disp_ts};
+}
+
 std::vector<torch::optim::OptimizerParamGroup> Renderer::optim_param_groups(float lr)
 {
   std::vector<torch::optim::OptimizerParamGroup> ret;

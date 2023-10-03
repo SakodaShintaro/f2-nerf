@@ -32,6 +32,9 @@ public:
   RenderResult render(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & emb_idx, RunningMode mode);
 
+  std::tuple<Tensor, Tensor> render_all_rays(
+    const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
+
   std::vector<torch::optim::OptimizerParamGroup> optim_param_groups(float lr);
 
 private:

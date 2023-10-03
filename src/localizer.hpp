@@ -50,9 +50,6 @@ public:
 
   BoundedRays rays_from_pose(const Tensor & pose);
 
-  std::tuple<Tensor, Tensor> render_all_rays(
-    const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
-
   float radius() const { return radius_; }
   int infer_height() const { return infer_height_; }
   int infer_width() const { return infer_width_; }
