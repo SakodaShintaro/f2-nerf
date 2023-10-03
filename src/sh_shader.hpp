@@ -13,15 +13,17 @@ class SHShader : public torch::nn::Module
 
 public:
   SHShader();
-  Tensor query(const Tensor & feats, const Tensor & dirs);
 
-  Tensor encode(const Tensor & dirs);
+  Tensor query(const Tensor & feats, const Tensor & dirs);
 
   std::vector<torch::optim::OptimizerParamGroup> optim_param_groups(float lr);
 
-  torch::nn::Sequential mlp_ = nullptr;
+private:
+  static constexpr int DEGREE = 4;
 
-  const int degree_;
+  Tensor encode(const Tensor & dirs);
+
+  torch::nn::Sequential mlp_ = nullptr;
 };
 
 #endif  // F2_NERF__SH_SHADER_HPP_

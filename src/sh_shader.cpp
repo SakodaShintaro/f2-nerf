@@ -8,7 +8,7 @@
 
 using Tensor = torch::Tensor;
 
-SHShader::SHShader() : degree_(4)
+SHShader::SHShader()
 {
   const int d_in = 32;
   const int d_hidden = 64;

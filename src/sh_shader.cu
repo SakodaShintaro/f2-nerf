@@ -108,11 +108,11 @@ __global__ void SHKenerl(
 Tensor SHShader::encode(const Tensor &dirs) {
   CHECK(dirs.is_contiguous());
   int n_pts = dirs.size(0);
-  Tensor out = torch::empty({ n_pts, degree_ * degree_ }, CUDAFloat);
+  Tensor out = torch::empty({ n_pts, DEGREE * DEGREE }, CUDAFloat);
   dim3 grid_dim = LIN_GRID_DIM(n_pts);
   dim3 block_dim = LIN_BLOCK_DIM(n_pts);
 
-  SHKenerl<<<grid_dim, block_dim>>>(n_pts, degree_, dirs.data_ptr<float>(), out.data_ptr<float>());
+  SHKenerl<<<grid_dim, block_dim>>>(n_pts, DEGREE, dirs.data_ptr<float>(), out.data_ptr<float>());
 
   return out;
 }
