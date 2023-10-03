@@ -438,29 +438,6 @@ BoundedRays LocalizerCore::rays_from_pose(const Tensor & pose)
   return {rays_o, rays_d, bounds};
 }
 
-Tensor LocalizerCore::resize_image(Tensor image)
-{
-  const int height = image.size(0);
-  const int width = image.size(0);
-  if (height == infer_height_ && width == infer_width_) {
-    return image;
-  }
-
-  // change HWC to CHW
-  image = image.permute({2, 0, 1});
-  image = image.unsqueeze(0);  // add batch dim
-
-  // Resize
-  std::vector<int64_t> size = {infer_height_, infer_width_};
-  image = torch::nn::functional::interpolate(
-    image, torch::nn::functional::InterpolateFuncOptions().size(size));
-
-  // change CHW to HWC
-  image = image.squeeze(0);  // remove batch dim
-  image = image.permute({1, 2, 0});
-  return image;
-}
-
 torch::Tensor LocalizerCore::world2camera(const torch::Tensor & pose_in_world)
 {
   torch::Tensor x = pose_in_world;

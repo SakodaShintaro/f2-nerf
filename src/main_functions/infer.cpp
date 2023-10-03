@@ -49,7 +49,7 @@ void infer(const std::string & config_path)
     torch::Tensor initial_pose = dataset.poses_[i];
     torch::Tensor image_tensor = dataset.image_tensors_[i];
 
-    image_tensor = core.resize_image(image_tensor);
+    image_tensor = utils::resize_image(image_tensor, core.infer_height(), core.infer_width());
     utils::write_image_tensor(curr_dir + "image_01_gt.png", image_tensor);
 
     std::ofstream ofs(curr_dir + "/position.tsv");

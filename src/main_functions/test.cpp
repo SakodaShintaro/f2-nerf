@@ -33,7 +33,8 @@ void test(const std::string & config_path)
     torch::Tensor initial_pose = dataset.poses_[i];
     torch::Tensor image_tensor = dataset.image_tensors_[i];
 
-    image_tensor = localizer.resize_image(image_tensor);
+    image_tensor =
+      utils::resize_image(image_tensor, localizer.infer_height(), localizer.infer_width());
 
     timer.start();
     torch::Tensor nerf_image = localizer.render_image(initial_pose).cpu();

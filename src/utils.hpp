@@ -15,6 +15,7 @@ using Tensor = torch::Tensor;
 
 Tensor read_image_tensor(const std::string & path);
 bool write_image_tensor(const std::string & path, Tensor img);
+Tensor resize_image(Tensor image, const int resize_height, const int resize_width);
 
 }  // namespace utils
 

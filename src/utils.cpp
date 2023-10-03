@@ -31,3 +31,26 @@ bool utils::write_image_tensor(const std::string & path, Tensor img)
   cv::imwrite(path, img_mat);
   return true;
 }
+
+Tensor utils::resize_image(Tensor image, const int resize_height, const int resize_width)
+{
+  const int height = image.size(0);
+  const int width = image.size(1);
+  if (height == resize_height && width == resize_width) {
+    return image;
+  }
+
+  // change HWC to CHW
+  image = image.permute({2, 0, 1});
+  image = image.unsqueeze(0);  // add batch dim
+
+  // Resize
+  std::vector<int64_t> size = {resize_height, resize_width};
+  image = torch::nn::functional::interpolate(
+    image, torch::nn::functional::InterpolateFuncOptions().size(size));
+
+  // change CHW to HWC
+  image = image.squeeze(0);  // remove batch dim
+  image = image.permute({1, 2, 0});
+  return image;
+}

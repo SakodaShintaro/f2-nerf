@@ -46,8 +46,6 @@ public:
   Tensor normalize_position(Tensor pose);
   Tensor denormalize_position(Tensor pose);
 
-  Tensor resize_image(Tensor image);
-
   static Tensor calc_average_pose(const std::vector<Particle> & particles);
 
   BoundedRays rays_from_pose(const Tensor & pose);
