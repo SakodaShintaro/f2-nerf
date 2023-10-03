@@ -27,9 +27,9 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
     throw std::runtime_error("Failed to open " + base_exp_dir + "/inference_params.yaml");
   }
 
-  n_images_ = (int)inference_params["n_images"];
-  train_height_ = (int)inference_params["height"];
-  train_width_ = (int)inference_params["width"];
+  const int n_images = (int)inference_params["n_images"];
+  const int train_height = (int)inference_params["height"];
+  const int train_width = (int)inference_params["width"];
 
   std::vector<float> intrinsic_vector;
   inference_params["intrinsic"] >> intrinsic_vector;
@@ -47,7 +47,7 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
   radius_ = (float)inference_params["normalizing_radius"];
 
   const bool use_app_emb = (config["renderer"]["use_app_emb"].string() == "true");
-  renderer_ = std::make_shared<Renderer>(use_app_emb, n_images_);
+  renderer_ = std::make_shared<Renderer>(use_app_emb, n_images);
 
   const std::string checkpoint_path = base_exp_dir + "/checkpoints/latest";
   Tensor scalars;
@@ -56,8 +56,8 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
   torch::load(renderer_, checkpoint_path + "/renderer.pt");
 
   // set
-  infer_height_ = train_height_ / param.resize_factor;
-  infer_width_ = train_width_ / param.resize_factor;
+  infer_height_ = train_height / param.resize_factor;
+  infer_width_ = train_width / param.resize_factor;
   std::cout << "infer_height_ = " << infer_height_ << ", infer_width_ = " << infer_width_
             << ", factor = " << param.resize_factor << std::endl;
   intrinsic_ /= param.resize_factor;
@@ -70,12 +70,12 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
   [  0, +1,  0,  0 ],
   [  0,  0,  0, +1 ]]
 */
-  axis_convert_mat1_ = torch::zeros({4, 4});
-  axis_convert_mat1_[0][2] = -1;
-  axis_convert_mat1_[1][0] = -1;
-  axis_convert_mat1_[2][1] = 1;
-  axis_convert_mat1_[3][3] = 1;
-  axis_convert_mat1_ = axis_convert_mat1_.to(torch::kCUDA);
+  axis_convert_mat_ = torch::zeros({4, 4});
+  axis_convert_mat_[0][2] = -1;
+  axis_convert_mat_[1][0] = -1;
+  axis_convert_mat_[2][1] = 1;
+  axis_convert_mat_[3][3] = 1;
+  axis_convert_mat_ = axis_convert_mat_.to(torch::kCUDA);
 }
 
 std::vector<Particle> LocalizerCore::random_search(
@@ -267,7 +267,7 @@ Tensor LocalizerCore::normalize_position(Tensor pose)
   return pose;
 }
 
-Tensor LocalizerCore::inverse_normalize_position(Tensor pose)
+Tensor LocalizerCore::denormalize_position(Tensor pose)
 {
   Tensor cam_pos = pose.index({Slc(0, 3), 3}).clone();
   cam_pos = cam_pos * radius_ + center_.unsqueeze(0);
@@ -464,8 +464,8 @@ Tensor LocalizerCore::resize_image(Tensor image)
 torch::Tensor LocalizerCore::world2camera(const torch::Tensor & pose_in_world)
 {
   torch::Tensor x = pose_in_world;
-  x = torch::mm(x, axis_convert_mat1_);
-  x = torch::mm(axis_convert_mat1_.t(), x);
+  x = torch::mm(x, axis_convert_mat_);
+  x = torch::mm(axis_convert_mat_.t(), x);
   x = normalize_position(x);
   x = x.index({Slc(0, 3), Slc(0, 4)});
   return x;
@@ -475,8 +475,8 @@ torch::Tensor LocalizerCore::camera2world(const torch::Tensor & pose_in_camera)
 {
   torch::Tensor x = pose_in_camera;
   x = torch::cat({x, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
-  x = inverse_normalize_position(x);
-  x = torch::mm(x, axis_convert_mat1_.t());
-  x = torch::mm(axis_convert_mat1_, x);
+  x = denormalize_position(x);
+  x = torch::mm(x, axis_convert_mat_.t());
+  x = torch::mm(axis_convert_mat_, x);
   return x;
 }

@@ -44,9 +44,7 @@ public:
   torch::Tensor camera2world(const torch::Tensor & pose_in_camera);
 
   Tensor normalize_position(Tensor pose);
-  Tensor inverse_normalize_position(Tensor pose);
-
-  float radius() const { return radius_; }
+  Tensor denormalize_position(Tensor pose);
 
   Tensor resize_image(Tensor image);
 
@@ -57,6 +55,7 @@ public:
   std::tuple<Tensor, Tensor> render_all_rays(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds);
 
+  float radius() const { return radius_; }
   int infer_height() const { return infer_height_; }
   int infer_width() const { return infer_width_; }
 
@@ -67,11 +66,8 @@ private:
 
   std::shared_ptr<Renderer> renderer_;
 
-  // Convert mat
-  torch::Tensor axis_convert_mat1_;
+  torch::Tensor axis_convert_mat_;
 
-  int n_images_;
-  int train_height_, train_width_;
   int infer_height_, infer_width_;
   Tensor intrinsic_;
   float near_, far_;
