@@ -32,8 +32,10 @@ class PtsSampler
 
 public:
   PtsSampler();
+
   SampleResultFlex get_samples(const Tensor & rays_o, const Tensor & rays_d, RunningMode mode);
 
+private:
   static constexpr float SAMPLE_L = 1.0 / 256;
 };
 

@@ -258,5 +258,5 @@ void TrainManager::VisualizeImage(int idx)
   fs::create_directories(base_exp_dir_ + "/images");
   std::stringstream ss;
   ss << iter_step_ << "_" << idx << ".png";
-  Utils::write_image_tensor(base_exp_dir_ + "/images/" + ss.str(), img_tensor);
+  utils::write_image_tensor(base_exp_dir_ + "/images/" + ss.str(), img_tensor);
 }

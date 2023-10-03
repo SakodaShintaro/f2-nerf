@@ -13,6 +13,8 @@ class ScopeWatch
 public:
   ScopeWatch(const std::string & scope_name);
   ~ScopeWatch();
+
+private:
   std::chrono::steady_clock::time_point t_point_;
   std::string scope_name_;
 };

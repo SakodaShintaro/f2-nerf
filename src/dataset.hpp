@@ -41,7 +41,6 @@ public:
 
   std::tuple<BoundedRays, Tensor, Tensor> sample_random_rays(int batch_size);
 
-  // variables
   int n_images_ = 0;
   Tensor poses_, intrinsics_, dist_params_, bounds_;
   Tensor center_;

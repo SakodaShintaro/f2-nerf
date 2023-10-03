@@ -9,13 +9,13 @@
 
 #include <string>
 
-namespace Utils
+namespace utils
 {
 using Tensor = torch::Tensor;
 
 Tensor read_image_tensor(const std::string & path);
 bool write_image_tensor(const std::string & path, Tensor img);
 
-}  // namespace Utils
+}  // namespace utils
 
 #endif  // F2_NERF__UTILS_HPP_

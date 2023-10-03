@@ -104,7 +104,7 @@ Dataset::Dataset(const std::string & data_path)
     for (int i = 0; i < n_images_; i++) {
       std::string image_path;
       std::getline(image_list, image_path);
-      images.push_back(Utils::read_image_tensor(image_path).to(torch::kCPU));
+      images.push_back(utils::read_image_tensor(image_path).to(torch::kCPU));
     }
   }
 

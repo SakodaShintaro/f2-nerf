@@ -34,6 +34,7 @@ public:
 
   std::vector<torch::optim::OptimizerParamGroup> optim_param_groups(float lr);
 
+private:
   std::shared_ptr<PtsSampler> pts_sampler_;
   std::shared_ptr<Hash3DAnchored> scene_field_;
   std::shared_ptr<SHShader> shader_;
