@@ -20,7 +20,7 @@ int main(int argc, char * argv[])
   const std::string conf_path = argv[2];
   if (command == "train") {
     auto train_manager = std::make_unique<TrainManager>(conf_path);
-    train_manager->Train();
+    train_manager->train();
   } else if (command == "infer") {
     infer(conf_path);
   } else if (command == "walk") {

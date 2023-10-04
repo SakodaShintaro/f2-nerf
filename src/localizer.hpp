@@ -62,7 +62,6 @@ private:
 
   int infer_height_, infer_width_;
   Tensor intrinsic_;
-  float near_, far_;
   Tensor center_;
   float radius_;
 };

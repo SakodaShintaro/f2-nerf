@@ -139,9 +139,6 @@ void Dataset::save_inference_params(const std::string & output_dir) const
   ofs << intrinsics_[0][2][1].item() << ", ";
   ofs << intrinsics_[0][2][2].item() << "]" << std::endl;
 
-  ofs << "bounds: [" << bounds_[0][0].item();
-  ofs << ", " << bounds_[0][1].item() << "]" << std::endl;
-
   ofs << "normalizing_center: [" << center_[0].item();
   ofs << ", " << center_[1].item();
   ofs << ", " << center_[2].item() << "]" << std::endl;

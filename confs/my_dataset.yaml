@@ -18,5 +18,3 @@ renderer:
   use_app_emb: true
 
 dataset_path: None
-
-is_continue: false

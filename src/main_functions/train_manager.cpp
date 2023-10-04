@@ -43,32 +43,20 @@ TrainManager::TrainManager(const std::string & conf_path)
   var_loss_start_ = (int)train_config["var_loss_start"];
   var_loss_end_ = (int)train_config["var_loss_end"];
 
-  std::string data_path;
-  fs["dataset_path"] >> data_path;
-
   // Dataset
-  dataset_ = std::make_shared<Dataset>(data_path);
+  dataset_ = std::make_shared<Dataset>(fs["dataset_path"].string());
   dataset_->save_inference_params(base_exp_dir_);
 
   // Renderer
-  std::string use_app_emb_str;
-  fs["renderer"]["use_app_emb"] >> use_app_emb_str;
-  const bool use_app_emb = (use_app_emb_str == "true");
+  const bool use_app_emb = (fs["renderer"]["use_app_emb"].string() == "true");
   renderer_ = std::make_shared<Renderer>(use_app_emb, dataset_->n_images_);
   renderer_->to(torch::kCUDA);
 
   // Optimizer
   optimizer_ = std::make_shared<torch::optim::Adam>(renderer_->optim_param_groups(learning_rate_));
-
-  std::string is_continue_str;
-  fs["is_continue"] >> is_continue_str;
-  const bool is_continue = (is_continue_str == "true");
-  if (is_continue) {
-    LoadCheckpoint(base_exp_dir_ + "/checkpoints/latest");
-  }
 }
 
-void TrainManager::Train()
+void TrainManager::train()
 {
   std::ofstream ofs_log(base_exp_dir_ + "/train_log.txt");
 
@@ -76,7 +64,7 @@ void TrainManager::Train()
   timer.start();
 
   float psnr_smooth = -1.0;
-  UpdateAdaParams();
+  updated_ada_params();
 
   for (; iter_step_ < end_iter_;) {
     constexpr float sampled_pts_per_ray_ = 512.f;
@@ -126,11 +114,11 @@ void TrainManager::Train()
     iter_step_++;
 
     if (iter_step_ % vis_freq_ == 0) {
-      VisualizeImage(0);
+      visualize_image(0);
     }
 
     if (iter_step_ % save_freq_ == 0) {
-      SaveCheckpoint();
+      save_check_point();
     }
     const int64_t total_sec = timer.elapsed_seconds();
     const int64_t total_m = total_sec / 60;
@@ -149,25 +137,13 @@ void TrainManager::Train()
       std::cout << log_str << std::endl;
       ofs_log << log_str << std::endl;
     }
-    UpdateAdaParams();
+    updated_ada_params();
   }
 
   std::cout << "Train done" << std::endl;
 }
 
-void TrainManager::LoadCheckpoint(const std::string & path)
-{
-  {
-    Tensor scalars;
-    torch::load(scalars, path + "/scalars.pt");
-    iter_step_ = std::round(scalars[0].item<float>());
-    UpdateAdaParams();
-  }
-
-  torch::load(renderer_, path + "/renderer.pt");
-}
-
-void TrainManager::SaveCheckpoint()
+void TrainManager::save_check_point()
 {
   std::stringstream ss;
   ss << base_exp_dir_ << "/checkpoints/" << std::setw(8) << std::setfill('0') << iter_step_;
@@ -190,7 +166,7 @@ void TrainManager::SaveCheckpoint()
   fs::create_symlink(output_dir + "/scalars.pt", base_exp_dir_ + "/checkpoints/latest/scalars.pt");
 }
 
-void TrainManager::UpdateAdaParams()
+void TrainManager::updated_ada_params()
 {
   // Update learning rate
   float lr_factor;
@@ -208,7 +184,7 @@ void TrainManager::UpdateAdaParams()
   }
 }
 
-std::tuple<Tensor, Tensor> TrainManager::RenderWholeImage(
+std::tuple<Tensor, Tensor> TrainManager::render_whole_image(
   Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode)
 {
   torch::NoGradGuard no_grad_guard;
@@ -241,12 +217,13 @@ std::tuple<Tensor, Tensor> TrainManager::RenderWholeImage(
   return {pred_colors, pred_disp};
 }
 
-void TrainManager::VisualizeImage(int idx)
+void TrainManager::visualize_image(int idx)
 {
   torch::NoGradGuard no_grad_guard;
 
   auto [rays_o, rays_d, bounds] = dataset_->get_all_rays_of_camera(idx);
-  auto [pred_colors, pred_disps] = RenderWholeImage(rays_o, rays_d, bounds, RunningMode::VALIDATE);
+  auto [pred_colors, pred_disps] =
+    render_whole_image(rays_o, rays_d, bounds, RunningMode::VALIDATE);
 
   int H = dataset_->height_;
   int W = dataset_->width_;

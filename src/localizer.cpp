@@ -35,11 +35,6 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
   inference_params["intrinsic"] >> intrinsic_vector;
   intrinsic_ = torch::tensor(intrinsic_vector, torch::kFloat).view({3, 3}).to(torch::kCUDA);
 
-  std::vector<float> bounds;
-  inference_params["bounds"] >> bounds;
-  near_ = bounds[0];
-  far_ = bounds[1];
-
   std::vector<float> normalizing_center;
   inference_params["normalizing_center"] >> normalizing_center;
   center_ = torch::tensor(normalizing_center, torch::kFloat).to(torch::kCUDA);

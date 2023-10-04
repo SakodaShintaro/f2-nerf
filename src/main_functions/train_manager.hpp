@@ -21,14 +21,13 @@ class TrainManager
 public:
   TrainManager(const std::string & conf_path);
 
-  void Train();
+  void train();
 
-  void LoadCheckpoint(const std::string & path);
-  void SaveCheckpoint();
-  void UpdateAdaParams();
-  std::tuple<Tensor, Tensor> RenderWholeImage(
+  void save_check_point();
+  void updated_ada_params();
+  std::tuple<Tensor, Tensor> render_whole_image(
     Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode);
-  void VisualizeImage(int idx);
+  void visualize_image(int idx);
 
   // data
   std::string base_exp_dir_;
