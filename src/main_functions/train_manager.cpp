@@ -117,7 +117,9 @@ void TrainManager::train()
     }
 
     if (iter_step_ % save_freq_ == 0) {
-      save_check_point();
+      fs::remove_all(base_exp_dir_ + "/checkpoints/latest");
+      fs::create_directories(base_exp_dir_ + "/checkpoints/latest");
+      torch::save(renderer_, base_exp_dir_ + "/checkpoints/latest/renderer.pt");
     }
     const int64_t total_sec = timer.elapsed_seconds();
     const int64_t total_m = total_sec / 60;
@@ -140,29 +142,6 @@ void TrainManager::train()
   }
 
   std::cout << "Train done" << std::endl;
-}
-
-void TrainManager::save_check_point()
-{
-  std::stringstream ss;
-  ss << base_exp_dir_ << "/checkpoints/" << std::setw(8) << std::setfill('0') << iter_step_;
-  std::string output_dir = ss.str();
-  fs::create_directories(output_dir);
-
-  fs::remove_all(base_exp_dir_ + "/checkpoints/latest");
-  fs::create_directory(base_exp_dir_ + "/checkpoints/latest");
-  // scene
-  torch::save(renderer_, output_dir + "/renderer.pt");
-  fs::create_symlink(
-    output_dir + "/renderer.pt", base_exp_dir_ + "/checkpoints/latest/renderer.pt");
-  // optimizer
-  // torch::save(*(optimizer_), output_dir + "/optimizer.pt");
-  // other scalars
-  Tensor scalars =
-    torch::empty({1}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
-  scalars.index_put_({0}, float(iter_step_));
-  torch::save(scalars, output_dir + "/scalars.pt");
-  fs::create_symlink(output_dir + "/scalars.pt", base_exp_dir_ + "/checkpoints/latest/scalars.pt");
 }
 
 void TrainManager::updated_ada_params()

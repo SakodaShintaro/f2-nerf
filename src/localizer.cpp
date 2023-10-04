@@ -44,11 +44,7 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
   const bool use_app_emb = (config["renderer"]["use_app_emb"].string() == "true");
   renderer_ = std::make_shared<Renderer>(use_app_emb, n_images);
 
-  const std::string checkpoint_path = base_exp_dir + "/checkpoints/latest";
-  Tensor scalars;
-  torch::load(scalars, checkpoint_path + "/scalars.pt");
-
-  torch::load(renderer_, checkpoint_path + "/renderer.pt");
+  torch::load(renderer_,  base_exp_dir + "/checkpoints/latest/renderer.pt");
 
   // set
   infer_height_ = train_height / param.resize_factor;
