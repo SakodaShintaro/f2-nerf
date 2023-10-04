@@ -123,8 +123,7 @@ RenderResult Renderer::render(
   return {colors, disparity, depth, weights, idx_start_end};
 }
 
-std::tuple<Tensor, Tensor> Renderer::render_all_rays(
-  const Tensor & rays_o, const Tensor & rays_d, const Tensor & bounds)
+std::tuple<Tensor, Tensor> Renderer::render_all_rays(const Tensor & rays_o, const Tensor & rays_d)
 {
   const int n_rays = rays_d.sizes()[0];
 
@@ -136,7 +135,6 @@ std::tuple<Tensor, Tensor> Renderer::render_all_rays(
     int i_high = std::min(i + ray_batch_size, n_rays);
     Tensor cur_rays_o = rays_o.index({Slc(i, i_high)}).contiguous();
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).contiguous();
-    Tensor cur_bounds = bounds.index({Slc(i, i_high)}).contiguous();
 
     RenderResult render_result = render(cur_rays_o, cur_rays_d, Tensor(), RunningMode::VALIDATE);
     Tensor colors = render_result.colors;

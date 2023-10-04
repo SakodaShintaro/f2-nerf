@@ -47,8 +47,6 @@ public:
 
   static Tensor calc_average_pose(const std::vector<Particle> & particles);
 
-  BoundedRays rays_from_pose(const Tensor & pose);
-
   float radius() const { return radius_; }
   int infer_height() const { return infer_height_; }
   int infer_width() const { return infer_width_; }

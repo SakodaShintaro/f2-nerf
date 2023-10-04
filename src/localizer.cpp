@@ -162,17 +162,10 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
   Tensor prev = initial_pose.detach().clone();
   std::vector<Tensor> results;
   initial_pose = initial_pose.requires_grad_(true);
+  image_tensor = image_tensor.view({infer_height_, infer_width_, 3});
   torch::optim::Adam optimizer({initial_pose}, 1 * 1e-4);
   for (int64_t i = 0; i < iteration_num; i++) {
-    auto [rays_o, rays_d, bounds] = rays_from_pose(initial_pose);
-    auto [pred_colors, pred_disps] = renderer_->render_all_rays(rays_o, rays_d, bounds);
-
-    Tensor pred_img = pred_colors.view({infer_height_, infer_width_, 3});
-    pred_img = pred_img.clip(0.f, 1.f);
-    pred_img = pred_img.to(image_tensor.device());
-
-    image_tensor = image_tensor.view({infer_height_, infer_width_, 3});
-
+    Tensor pred_img = render_image(initial_pose);
     Tensor loss = torch::nn::functional::mse_loss(pred_img, image_tensor);
     optimizer.zero_grad();
     // For some reason, backward may fail, so check here
@@ -192,9 +185,16 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
 
 Tensor LocalizerCore::render_image(const Tensor & pose)
 {
-  torch::NoGradGuard no_grad_guard;
-  auto [rays_o, rays_d, bounds] = rays_from_pose(pose);
-  auto [image, _] = renderer_->render_all_rays(rays_o, rays_d, bounds);
+  Tensor ii = torch::linspace(0.f, infer_height_ - 1.f, infer_height_, CUDAFloat);
+  Tensor jj = torch::linspace(0.f, infer_width_ - 1.f, infer_width_, CUDAFloat);
+  auto ij = torch::meshgrid({ii, jj}, "ij");
+  Tensor i = ij[0].reshape({-1});
+  Tensor j = ij[1].reshape({-1});
+
+  auto [rays_o, rays_d] =
+    get_rays_from_pose(pose.unsqueeze(0), intrinsic_.unsqueeze(0), torch::stack({i, j}, -1));
+
+  auto [image, _] = renderer_->render_all_rays(rays_o, rays_d);
   image = image.clip(0.0f, 1.0f);
   image = image.view({infer_height_, infer_width_, 3});
   return image;
@@ -272,13 +272,9 @@ std::vector<float> LocalizerCore::evaluate_poses(
 
   Tensor rays_o = torch::cat(rays_o_vec);  // (numel, 3)
   Tensor rays_d = torch::cat(rays_d_vec);  // (numel, 3)
-  Tensor bounds =
-    torch::stack(
-      {torch::full({numel}, near_, CUDAFloat), torch::full({numel}, far_, CUDAFloat)}, -1)
-      .contiguous();  // (numel, 2)
 
   timer.start();
-  auto [pred_colors, pred_disps] = renderer_->render_all_rays(rays_o, rays_d, bounds);
+  auto [pred_colors, _] = renderer_->render_all_rays(rays_o, rays_d);
 
   Tensor pred_pixels = pred_colors.view({pose_num, pixel_num, 3});
   pred_pixels = pred_pixels.clip(0.f, 1.f);
@@ -356,26 +352,6 @@ Tensor LocalizerCore::calc_average_pose(const std::vector<Particle> & particles)
   avg_pose.index_put_({Slc(0, 3), Slc(0, 3)}, avg_rotation_tensor);
 
   return avg_pose;
-}
-
-BoundedRays LocalizerCore::rays_from_pose(const Tensor & pose)
-{
-  Tensor ii = torch::linspace(0.f, infer_height_ - 1.f, infer_height_, CUDAFloat);
-  Tensor jj = torch::linspace(0.f, infer_width_ - 1.f, infer_width_, CUDAFloat);
-  auto ij = torch::meshgrid({ii, jj}, "ij");
-  Tensor i = ij[0].reshape({-1});
-  Tensor j = ij[1].reshape({-1});
-
-  auto [rays_o, rays_d] =
-    get_rays_from_pose(pose.unsqueeze(0), intrinsic_.unsqueeze(0), torch::stack({i, j}, -1));
-
-  Tensor bounds = torch::stack(
-                    {torch::full({infer_height_ * infer_width_}, near_, CUDAFloat),
-                     torch::full({infer_height_ * infer_width_}, far_, CUDAFloat)},
-                    -1)
-                    .contiguous();
-
-  return {rays_o, rays_d, bounds};
 }
 
 torch::Tensor LocalizerCore::world2camera(const torch::Tensor & pose_in_world)
