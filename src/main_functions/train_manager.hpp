@@ -25,8 +25,7 @@ public:
 
   void save_check_point();
   void updated_ada_params();
-  std::tuple<Tensor, Tensor> render_whole_image(
-    Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode);
+  std::tuple<Tensor, Tensor> render_whole_image(Tensor rays_o, Tensor rays_d, RunningMode mode);
   void visualize_image(int idx);
 
   // data

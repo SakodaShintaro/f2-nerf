@@ -73,7 +73,6 @@ void TrainManager::train()
 
     Tensor & rays_o = train_rays.origins;
     Tensor & rays_d = train_rays.dirs;
-    Tensor & bounds = train_rays.bounds;
 
     auto render_result = renderer_->render(rays_o, rays_d, emb_idx, RunningMode::TRAIN);
     Tensor pred_colors = render_result.colors.index({Slc(0, cur_batch_size)});
@@ -185,12 +184,11 @@ void TrainManager::updated_ada_params()
 }
 
 std::tuple<Tensor, Tensor> TrainManager::render_whole_image(
-  Tensor rays_o, Tensor rays_d, Tensor bounds, RunningMode mode)
+  Tensor rays_o, Tensor rays_d, RunningMode mode)
 {
   torch::NoGradGuard no_grad_guard;
   rays_o = rays_o.to(torch::kCPU);
   rays_d = rays_d.to(torch::kCPU);
-  bounds = bounds.to(torch::kCPU);
   const int n_rays = rays_d.sizes()[0];
 
   Tensor pred_colors =
@@ -203,7 +201,6 @@ std::tuple<Tensor, Tensor> TrainManager::render_whole_image(
     int i_high = std::min(i + ray_batch_size, n_rays);
     Tensor cur_rays_o = rays_o.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
-    Tensor cur_bounds = bounds.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
 
     auto render_result = renderer_->render(cur_rays_o, cur_rays_d, Tensor(), mode);
     Tensor colors = render_result.colors.detach().to(torch::kCPU);
@@ -221,9 +218,8 @@ void TrainManager::visualize_image(int idx)
 {
   torch::NoGradGuard no_grad_guard;
 
-  auto [rays_o, rays_d, bounds] = dataset_->get_all_rays_of_camera(idx);
-  auto [pred_colors, pred_disps] =
-    render_whole_image(rays_o, rays_d, bounds, RunningMode::VALIDATE);
+  auto [rays_o, rays_d] = dataset_->get_all_rays_of_camera(idx);
+  auto [pred_colors, pred_disps] = render_whole_image(rays_o, rays_d, RunningMode::VALIDATE);
 
   int H = dataset_->height_;
   int W = dataset_->width_;

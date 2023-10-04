@@ -9,13 +9,6 @@ struct alignas(32) Rays
   torch::Tensor dirs;
 };
 
-struct alignas(32) BoundedRays
-{
-  torch::Tensor origins;
-  torch::Tensor dirs;
-  torch::Tensor bounds;  // near, far
-};
-
 Rays get_rays_from_pose(
   const torch::Tensor & pose, const torch::Tensor & intrinsic, const torch::Tensor & ij);
 

@@ -23,12 +23,12 @@ public:
 
   void save_inference_params(const std::string & output_dir) const;
 
-  BoundedRays get_all_rays_of_camera(int idx);
+  Rays get_all_rays_of_camera(int idx);
 
-  std::tuple<BoundedRays, Tensor, Tensor> sample_random_rays(int batch_size);
+  std::tuple<Rays, Tensor, Tensor> sample_random_rays(int batch_size);
 
   int n_images_ = 0;
-  Tensor poses_, intrinsics_, dist_params_, bounds_;
+  Tensor poses_, intrinsics_, dist_params_;
   Tensor center_;
   float radius_;
   int height_, width_;

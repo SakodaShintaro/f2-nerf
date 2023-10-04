@@ -72,7 +72,6 @@ Dataset::Dataset(const std::string & data_path)
     poses_ = torch::stack(poses, 0).contiguous().to(torch::kCUDA);
     intrinsics_ = torch::stack(intrinsics, 0).contiguous().to(torch::kCUDA);
     dist_params_ = torch::stack(dist_params, 0).contiguous().to(torch::kCUDA);
-    bounds_ = torch::stack(bounds, 0).contiguous().to(torch::kCUDA);
   }
 
   // Normalize scene
@@ -84,17 +83,7 @@ Dataset::Dataset(const std::string & data_path)
     cam_pos = (cam_pos - center_.unsqueeze(0)) / radius_;
     poses_.index_put_({Slc(), Slc(0, 3), 3}, cam_pos);
     poses_ = poses_.contiguous();
-    bounds_ = (bounds_ / radius_).contiguous();
   }
-
-  // Relax bounds
-  const std::vector<float> bounds_factor = {0.25, 4.0};
-  bounds_ = torch::stack(
-              {bounds_.index({"...", 0}) * bounds_factor[0],
-               {bounds_.index({"...", 1}) * bounds_factor[1]}},
-              -1)
-              .contiguous();
-  bounds_.clamp_(1e-2f, 1e9f);
 
   std::vector<Tensor> images;
   // Load images
@@ -145,7 +134,7 @@ void Dataset::save_inference_params(const std::string & output_dir) const
   ofs << "normalizing_radius: " << radius_ << std::endl;
 }
 
-BoundedRays Dataset::get_all_rays_of_camera(int idx)
+Rays Dataset::get_all_rays_of_camera(int idx)
 {
   int H = height_;
   int W = width_;
@@ -155,19 +144,12 @@ BoundedRays Dataset::get_all_rays_of_camera(int idx)
   Tensor i = ij[0].reshape({-1});
   Tensor j = ij[1].reshape({-1});
 
-  float near = bounds_.index({idx, 0}).item<float>();
-  float far = bounds_.index({idx, 1}).item<float>();
-
-  Tensor bounds =
-    torch::stack({torch::full({H * W}, near, CUDAFloat), torch::full({H * W}, far, CUDAFloat)}, -1)
-      .contiguous();
-
   auto [rays_o, rays_d] = get_rays_from_pose(
     poses_[idx].unsqueeze(0), intrinsics_[idx].unsqueeze(0), torch::stack({i, j}, -1));
-  return {rays_o, rays_d, bounds};
+  return {rays_o, rays_d};
 }
 
-std::tuple<BoundedRays, Tensor, Tensor> Dataset::sample_random_rays(int batch_size)
+std::tuple<Rays, Tensor, Tensor> Dataset::sample_random_rays(int batch_size)
 {
   const auto CPULong = torch::TensorOptions().dtype(torch::kLong).device(torch::kCPU);
   Tensor cam_indices = torch::randint(n_images_, {batch_size}, CPULong);
@@ -187,6 +169,5 @@ std::tuple<BoundedRays, Tensor, Tensor> Dataset::sample_random_rays(int batch_si
   Tensor selected_intrinsics = torch::index_select(intrinsics_, 0, cam_indices);
   auto [rays_o, rays_d] = get_rays_from_pose(selected_poses, selected_intrinsics, ij);
 
-  Tensor bounds = bounds_.index({cam_indices.to(torch::kLong)}).contiguous();
-  return {{rays_o, rays_d, bounds}, gt_colors, cam_indices.to(torch::kInt32).contiguous()};
+  return {{rays_o, rays_d}, gt_colors, cam_indices.to(torch::kInt32).contiguous()};
 }
