@@ -1,23 +1,7 @@
 import os
 from omegaconf import OmegaConf, DictConfig
-from glob import glob
 import hydra
 import subprocess
-
-
-def make_image_list(data_path):
-    image_list = []
-    suffix = ['*.jpg', '*.png', '*.JPG', '*.jpeg']
-    for suf in suffix:
-        image_list += glob(os.path.join(data_path, 'images', suf)) +\
-            glob(os.path.join(data_path, 'images_1', suf))
-
-    assert len(image_list) > 0, "No image found"
-    image_list.sort()
-
-    f = open(os.path.join(data_path, 'image_list.txt'), 'w')
-    for image_path in image_list:
-        f.write(image_path + '\n')
 
 
 @hydra.main(version_base=None, config_path='../confs', config_name='default')
@@ -27,7 +11,6 @@ def main(conf: DictConfig) -> None:
 
     data_path = os.path.abspath(conf['dataset_path'])
     assert os.path.exists(data_path), data_path
-    make_image_list(data_path)
 
     save_dir_name = os.path.basename(data_path)
     base_exp_dir = os.path.join(base_dir, 'exp', save_dir_name)
