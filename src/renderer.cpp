@@ -45,8 +45,8 @@ RenderResult Renderer::render(
 
   if (n_all_pts <= 0) {
     return {
-      bg_color, torch::zeros({n_rays, 1}, CUDAFloat), torch::zeros({n_rays}, CUDAFloat),
-      torch::full({n_rays}, 512.f, CUDAFloat), Tensor()};
+      bg_color, torch::zeros({n_rays}, CUDAFloat), torch::full({n_rays}, 512.f, CUDAFloat),
+      Tensor()};
   }
   CHECK(rays_o.sizes()[0] == sample_result.pts_idx_bounds.sizes()[0]);
 
@@ -115,12 +115,11 @@ RenderResult Renderer::render(
   Tensor last_trans = torch::exp(-FlexOps::Sum(sec_density, idx_start_end));
   Tensor colors = FlexOps::Sum(weights.unsqueeze(-1) * sampled_colors, idx_start_end);
   colors = colors + last_trans.unsqueeze(-1) * bg_color;
-  Tensor disparity = FlexOps::Sum(weights / sampled_t, idx_start_end);
-  Tensor depth = FlexOps::Sum(weights * sampled_t, idx_start_end) / (1.f - last_trans + 1e-4f);
+  Tensor depths = FlexOps::Sum(weights * sampled_t, idx_start_end) / (1.f - last_trans + 1e-4f);
 
   CHECK(std::isfinite((colors).mean().item<float>()));
 
-  return {colors, disparity, depth, weights, idx_start_end};
+  return {colors, depths, weights, idx_start_end};
 }
 
 std::tuple<Tensor, Tensor> Renderer::render_all_rays(
@@ -129,7 +128,7 @@ std::tuple<Tensor, Tensor> Renderer::render_all_rays(
   const int n_rays = rays_d.sizes()[0];
 
   std::vector<Tensor> pred_colors;
-  std::vector<Tensor> pred_disp;
+  std::vector<Tensor> pred_depths;
 
   const int ray_batch_size = (1 << 16);
   for (int i = 0; i < n_rays; i += batch_size) {
@@ -139,18 +138,16 @@ std::tuple<Tensor, Tensor> Renderer::render_all_rays(
 
     RenderResult render_result = render(cur_rays_o, cur_rays_d, Tensor(), RunningMode::VALIDATE);
     Tensor colors = render_result.colors;
-    Tensor disp = render_result.disparity.squeeze();
+    Tensor depths = render_result.depths.squeeze();
 
     pred_colors.push_back(colors);
-    pred_disp.push_back(disp.unsqueeze(-1));
+    pred_depths.push_back(depths.unsqueeze(-1));
   }
 
   Tensor pred_colors_ts = torch::cat(pred_colors, 0);
-  Tensor pred_disp_ts = torch::cat(pred_disp, 0);
+  Tensor pred_depths_ts = torch::cat(pred_depths, 0);
 
-  pred_disp_ts = pred_disp_ts / pred_disp_ts.max();
-
-  return {pred_colors_ts, pred_disp_ts};
+  return {pred_colors_ts, pred_depths_ts};
 }
 
 std::vector<torch::optim::OptimizerParamGroup> Renderer::optim_param_groups(float lr)

@@ -75,10 +75,7 @@ void TrainManager::train()
 
     auto render_result = renderer_->render(rays_o, rays_d, emb_idx, RunningMode::TRAIN);
     Tensor pred_colors = render_result.colors.index({Slc(0, cur_batch_size)});
-    Tensor disparity = render_result.disparity;
     Tensor color_loss = torch::sqrt((pred_colors - gt_colors).square() + 1e-4f).mean();
-
-    Tensor disparity_loss = disparity.square().mean();
 
     Tensor sampled_weights = render_result.weights;
     Tensor idx_start_end = render_result.idx_start_end;
@@ -171,17 +168,17 @@ void TrainManager::visualize_image(int idx)
   rays_d = rays_d.to(torch::kCUDA);
 
   const int ray_batch_size = 8192;
-  auto [pred_colors, pred_disps] = renderer_->render_all_rays(rays_o, rays_d, ray_batch_size);
+  auto [pred_colors, pred_depths] = renderer_->render_all_rays(rays_o, rays_d, ray_batch_size);
 
   pred_colors = pred_colors.to(torch::kCPU);
-  pred_disps = pred_disps.to(torch::kCPU);
+  pred_depths = pred_depths.to(torch::kCPU);
 
   int H = dataset_->height_;
   int W = dataset_->width_;
 
   Tensor img_tensor = torch::cat(
     {dataset_->image_tensors_[idx].to(torch::kCPU).reshape({H, W, 3}),
-     pred_colors.reshape({H, W, 3}), pred_disps.reshape({H, W, 1}).repeat({1, 1, 3})},
+     pred_colors.reshape({H, W, 3}), pred_depths.reshape({H, W, 1}).repeat({1, 1, 3})},
     1);
   fs::create_directories(base_exp_dir_ + "/images");
   std::stringstream ss;

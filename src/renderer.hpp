@@ -16,8 +16,7 @@ struct RenderResult
 {
   using Tensor = torch::Tensor;
   Tensor colors;
-  Tensor disparity;
-  Tensor depth;
+  Tensor depths;
   Tensor weights;
   Tensor idx_start_end;
 };
