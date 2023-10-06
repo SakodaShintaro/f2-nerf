@@ -185,7 +185,7 @@ Tensor LocalizerCore::render_image(const Tensor & pose)
   auto [rays_o, rays_d] =
     get_rays_from_pose(pose.unsqueeze(0), intrinsic_.unsqueeze(0), torch::stack({i, j}, -1));
 
-  auto [image, _] = renderer_->render_all_rays(rays_o, rays_d);
+  auto [image, _] = renderer_->render_all_rays(rays_o, rays_d, (1 << 16));
   image = image.clip(0.0f, 1.0f);
   image = image.view({infer_height_, infer_width_, 3});
   return image;
@@ -265,7 +265,7 @@ std::vector<float> LocalizerCore::evaluate_poses(
   Tensor rays_d = torch::cat(rays_d_vec);  // (numel, 3)
 
   timer.start();
-  auto [pred_colors, _] = renderer_->render_all_rays(rays_o, rays_d);
+  auto [pred_colors, _] = renderer_->render_all_rays(rays_o, rays_d, (1 << 16));
 
   Tensor pred_pixels = pred_colors.view({pose_num, pixel_num, 3});
   pred_pixels = pred_pixels.clip(0.f, 1.f);

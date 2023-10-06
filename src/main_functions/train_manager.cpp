@@ -63,7 +63,7 @@ void TrainManager::train()
   timer.start();
 
   float psnr_smooth = -1.0;
-  updated_ada_params();
+  update_ada_params();
 
   for (; iter_step_ < end_iter_;) {
     constexpr float sampled_pts_per_ray_ = 512.f;
@@ -137,13 +137,13 @@ void TrainManager::train()
       std::cout << log_str << std::endl;
       ofs_log << log_str << std::endl;
     }
-    updated_ada_params();
+    update_ada_params();
   }
 
   std::cout << "Train done" << std::endl;
 }
 
-void TrainManager::updated_ada_params()
+void TrainManager::update_ada_params()
 {
   // Update learning rate
   float lr_factor;
@@ -167,29 +167,14 @@ void TrainManager::visualize_image(int idx)
 
   auto [rays_o, rays_d] = dataset_->get_all_rays_of_camera(idx);
 
-  rays_o = rays_o.to(torch::kCPU);
-  rays_d = rays_d.to(torch::kCPU);
-  const int n_rays = rays_d.sizes()[0];
-
-  Tensor pred_colors =
-    torch::zeros({n_rays, 3}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
-  Tensor pred_disps =
-    torch::zeros({n_rays, 1}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
+  rays_o = rays_o.to(torch::kCUDA);
+  rays_d = rays_d.to(torch::kCUDA);
 
   const int ray_batch_size = 8192;
-  for (int i = 0; i < n_rays; i += ray_batch_size) {
-    int i_high = std::min(i + ray_batch_size, n_rays);
-    Tensor cur_rays_o = rays_o.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
-    Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
+  auto [pred_colors, pred_disps] = renderer_->render_all_rays(rays_o, rays_d, ray_batch_size);
 
-    auto render_result = renderer_->render(cur_rays_o, cur_rays_d, Tensor(), RunningMode::VALIDATE);
-    Tensor colors = render_result.colors.detach().to(torch::kCPU);
-    Tensor disp = render_result.disparity.detach().to(torch::kCPU).squeeze();
-
-    pred_colors.index_put_({Slc(i, i_high)}, colors);
-    pred_disps.index_put_({Slc(i, i_high)}, disp.unsqueeze(-1));
-  }
-  pred_disps = pred_disps / pred_disps.max();
+  pred_colors = pred_colors.to(torch::kCPU);
+  pred_disps = pred_disps.to(torch::kCPU);
 
   int H = dataset_->height_;
   int W = dataset_->width_;

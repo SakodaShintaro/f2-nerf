@@ -23,7 +23,7 @@ public:
 
   void train();
 
-  void updated_ada_params();
+  void update_ada_params();
 
   void visualize_image(int idx);
 
