@@ -13,14 +13,11 @@ using Tensor = torch::Tensor;
 
 TORCH_LIBRARY(dec_hash3d_anchored, m)
 {
-  std::cout << "register Hash3DAnchoredInfo" << std::endl;
   m.class_<Hash3DAnchoredInfo>("Hash3DAnchoredInfo").def(torch::init());
 }
 
 Hash3DAnchored::Hash3DAnchored()
 {
-  ScopeWatch dataset_watch("Hash3DAnchored::Hash3DAnchored");
-
   pool_size_ = (1 << 19) * N_LEVELS;
 
   // Feat pool
