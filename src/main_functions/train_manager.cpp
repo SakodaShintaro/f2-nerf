@@ -161,17 +161,19 @@ void TrainManager::updated_ada_params()
   }
 }
 
-std::tuple<Tensor, Tensor> TrainManager::render_whole_image(
-  Tensor rays_o, Tensor rays_d, RunningMode mode)
+void TrainManager::visualize_image(int idx)
 {
   torch::NoGradGuard no_grad_guard;
+
+  auto [rays_o, rays_d] = dataset_->get_all_rays_of_camera(idx);
+
   rays_o = rays_o.to(torch::kCPU);
   rays_d = rays_d.to(torch::kCPU);
   const int n_rays = rays_d.sizes()[0];
 
   Tensor pred_colors =
     torch::zeros({n_rays, 3}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
-  Tensor pred_disp =
+  Tensor pred_disps =
     torch::zeros({n_rays, 1}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
 
   const int ray_batch_size = 8192;
@@ -180,24 +182,14 @@ std::tuple<Tensor, Tensor> TrainManager::render_whole_image(
     Tensor cur_rays_o = rays_o.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
     Tensor cur_rays_d = rays_d.index({Slc(i, i_high)}).to(torch::kCUDA).contiguous();
 
-    auto render_result = renderer_->render(cur_rays_o, cur_rays_d, Tensor(), mode);
+    auto render_result = renderer_->render(cur_rays_o, cur_rays_d, Tensor(), RunningMode::VALIDATE);
     Tensor colors = render_result.colors.detach().to(torch::kCPU);
     Tensor disp = render_result.disparity.detach().to(torch::kCPU).squeeze();
 
     pred_colors.index_put_({Slc(i, i_high)}, colors);
-    pred_disp.index_put_({Slc(i, i_high)}, disp.unsqueeze(-1));
+    pred_disps.index_put_({Slc(i, i_high)}, disp.unsqueeze(-1));
   }
-  pred_disp = pred_disp / pred_disp.max();
-
-  return {pred_colors, pred_disp};
-}
-
-void TrainManager::visualize_image(int idx)
-{
-  torch::NoGradGuard no_grad_guard;
-
-  auto [rays_o, rays_d] = dataset_->get_all_rays_of_camera(idx);
-  auto [pred_colors, pred_disps] = render_whole_image(rays_o, rays_d, RunningMode::VALIDATE);
+  pred_disps = pred_disps / pred_disps.max();
 
   int H = dataset_->height_;
   int W = dataset_->width_;
