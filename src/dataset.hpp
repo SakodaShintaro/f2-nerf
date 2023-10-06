@@ -27,6 +27,8 @@ public:
 
   std::tuple<Rays, Tensor, Tensor> sample_random_rays(int batch_size);
 
+  static std::vector<std::string> glob_image_paths(const std::string & input_dir);
+
   int n_images_ = 0;
   Tensor poses_, intrinsics_, dist_params_;
   Tensor center_;

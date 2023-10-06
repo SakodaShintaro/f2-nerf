@@ -9,6 +9,7 @@
 #include <experimental/filesystem>
 
 #include <fmt/core.h>
+#include <glob.h>
 
 #include <iostream>
 
@@ -89,10 +90,9 @@ Dataset::Dataset(const std::string & data_path)
   // Load images
   {
     ScopeWatch watch("LoadImages");
-    std::ifstream image_list(data_path + "/image_list.txt");
+    const std::vector<std::string> image_paths = glob_image_paths(data_path + "/images/");
     for (int i = 0; i < n_images_; i++) {
-      std::string image_path;
-      std::getline(image_list, image_path);
+      const std::string image_path = image_paths[i];
       images.push_back(utils::read_image_tensor(image_path).to(torch::kCPU));
     }
   }
@@ -170,4 +170,17 @@ std::tuple<Rays, Tensor, Tensor> Dataset::sample_random_rays(int batch_size)
   auto [rays_o, rays_d] = get_rays_from_pose(selected_poses, selected_intrinsics, ij);
 
   return {{rays_o, rays_d}, gt_colors, cam_indices.to(torch::kInt32).contiguous()};
+}
+
+std::vector<std::string> Dataset::glob_image_paths(const std::string & input_dir)
+{
+  glob_t buffer;
+  std::vector<std::string> files;
+  glob((input_dir + "*.png").c_str(), 0, NULL, &buffer);
+  for (size_t i = 0; i < buffer.gl_pathc; i++) {
+    files.push_back(buffer.gl_pathv[i]);
+  }
+  globfree(&buffer);
+  std::sort(files.begin(), files.end());
+  return files;
 }
