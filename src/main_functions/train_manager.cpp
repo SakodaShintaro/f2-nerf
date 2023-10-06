@@ -38,7 +38,6 @@ TrainManager::TrainManager(const std::string & conf_path)
   learning_rate_ = (float)train_config["learning_rate"];
   learning_rate_alpha_ = (float)train_config["learning_rate_alpha"];
   learning_rate_warm_up_end_iter_ = (int)train_config["learning_rate_warm_up_end_iter"];
-  disp_loss_weight_ = (float)train_config["disp_loss_weight"];
   var_loss_weight_ = (float)train_config["var_loss_weight"];
   var_loss_start_ = (int)train_config["var_loss_start"];
   var_loss_end_ = (int)train_config["var_loss_end"];
@@ -94,7 +93,7 @@ void TrainManager::train()
                         float(var_loss_end_ - var_loss_start_) * var_loss_weight_;
     }
 
-    Tensor loss = color_loss + var_loss * var_loss_weight + disparity_loss * disp_loss_weight_;
+    Tensor loss = color_loss + var_loss * var_loss_weight;
 
     float mse = (pred_colors - gt_colors).square().mean().item<float>();
     float psnr = 20.f * std::log10(1 / std::sqrt(mse));
