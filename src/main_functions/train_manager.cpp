@@ -16,8 +16,9 @@
 namespace fs = std::experimental::filesystem::v1;
 using Tensor = torch::Tensor;
 
-TrainManager::TrainManager(const std::string & conf_path)
+TrainManager::TrainManager(const std::string & train_result_dir, const std::string & dataset_dir)
 {
+  const std::string conf_path = train_result_dir + "/runtime_config.yaml";
   fs::path p(conf_path);
   fs::path canonical_path = fs::canonical(p);
   const std::string path = canonical_path.string();
@@ -26,8 +27,8 @@ TrainManager::TrainManager(const std::string & conf_path)
     throw std::runtime_error("Failed to open " + conf_path);
   }
 
-  fs["base_exp_dir"] >> base_exp_dir_;
-  fs::create_directories(base_exp_dir_);
+  train_result_dir_ = train_result_dir;
+  fs::create_directories(train_result_dir_);
 
   const cv::FileNode train_config = fs["train"];
   pts_batch_size_ = (int)train_config["pts_batch_size"];
@@ -43,8 +44,8 @@ TrainManager::TrainManager(const std::string & conf_path)
   var_loss_end_ = (int)train_config["var_loss_end"];
 
   // Dataset
-  dataset_ = std::make_shared<Dataset>(fs["dataset_path"].string());
-  dataset_->save_inference_params(base_exp_dir_);
+  dataset_ = std::make_shared<Dataset>(dataset_dir);
+  dataset_->save_inference_params(train_result_dir_);
 
   // Renderer
   renderer_ = std::make_shared<Renderer>(dataset_->n_images);
@@ -56,7 +57,7 @@ TrainManager::TrainManager(const std::string & conf_path)
 
 void TrainManager::train()
 {
-  std::ofstream ofs_log(base_exp_dir_ + "/train_log.txt");
+  std::ofstream ofs_log(train_result_dir_ + "/train_log.txt");
 
   Timer timer;
   timer.start();
@@ -122,16 +123,16 @@ void TrainManager::train()
       pred_depths = pred_depths.to(torch::kCPU);
 
       Tensor concat_tensor = torch::cat({image, pred_colors, pred_depths}, 1);
-      fs::create_directories(base_exp_dir_ + "/images");
+      fs::create_directories(train_result_dir_ + "/images");
       std::stringstream ss;
       ss << std::setw(8) << std::setfill('0') << iter_step_ << "_" << idx << ".png";
-      utils::write_image_tensor(base_exp_dir_ + "/images/" + ss.str(), concat_tensor);
+      utils::write_image_tensor(train_result_dir_ + "/images/" + ss.str(), concat_tensor);
     }
 
     if (iter_step_ % save_freq_ == 0) {
-      fs::remove_all(base_exp_dir_ + "/checkpoints/latest");
-      fs::create_directories(base_exp_dir_ + "/checkpoints/latest");
-      torch::save(renderer_, base_exp_dir_ + "/checkpoints/latest/renderer.pt");
+      fs::remove_all(train_result_dir_ + "/checkpoints/latest");
+      fs::create_directories(train_result_dir_ + "/checkpoints/latest");
+      torch::save(renderer_, train_result_dir_ + "/checkpoints/latest/renderer.pt");
     }
 
     if (iter_step_ % report_freq_ == 0) {

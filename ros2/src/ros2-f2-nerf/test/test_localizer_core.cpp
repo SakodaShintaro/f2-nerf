@@ -8,7 +8,7 @@
 TEST(LocalizerCoreTest, TestMonteCarloLocalize)
 {
   LocalizerCoreParam param;
-  param.runtime_config_path = "./runtime_config.yaml";
+  param.train_result_dir = "./";
   LocalizerCore localizer_core(param);
   EXPECT_EQ(1, 1);
 }

@@ -2,7 +2,7 @@
 
 set -eux
 
-RUNTIME_CONFIG=$(readlink -f $1)
+TRAIN_RESULT_DIR=$(readlink -f $1)
 
 cd $(dirname $0)/../
 
@@ -24,7 +24,7 @@ set -eux
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/root/f2-nerf/External/libtorch/lib/
 ros2 run ros2-f2-nerf nerf_based_localizer \
     --ros-args --params-file ./src/ros2-f2-nerf/config/parameters_awsim.yaml \
-    --ros-args --param runtime_config_path:=$RUNTIME_CONFIG \
+    --ros-args --param train_result_dir:=$TRAIN_RESULT_DIR \
     --ros-args --remap image:=/sensing/camera/traffic_light/image_raw \
     --ros-args --remap initial_pose_with_covariance:=/localization/pose_twist_fusion_filter/biased_pose_with_covariance \
     --ros-args --remap nerf_service:=/localization/pose_estimator/ndt_align_srv \

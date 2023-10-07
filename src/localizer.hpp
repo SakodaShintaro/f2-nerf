@@ -14,7 +14,7 @@ struct Particle
 
 struct LocalizerCoreParam
 {
-  std::string runtime_config_path;
+  std::string train_result_dir;
   int32_t render_pixel_num = 256;
   float noise_position_x = 0.025f;
   float noise_position_y = 0.025f;

@@ -21,7 +21,7 @@ struct Dataset
 public:
   Dataset(const std::string & data_path);
 
-  void save_inference_params(const std::string & output_dir) const;
+  void save_inference_params(const std::string & train_result_dir) const;
 
   Rays get_all_rays_of_camera(int idx);
 

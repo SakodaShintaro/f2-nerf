@@ -9,7 +9,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('dir1', type=str)
     parser.add_argument('dir2', type=str)
-    parser.add_argument('output_dir', type=str)
+    parser.add_argument('train_result_dir', type=str)
     return parser.parse_args()
 
 
@@ -35,9 +35,9 @@ def main():
     args = parse_args()
     dir1 = args.dir1
     dir2 = args.dir2
-    output_dir = args.output_dir
+    train_result_dir = args.train_result_dir
 
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(train_result_dir, exist_ok=True)
 
     frame_dirs = sorted(glob(f"{dir1}/*/"))
     files2 = sorted(glob(f"{dir2}/*.png"))
@@ -56,7 +56,7 @@ def main():
         new_image = cv2.hconcat([image1, image2])
 
         # 保存
-        output_path = f"{output_dir}/{os.path.basename(file2)}"
+        output_path = f"{train_result_dir}/{os.path.basename(file2)}"
         cv2.imwrite(output_path, new_image)
         print(f"Saved {output_path}")
 

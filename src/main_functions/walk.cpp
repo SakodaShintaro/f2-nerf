@@ -53,11 +53,11 @@ void render(LocalizerCore & localizer, torch::Tensor pose)
             << std::endl;
 }
 
-void walk(const std::string & config_path)
+void walk(const std::string & train_result_dir)
 {
   torch::NoGradGuard no_grad_guard;
   LocalizerCoreParam param;
-  param.runtime_config_path = config_path;
+  param.train_result_dir = train_result_dir;
   param.resize_factor = 8;
   LocalizerCore localizer(param);
   torch::Tensor pose = torch::eye(4).cuda();

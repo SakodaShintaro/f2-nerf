@@ -30,7 +30,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   target_frame_ = this->declare_parameter<std::string>("target_frame");
 
   LocalizerCoreParam param;
-  param.runtime_config_path = this->declare_parameter<std::string>("runtime_config_path");
+  param.train_result_dir = this->declare_parameter<std::string>("train_result_dir");
   param.render_pixel_num = this->declare_parameter<int>("render_pixel_num");
   param.noise_position_x = this->declare_parameter<float>("noise_position_x");
   param.noise_position_y = this->declare_parameter<float>("noise_position_y");

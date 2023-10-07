@@ -19,14 +19,14 @@ class TrainManager
   using Tensor = torch::Tensor;
 
 public:
-  TrainManager(const std::string & conf_path);
+  TrainManager(const std::string & train_result_dir, const std::string & dataset_dir);
 
   void train();
 
   void update_ada_params();
 
   // data
-  std::string base_exp_dir_;
+  std::string train_result_dir_;
 
   unsigned iter_step_ = 0;
   unsigned end_iter_;

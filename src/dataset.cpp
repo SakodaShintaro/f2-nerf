@@ -103,9 +103,9 @@ Dataset::Dataset(const std::string & data_path)
   images = torch::stack(images_vec, 0).contiguous();
 }
 
-void Dataset::save_inference_params(const std::string & output_dir) const
+void Dataset::save_inference_params(const std::string & train_result_dir) const
 {
-  std::ofstream ofs(output_dir + "/inference_params.yaml");
+  std::ofstream ofs(train_result_dir + "/inference_params.yaml");
   ofs << std::fixed;
   ofs << "%YAML 1.2" << std::endl;
   ofs << "---" << std::endl;

@@ -1,3 +1,5 @@
+%YAML 1.2
+---
 train:
   pts_batch_size: 262144
   end_iter: 20000
@@ -11,5 +13,3 @@ train:
   var_loss_weight: 1e-2
   var_loss_start: 5000
   var_loss_end: 10000
-
-dataset_path: None

@@ -8,20 +8,16 @@
 
 namespace fs = std::experimental::filesystem::v1;
 
-void test(const std::string & config_path)
+void test(const std::string & train_result_dir, const std::string & dataset_dir)
 {
   torch::NoGradGuard no_grad_guard;
   LocalizerCoreParam param;
-  param.runtime_config_path = config_path;
+  param.train_result_dir = train_result_dir;
   param.resize_factor = 8;
   LocalizerCore localizer(param);
-  cv::FileStorage config(config_path, cv::FileStorage::READ);
 
-  const std::string data_path = config["dataset_path"].string();
-  const std::string base_exp_dir = config["base_exp_dir"].string();
-
-  Dataset dataset(data_path);
-  const std::string save_dir = base_exp_dir + "/test_result/";
+  Dataset dataset(dataset_dir);
+  const std::string save_dir = train_result_dir + "/test_result/";
   fs::create_directories(save_dir);
 
   Timer timer;
@@ -54,7 +50,7 @@ void test(const std::string & config_path)
   const float average_time = time_sum / dataset.n_images;
   const float average_score = score_sum / dataset.n_images;
 
-  std::ofstream summary(base_exp_dir + "/summary.tsv");
+  std::ofstream summary(train_result_dir + "/summary.tsv");
   summary << std::fixed;
   summary << "average_time\taverage_score" << std::endl;
   summary << average_time << "\t" << average_score << std::endl;

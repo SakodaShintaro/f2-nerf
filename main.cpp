@@ -10,23 +10,24 @@ int main(int argc, char * argv[])
 {
   torch::manual_seed(2022);
 
-  if (argc != 3) {
-    std::cerr << "Please specify a config file path as command line argument." << std::endl;
+  if (argc < 2) {
+    std::cerr << "Please specify a train_result_dir path as command line argument." << std::endl;
     std::cerr << "argc = " << argc << std::endl;
-    return 1;  // Return with error code
+    return 1;
   }
 
   const std::string command = argv[1];
-  const std::string conf_path = argv[2];
+  const std::string train_result_dir = argv[2];
+  const std::string dataset_dir = (argc >= 4 ? argv[3] : "");
   if (command == "train") {
-    auto train_manager = std::make_unique<TrainManager>(conf_path);
+    auto train_manager = std::make_unique<TrainManager>(train_result_dir, dataset_dir);
     train_manager->train();
   } else if (command == "infer") {
-    infer(conf_path);
+    infer(train_result_dir, dataset_dir);
   } else if (command == "walk") {
-    walk(conf_path);
+    walk(train_result_dir);
   } else if (command == "test") {
-    test(conf_path);
+    test(train_result_dir, dataset_dir);
   } else {
     std::cerr << "Invalid command line argument : " << command << std::endl;
     return 1;

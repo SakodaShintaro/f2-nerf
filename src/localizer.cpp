@@ -14,17 +14,12 @@ using Tensor = torch::Tensor;
 
 LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
 {
-  cv::FileStorage config(param.runtime_config_path, cv::FileStorage::READ);
-  if (!config.isOpened()) {
-    throw std::runtime_error("Failed to open " + param.runtime_config_path);
-  }
+  const std::string train_result_dir = param.train_result_dir;
 
-  const std::string base_exp_dir = config["base_exp_dir"].string();
-  std::cout << "base_exp_dir: " << base_exp_dir << std::endl;
-
-  cv::FileStorage inference_params(base_exp_dir + "/inference_params.yaml", cv::FileStorage::READ);
+  cv::FileStorage inference_params(
+    train_result_dir + "/inference_params.yaml", cv::FileStorage::READ);
   if (!inference_params.isOpened()) {
-    throw std::runtime_error("Failed to open " + base_exp_dir + "/inference_params.yaml");
+    throw std::runtime_error("Failed to open " + train_result_dir + "/inference_params.yaml");
   }
 
   const int n_images = (int)inference_params["n_images"];
@@ -43,7 +38,7 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
 
   renderer_ = std::make_shared<Renderer>(n_images);
 
-  torch::load(renderer_, base_exp_dir + "/checkpoints/latest/renderer.pt");
+  torch::load(renderer_, train_result_dir + "/checkpoints/latest/renderer.pt");
 
   // set
   infer_height_ = train_height / param.resize_factor;

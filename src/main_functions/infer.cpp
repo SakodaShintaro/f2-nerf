@@ -12,23 +12,19 @@ enum Dir { kUp, kUpRight, kRight, kDownRight, kDown, kDownLeft, kLeft, kUpLeft, 
 constexpr int64_t kDx[kDirNum] = {0, 1, 1, 1, 0, -1, -1, -1};
 constexpr int64_t kDz[kDirNum] = {1, 1, 0, -1, -1, -1, 0, 1};
 
-void infer(const std::string & config_path)
+void infer(const std::string & train_result_dir, const std::string & dataset_dir)
 {
   LocalizerCoreParam param{};
   param.resize_factor = 32;
-  param.runtime_config_path = config_path;
+  param.train_result_dir = train_result_dir;
   LocalizerCore core(param);
 
   constexpr int32_t iteration_num = 10;
 
-  cv::FileStorage config(config_path, cv::FileStorage::READ);
-  const std::string data_path = config["dataset_path"].string();
-  const std::string base_exp_dir = config["base_exp_dir"].string();
-
-  const std::string save_dir = base_exp_dir + "/inference_result/";
+  const std::string save_dir = train_result_dir + "/inference_result/";
   fs::create_directories(save_dir);
 
-  Dataset dataset(data_path);
+  Dataset dataset(dataset_dir);
 
   Timer timer, timer_local;
   timer.start();
