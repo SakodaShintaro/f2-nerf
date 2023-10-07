@@ -42,9 +42,6 @@ public:
   torch::Tensor world2camera(const torch::Tensor & pose_in_world);
   torch::Tensor camera2world(const torch::Tensor & pose_in_camera);
 
-  Tensor normalize_position(Tensor pose);
-  Tensor denormalize_position(Tensor pose);
-
   static Tensor calc_average_pose(const std::vector<Particle> & particles);
 
   float radius() const { return radius_; }

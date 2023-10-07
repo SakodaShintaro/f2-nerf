@@ -191,22 +191,6 @@ Tensor LocalizerCore::render_image(const Tensor & pose)
   return image;
 }
 
-Tensor LocalizerCore::normalize_position(Tensor pose)
-{
-  Tensor cam_pos = pose.index({Slc(0, 3), 3}).clone();
-  cam_pos = (cam_pos - center_.unsqueeze(0)) / radius_;
-  pose.index_put_({Slc(0, 3), 3}, cam_pos);
-  return pose;
-}
-
-Tensor LocalizerCore::denormalize_position(Tensor pose)
-{
-  Tensor cam_pos = pose.index({Slc(0, 3), 3}).clone();
-  cam_pos = cam_pos * radius_ + center_.unsqueeze(0);
-  pose.index_put_({Slc(0, 3), 3}, cam_pos);
-  return pose;
-}
-
 std::vector<float> LocalizerCore::evaluate_poses(
   const std::vector<Tensor> & poses, const Tensor & image)
 {
@@ -350,7 +334,12 @@ torch::Tensor LocalizerCore::world2camera(const torch::Tensor & pose_in_world)
   torch::Tensor x = pose_in_world;
   x = torch::mm(x, axis_convert_mat_);
   x = torch::mm(axis_convert_mat_.t(), x);
-  x = normalize_position(x);
+
+  // normalize t
+  Tensor t = x.index({Slc(0, 3), 3}).clone();
+  t = (t - center_.unsqueeze(0)) / radius_;
+  x.index_put_({Slc(0, 3), 3}, t);
+
   x = x.index({Slc(0, 3), Slc(0, 4)});
   return x;
 }
@@ -359,7 +348,12 @@ torch::Tensor LocalizerCore::camera2world(const torch::Tensor & pose_in_camera)
 {
   torch::Tensor x = pose_in_camera;
   x = torch::cat({x, torch::tensor({0, 0, 0, 1}).view({1, 4}).to(torch::kCUDA)});
-  x = denormalize_position(x);
+
+  // denormalize t
+  Tensor t = x.index({Slc(0, 3), 3}).clone();
+  t = t * radius_ + center_.unsqueeze(0);
+  x.index_put_({Slc(0, 3), 3}, t);
+
   x = torch::mm(x, axis_convert_mat_.t());
   x = torch::mm(axis_convert_mat_, x);
   return x;
