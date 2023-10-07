@@ -4,13 +4,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "test_field",
+            "name": "test",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build-Debug/main",
             "args": [
-                "test_field",
-                "../exp/20230609_base_link_logiee/runtime_config.yaml"
+                "test",
+                "../exp/20230930_15kph/runtime_config.yaml"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build-Debug",
@@ -25,7 +25,7 @@
             "program": "${workspaceFolder}/build-Debug/main",
             "args": [
                 "infer",
-                "../exp/20230609_base_link_logiee/runtime_config.yaml"
+                "../exp/20230930_15kph/runtime_config.yaml"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build-Debug",
