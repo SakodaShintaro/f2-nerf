@@ -2,6 +2,7 @@
 // Created by ppwang on 2023/3/27.
 //
 
+#include "../common_cuda.hpp"
 #include "Scatter.hpp"
 
 using Tensor = torch::Tensor;
@@ -108,7 +109,7 @@ Tensor CustomOps::ScatterAdd(torch::Tensor emb, torch::Tensor idx, torch::Tensor
 
 
 __global__ void ScatterIdxKernal(int n_rays, int* idx_start_end, int* emb_idx, int* all_emb_idx) {
-  int ray_idx = LINEAR_IDX();
+  int ray_idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (ray_idx >= n_rays) return;
   int idx_start = idx_start_end[ray_idx * 2];
   int idx_end = idx_start_end[ray_idx * 2 + 1];
@@ -123,7 +124,7 @@ Tensor CustomOps::ScatterIdx(int n_all_pts, Tensor idx_start_end, Tensor emb_idx
   Tensor ret = torch::empty({ n_all_pts }, torch::TensorOptions().dtype(torch::kInt).device(torch::kCUDA));
   int n_rays = idx_start_end.size(0);
   dim3 grid_dim = LIN_GRID_DIM(n_rays);
-  dim3 block_dim = LIN_BLOCK_DIM(n_rays);
+  dim3 block_dim = LIN_BLOCK_DIM;
 
   ScatterIdxKernal<<<grid_dim, block_dim>>>(n_rays, idx_start_end.data_ptr<int>(), emb_idx.data_ptr<int>(), ret.data_ptr<int>());
 

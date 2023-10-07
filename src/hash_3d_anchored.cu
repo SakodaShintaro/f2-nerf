@@ -2,6 +2,7 @@
 // Created by ppwang on 2022/7/17.
 //
 #include "common.hpp"
+#include "common_cuda.hpp"
 #include "hash_3d_anchored.hpp"
 
 #include <Eigen/Eigen>
@@ -210,9 +211,8 @@ variable_list Hash3DAnchoredFunction::forward(
 
   int n_points = points.sizes()[0];
 
-  const unsigned thread_cap = 512;
-  dim3 block_dim = {unsigned(thread_cap), 1, 1};
-  dim3 grid_dim = {DivUp(n_points, thread_cap), unsigned(N_LEVELS), 1};
+  dim3 block_dim = LIN_BLOCK_DIM;
+  dim3 grid_dim = {DivUp(n_points, THREAD_CAP), unsigned(N_LEVELS), 1};
 
   Tensor out_feat = torch::zeros({n_points, N_LEVELS * N_CHANNELS}, CUDAFlex);
   CHECK(out_feat.is_contiguous());
@@ -243,9 +243,8 @@ variable_list Hash3DAnchoredFunction::backward(AutogradContext * ctx, variable_l
 
   int pool_size = info_ptr->hash3d_->pool_size_;
 
-  const unsigned thread_cap = 512;
-  dim3 block_dim = {unsigned(thread_cap), 1, 1};
-  dim3 grid_dim = {DivUp(n_points, thread_cap), unsigned(N_LEVELS), 1};
+  dim3 block_dim = LIN_BLOCK_DIM;
+  dim3 grid_dim = {DivUp(n_points, THREAD_CAP), unsigned(N_LEVELS), 1};
 
   Tensor feat_pool_true = feat_pool.to(torch::kFloat16).contiguous();
 

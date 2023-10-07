@@ -1,9 +1,10 @@
+#include "../common_cuda.hpp"
 #include "FlexOps.hpp"
 
 using Tensor = torch::Tensor;
 
 __global__ void FlexSumForwardKernel(int n_outs, float* val, int* idx_start_end, float* sum) {
-  int idx = LINEAR_IDX();
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= n_outs) return;
   int idx_start = idx_start_end[idx * 2];
   int idx_end   = idx_start_end[idx * 2 + 1];
@@ -15,7 +16,7 @@ __global__ void FlexSumForwardKernel(int n_outs, float* val, int* idx_start_end,
 }
 
 __global__ void FlexSumBackwardKernel(int n_outs, float* dl_dsum, int* idx_start_end, float* dl_dval) {
-  int idx = LINEAR_IDX();
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= n_outs) return;
   int idx_start = idx_start_end[idx * 2];
   int idx_end   = idx_start_end[idx * 2 + 1];
@@ -26,7 +27,7 @@ __global__ void FlexSumBackwardKernel(int n_outs, float* dl_dsum, int* idx_start
 }
 
 __global__ void FlexSumVecForwardKernel(int n_outs, int vec_size, float* val, int* idx_start_end, float* sum) {
-  int idx = LINEAR_IDX();
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= n_outs) return;
   int idx_start = idx_start_end[idx * 2];
   int idx_end   = idx_start_end[idx * 2 + 1];
@@ -40,7 +41,7 @@ __global__ void FlexSumVecForwardKernel(int n_outs, int vec_size, float* val, in
 }
 
 __global__ void FlexSumVecBackwardKernel(int n_outs, int vec_size, float* dl_dsum, int* idx_start_end, float* dl_dval) {
-  int idx = LINEAR_IDX();
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= n_outs) return;
   int idx_start = idx_start_end[idx * 2];
   int idx_end   = idx_start_end[idx * 2 + 1];
@@ -53,7 +54,7 @@ __global__ void FlexSumVecBackwardKernel(int n_outs, int vec_size, float* dl_dsu
 }
 
 __global__ void FlexAccumulateSumForwardKernel(int n_outs, bool include_this, float* val, int* idx_start_end, float* sum) {
-  int idx = LINEAR_IDX();
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= n_outs) return;
   int idx_start = idx_start_end[idx * 2];
   int idx_end   = idx_start_end[idx * 2 + 1];
@@ -73,7 +74,7 @@ __global__ void FlexAccumulateSumForwardKernel(int n_outs, bool include_this, fl
 }
 
 __global__ void FlexAccumulateSumBackwardKernel(int n_outs, bool include_this, float* dl_dsum, int* idx_start_end, float* dl_dval) {
-  int idx = LINEAR_IDX();
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= n_outs) return;
   int idx_start = idx_start_end[idx * 2];
   int idx_end   = idx_start_end[idx * 2 + 1];
@@ -104,7 +105,7 @@ public:
     int n_outs = idx_start_end.size(0);
     Tensor sum;
     dim3 grid_dim  = LIN_GRID_DIM(n_outs);
-    dim3 block_dim = LIN_BLOCK_DIM(n_outs);
+    dim3 block_dim = LIN_BLOCK_DIM;
 
     if (val.sizes().size() == 1) {
       sum = torch::empty({ n_outs }, CUDAFloat);
@@ -132,7 +133,7 @@ public:
 
     Tensor dl_dval;
     dim3 grid_dim  = LIN_GRID_DIM(n_outs);
-    dim3 block_dim = LIN_BLOCK_DIM(n_outs);
+    dim3 block_dim = LIN_BLOCK_DIM;
 
     if (val.sizes().size() == 1) {
       dl_dval = torch::empty({ n_all }, CUDAFloat);
@@ -164,7 +165,7 @@ public:
     int n_outs = idx_start_end.size(0);
     Tensor sum = torch::empty({ n_all }, CUDAFloat);
     dim3 grid_dim  = LIN_GRID_DIM(n_outs);
-    dim3 block_dim = LIN_BLOCK_DIM(n_outs);
+    dim3 block_dim = LIN_BLOCK_DIM;
 
     FlexAccumulateSumForwardKernel<<<grid_dim, block_dim>>>(
         n_outs, include_this,
@@ -187,7 +188,7 @@ public:
 
     Tensor dl_dval = torch::empty({ n_all }, CUDAFloat);
     dim3 grid_dim  = LIN_GRID_DIM(n_outs);
-    dim3 block_dim = LIN_BLOCK_DIM(n_outs);
+    dim3 block_dim = LIN_BLOCK_DIM;
 
     FlexAccumulateSumBackwardKernel<<<grid_dim, block_dim>>>(
         n_outs, include_this,

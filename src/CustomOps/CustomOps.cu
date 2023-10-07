@@ -4,13 +4,14 @@
 
 #include "CustomOps.hpp"
 #include "../common.hpp"
+#include "../common_cuda.hpp"
 
 #define SCALE (16.f)
 
 using Tensor = torch::Tensor;
 
 __global__ void WeightVarLossForwardKernel(int n_outs, float* weights, int* idx_start_end, float* out_vars) {
-  int idx = LINEAR_IDX();
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= n_outs) return;
   int idx_start = idx_start_end[idx * 2];
   int idx_end   = idx_start_end[idx * 2 + 1];
@@ -36,7 +37,7 @@ __global__ void WeightVarLossForwardKernel(int n_outs, float* weights, int* idx_
 
 
 __global__ void WeightVarLossBackwardKernel(int n_outs, float* weights, int* idx_start_end, float* dl_dvars, float* dl_dw) {
-  int idx = LINEAR_IDX();
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= n_outs) return;
   int idx_start = idx_start_end[idx * 2];
   int idx_end   = idx_start_end[idx * 2 + 1];
@@ -77,7 +78,7 @@ public:
     int n_outs = idx_start_end.size(0);
     Tensor out_vars = torch::empty({ n_outs }, CUDAFloat);
     dim3 grid_dim  = LIN_GRID_DIM(n_outs);
-    dim3 block_dim = LIN_BLOCK_DIM(n_outs);
+    dim3 block_dim = LIN_BLOCK_DIM;
     WeightVarLossForwardKernel<<<grid_dim, block_dim>>>(n_outs,
                                                         weights.data_ptr<float>(),
                                                         idx_start_end.data_ptr<int>(),
@@ -98,7 +99,7 @@ public:
 
     Tensor dl_dw = torch::empty({ n_all }, CUDAFloat);
     dim3 grid_dim  = LIN_GRID_DIM(n_outs);
-    dim3 block_dim = LIN_BLOCK_DIM(n_outs);
+    dim3 block_dim = LIN_BLOCK_DIM;
 
     WeightVarLossBackwardKernel<<<grid_dim, block_dim>>>(n_outs,
                                                          weights.data_ptr<float>(),
