@@ -275,7 +275,7 @@ NerfBasedLocalizer::localize(
   if (optimization_mode_ == 0) {
     const double base_score = this->get_parameter("base_score").as_double();
     const float noise_coeff = (base_score > 0 ? base_score / previous_score_ : 1.0f);
-    particles = localizer_core_.random_search(
+    particles = localizer_core_.optimize_pose_by_random_search(
       initial_pose, image_tensor, this->get_parameter("particle_num").as_int(), noise_coeff);
 
     if (this->get_parameter("save_particles_images").as_bool()) {
@@ -300,7 +300,7 @@ NerfBasedLocalizer::localize(
     optimized_pose = Localizer::calc_average_pose(particles);
   } else {
     std::vector<torch::Tensor> optimized_poses =
-      localizer_core_.optimize_pose(initial_pose, image_tensor, 1);
+      localizer_core_.optimize_pose_by_differential(initial_pose, image_tensor, 1);
     optimized_pose = optimized_poses.back();
   }
 

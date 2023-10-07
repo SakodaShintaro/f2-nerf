@@ -81,7 +81,7 @@ void infer(const std::string & train_result_dir, const std::string & dataset_dir
       // Optimize
       timer_local.start();
       std::vector<torch::Tensor> optimized_poses =
-        core.optimize_pose(curr_pose, image_tensor, iteration_num);
+        core.optimize_pose_by_differential(curr_pose, image_tensor, iteration_num);
       optimize_times.push_back(timer_local.elapsed_seconds());
       for (int32_t itr = 0; itr < optimized_poses.size(); itr++) {
         torch::Tensor optimized_pose = optimized_poses[itr];

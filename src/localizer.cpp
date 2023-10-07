@@ -61,7 +61,7 @@ Localizer::Localizer(const LocalizerParam & param) : param_(param)
   axis_convert_mat_ = axis_convert_mat_.to(torch::kCUDA);
 }
 
-std::vector<Particle> Localizer::random_search(
+std::vector<Particle> Localizer::optimize_pose_by_random_search(
   Tensor initial_pose, Tensor image_tensor, int64_t particle_num, float noise_coeff)
 {
   torch::NoGradGuard no_grad_guard;
@@ -139,7 +139,7 @@ torch::Tensor gram_schmidt(torch::Tensor A)
   return A;
 }
 
-std::vector<Tensor> Localizer::optimize_pose(
+std::vector<Tensor> Localizer::optimize_pose_by_differential(
   Tensor initial_pose, Tensor image_tensor, int64_t iteration_num)
 {
   Tensor prev = initial_pose.detach().clone();
