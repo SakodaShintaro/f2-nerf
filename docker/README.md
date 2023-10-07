@@ -58,10 +58,6 @@ echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc
 ```bash
 sudo apt install -y ffmpeg colmap python3-colcon-common-extensions ccache vim gdb
 
-sudo add-apt-repository ppa:borglab/gtsam-release-4.1
-sudo apt update
-sudo apt install -y libgtsam-dev libgtsam-unstable-dev
-
 # add .bashrc
 export CC="/usr/lib/ccache/gcc"
 export CXX="/usr/lib/ccache/g++"

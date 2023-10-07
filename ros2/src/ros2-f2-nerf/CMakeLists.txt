@@ -34,14 +34,10 @@ include_directories(${ROOT_DIR}/External/eigen-3.4.0)
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-# GTSAM
-find_package(GTSAM REQUIRED)
-
 set(ALL_LIBS ${TORCH_LIBRARIES}
              ${TORCH_CUDA_LIBRARIES}
              ${OpenCV_LIBS}
-             stdc++fs
-             gtsam)
+             stdc++fs)
 
 set(PROJECT_SOURCE_DIR ${ROOT_DIR})
 file(GLOB SRC_ALL

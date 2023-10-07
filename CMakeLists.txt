@@ -34,9 +34,6 @@ include_directories(External/eigen-3.4.0)
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-# GTSAM
-find_package(GTSAM REQUIRED)
-
 file(GLOB_RECURSE SRC_ALL
         src/*.cpp
         src/*.cu)
@@ -44,8 +41,7 @@ file(GLOB_RECURSE SRC_ALL
 set(ALL_LIBS ${TORCH_LIBRARIES}
         ${TORCH_CUDA_LIBRARIES}
         ${OpenCV_LIBS}
-        stdc++fs
-        gtsam)
+        stdc++fs)
 
 # ------------------------------------ Add executables ---------------------------------------
 add_executable(main main.cpp ${SRC_ALL})

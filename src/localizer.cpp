@@ -6,8 +6,6 @@
 #include <Eigen/Geometry>
 #include <opencv2/core.hpp>
 
-#include <gtsam/geometry/Rot3.h>
-
 #include <random>
 
 using Tensor = torch::Tensor;
