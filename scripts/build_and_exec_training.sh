@@ -15,5 +15,5 @@ colcon build --symlink-install --packages-up-to ros2-f2-nerf --cmake-args -DCMAK
 cd ${ROOT_DIR}/build
 rm -rf ${TRAIN_RESULT_DIR}
 mkdir ${TRAIN_RESULT_DIR}
-cp ${ROOT_DIR}/confs/my_dataset.yaml ${TRAIN_RESULT_DIR}/runtime_config.yaml
+cp ${ROOT_DIR}/confs/train_config.yaml ${TRAIN_RESULT_DIR}/
 ./main train ${TRAIN_RESULT_DIR} ${DATASET_DIR}

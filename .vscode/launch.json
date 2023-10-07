@@ -10,7 +10,8 @@
             "program": "${workspaceFolder}/build-Debug/main",
             "args": [
                 "test",
-                "../exp/20230930_15kph/runtime_config.yaml"
+                "../exp/20230930_15kph/",
+                "/home/sakoda/data/converted/AWSIM/20230930_15kph"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build-Debug",
@@ -25,7 +26,8 @@
             "program": "${workspaceFolder}/build-Debug/main",
             "args": [
                 "infer",
-                "../exp/20230930_15kph/runtime_config.yaml"
+                "../exp/20230930_15kph/",
+                "/home/sakoda/data/converted/AWSIM/20230930_15kph"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build-Debug",
@@ -40,7 +42,8 @@
             "program": "${workspaceFolder}/build-Debug/main",
             "args": [
                 "train",
-                "../exp/20230930_15kph/runtime_config.yaml"
+                "../exp/20230930_15kph/",
+                "/home/sakoda/data/converted/AWSIM/20230930_15kph"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build-Debug",

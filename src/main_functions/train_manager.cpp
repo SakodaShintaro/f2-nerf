@@ -18,7 +18,7 @@ using Tensor = torch::Tensor;
 
 TrainManager::TrainManager(const std::string & train_result_dir, const std::string & dataset_dir)
 {
-  const std::string conf_path = train_result_dir + "/runtime_config.yaml";
+  const std::string conf_path = train_result_dir + "/train_config.yaml";
   fs::path p(conf_path);
   fs::path canonical_path = fs::canonical(p);
   const std::string path = canonical_path.string();
