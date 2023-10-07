@@ -70,9 +70,9 @@ std::vector<Particle> Localizer::random_search(
 
   std::mt19937_64 engine(std::random_device{}());
 
-  // 軸の順番が違うことに注意
-  // 世界座標(x: Front, y: Left, z: Up)
-  // NeRF座標(x: Right, y: Up, z: Back)
+  // Note that the order of the axes is different
+  // World coordinates (x: Front, y: Left, z: Up)
+  // NeRF coordinates (x: Right, y: Up, z: Back)
   const float pos_noise_x_in_nerf = param_.noise_position_y * noise_coeff / radius_;
   const float pos_noise_y_in_nerf = param_.noise_position_z * noise_coeff / radius_;
   const float pos_noise_z_in_nerf = param_.noise_position_x * noise_coeff / radius_;
