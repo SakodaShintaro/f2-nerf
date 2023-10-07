@@ -7,9 +7,9 @@
 
 TEST(LocalizerCoreTest, TestMonteCarloLocalize)
 {
-  LocalizerCoreParam param;
+  LocalizerParam param;
   param.train_result_dir = "./";
-  LocalizerCore localizer_core(param);
+  Localizer localizer_core(param);
   EXPECT_EQ(1, 1);
 }
 

@@ -43,7 +43,7 @@ torch::Tensor calc_rotation_tensor(float degree, Eigen::Vector3f axis)
   return result;
 }
 
-void render(LocalizerCore & localizer, torch::Tensor pose)
+void render(Localizer & localizer, torch::Tensor pose)
 {
   std::cout << "pose:\n" << pose << std::endl;
   torch::Tensor pose_camera = localizer.world2camera(pose);
@@ -56,10 +56,10 @@ void render(LocalizerCore & localizer, torch::Tensor pose)
 void walk(const std::string & train_result_dir)
 {
   torch::NoGradGuard no_grad_guard;
-  LocalizerCoreParam param;
+  LocalizerParam param;
   param.train_result_dir = train_result_dir;
   param.resize_factor = 8;
-  LocalizerCore localizer(param);
+  Localizer localizer(param);
   torch::Tensor pose = torch::eye(4).cuda();
   float step = 0.2;
   constexpr float degree = 10.0;

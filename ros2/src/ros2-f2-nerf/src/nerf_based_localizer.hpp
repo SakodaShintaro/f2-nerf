@@ -86,7 +86,7 @@ private:
 
   bool is_activated_;
 
-  LocalizerCore localizer_core_;
+  Localizer localizer_core_;
   const int optimization_mode_;
 };
 

@@ -29,7 +29,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   this->declare_parameter("base_score", 40.0f);
   target_frame_ = this->declare_parameter<std::string>("target_frame");
 
-  LocalizerCoreParam param;
+  LocalizerParam param;
   param.train_result_dir = this->declare_parameter<std::string>("train_result_dir");
   param.render_pixel_num = this->declare_parameter<int>("render_pixel_num");
   param.noise_position_x = this->declare_parameter<float>("noise_position_x");
@@ -39,7 +39,7 @@ NerfBasedLocalizer::NerfBasedLocalizer(
   param.noise_rotation_y = this->declare_parameter<float>("noise_rotation_y");
   param.noise_rotation_z = this->declare_parameter<float>("noise_rotation_z");
   param.resize_factor = this->declare_parameter<int>("resize_factor");
-  localizer_core_ = LocalizerCore(param);
+  localizer_core_ = Localizer(param);
 
   initial_pose_with_covariance_subscriber_ =
     this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -297,7 +297,7 @@ NerfBasedLocalizer::localize(
       cnt++;
     }
 
-    optimized_pose = LocalizerCore::calc_average_pose(particles);
+    optimized_pose = Localizer::calc_average_pose(particles);
   } else {
     std::vector<torch::Tensor> optimized_poses =
       localizer_core_.optimize_pose(initial_pose, image_tensor, 1);

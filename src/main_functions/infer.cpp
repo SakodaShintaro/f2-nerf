@@ -14,10 +14,10 @@ constexpr int64_t kDz[kDirNum] = {1, 1, 0, -1, -1, -1, 0, 1};
 
 void infer(const std::string & train_result_dir, const std::string & dataset_dir)
 {
-  LocalizerCoreParam param{};
+  LocalizerParam param{};
   param.resize_factor = 32;
   param.train_result_dir = train_result_dir;
-  LocalizerCore core(param);
+  Localizer core(param);
 
   constexpr int32_t iteration_num = 10;
 

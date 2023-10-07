@@ -12,7 +12,7 @@ struct Particle
   float weight;
 };
 
-struct LocalizerCoreParam
+struct LocalizerParam
 {
   std::string train_result_dir;
   int32_t render_pixel_num = 256;
@@ -25,13 +25,13 @@ struct LocalizerCoreParam
   int32_t resize_factor = 1;
 };
 
-class LocalizerCore
+class Localizer
 {
   using Tensor = torch::Tensor;
 
 public:
-  LocalizerCore() = default;
-  LocalizerCore(const LocalizerCoreParam & param);
+  Localizer() = default;
+  Localizer(const LocalizerParam & param);
 
   Tensor render_image(const Tensor & pose);
   std::vector<Particle> random_search(
@@ -51,7 +51,7 @@ public:
 private:
   std::vector<float> evaluate_poses(const std::vector<Tensor> & poses, const Tensor & image);
 
-  LocalizerCoreParam param_;
+  LocalizerParam param_;
 
   std::shared_ptr<Renderer> renderer_;
 

@@ -11,10 +11,10 @@ namespace fs = std::experimental::filesystem::v1;
 void test(const std::string & train_result_dir, const std::string & dataset_dir)
 {
   torch::NoGradGuard no_grad_guard;
-  LocalizerCoreParam param;
+  LocalizerParam param;
   param.train_result_dir = train_result_dir;
   param.resize_factor = 8;
-  LocalizerCore localizer(param);
+  Localizer localizer(param);
 
   Dataset dataset(dataset_dir);
   const std::string save_dir = train_result_dir + "/test_result/";
