@@ -31,7 +31,12 @@ public:
   RenderResult render(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & emb_idx, RunningMode mode);
 
-  std::tuple<Tensor, Tensor> render_all_rays(const Tensor & rays_o, const Tensor & rays_d, const int batch_size);
+  std::tuple<Tensor, Tensor> render_all_rays(
+    const Tensor & rays_o, const Tensor & rays_d, const int batch_size);
+
+  std::tuple<Tensor, Tensor> render_image(
+    const torch::Tensor & pose, const torch::Tensor & intrinsic, const int h, const int w,
+    const int batch_size);
 
   std::vector<torch::optim::OptimizerParamGroup> optim_param_groups(float lr);
 

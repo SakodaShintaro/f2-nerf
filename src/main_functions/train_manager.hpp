@@ -25,8 +25,6 @@ public:
 
   void update_ada_params();
 
-  void visualize_image(int idx);
-
   // data
   std::string base_exp_dir_;
 

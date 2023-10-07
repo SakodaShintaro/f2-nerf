@@ -8,6 +8,7 @@
 #include "CustomOps/FlexOps.hpp"
 #include "CustomOps/Scatter.hpp"
 #include "common.hpp"
+#include "rays.hpp"
 #include "stop_watch.hpp"
 #include "utils.hpp"
 
@@ -148,6 +149,27 @@ std::tuple<Tensor, Tensor> Renderer::render_all_rays(
   Tensor pred_depths_ts = torch::cat(pred_depths, 0);
 
   return {pred_colors_ts, pred_depths_ts};
+}
+
+std::tuple<Tensor, Tensor> Renderer::render_image(
+  const torch::Tensor & pose, const torch::Tensor & intrinsic, const int h, const int w,
+  const int batch_size)
+{
+  Tensor ii = torch::linspace(0.f, h - 1.f, h, CUDAFloat);
+  Tensor jj = torch::linspace(0.f, w - 1.f, w, CUDAFloat);
+  auto ij = torch::meshgrid({ii, jj}, "ij");
+  Tensor i = ij[0].reshape({-1});
+  Tensor j = ij[1].reshape({-1});
+  auto [rays_o, rays_d] =
+    get_rays_from_pose(pose.unsqueeze(0), intrinsic.unsqueeze(0), torch::stack({i, j}, -1));
+  auto [pred_colors, pred_depths] = render_all_rays(rays_o, rays_d, batch_size);
+  pred_colors = pred_colors.reshape({h, w, 3});
+  pred_depths = pred_depths.reshape({h, w, 1});
+
+  pred_colors = pred_colors.clip(0.0f, 1.0f);
+  pred_depths = pred_depths.repeat({1, 1, 3});
+
+  return {pred_colors, pred_depths};
 }
 
 std::vector<torch::optim::OptimizerParamGroup> Renderer::optim_param_groups(float lr)

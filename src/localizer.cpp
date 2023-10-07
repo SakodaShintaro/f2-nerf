@@ -44,7 +44,7 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
   const bool use_app_emb = (config["renderer"]["use_app_emb"].string() == "true");
   renderer_ = std::make_shared<Renderer>(use_app_emb, n_images);
 
-  torch::load(renderer_,  base_exp_dir + "/checkpoints/latest/renderer.pt");
+  torch::load(renderer_, base_exp_dir + "/checkpoints/latest/renderer.pt");
 
   // set
   infer_height_ = train_height / param.resize_factor;
@@ -176,18 +176,8 @@ std::vector<Tensor> LocalizerCore::optimize_pose(
 
 Tensor LocalizerCore::render_image(const Tensor & pose)
 {
-  Tensor ii = torch::linspace(0.f, infer_height_ - 1.f, infer_height_, CUDAFloat);
-  Tensor jj = torch::linspace(0.f, infer_width_ - 1.f, infer_width_, CUDAFloat);
-  auto ij = torch::meshgrid({ii, jj}, "ij");
-  Tensor i = ij[0].reshape({-1});
-  Tensor j = ij[1].reshape({-1});
-
-  auto [rays_o, rays_d] =
-    get_rays_from_pose(pose.unsqueeze(0), intrinsic_.unsqueeze(0), torch::stack({i, j}, -1));
-
-  auto [image, _] = renderer_->render_all_rays(rays_o, rays_d, (1 << 16));
-  image = image.clip(0.0f, 1.0f);
-  image = image.view({infer_height_, infer_width_, 3});
+  auto [image, _] =
+    renderer_->render_image(pose, intrinsic_, infer_height_, infer_width_, (1 << 16));
   return image;
 }
 

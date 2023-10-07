@@ -109,7 +109,24 @@ void TrainManager::train()
     iter_step_++;
 
     if (iter_step_ % vis_freq_ == 0) {
-      visualize_image(0);
+      torch::NoGradGuard no_grad_guard;
+
+      const int idx = 0;
+      const int H = dataset_->height;
+      const int W = dataset_->width;
+      const int ray_batch_size = 8192;
+      auto [pred_colors, pred_depths] = renderer_->render_image(
+        dataset_->poses[idx], dataset_->intrinsics[idx], H, W, ray_batch_size);
+
+      Tensor image = dataset_->images[idx].reshape({H, W, 3}).to(torch::kCPU);
+      pred_colors = pred_colors.to(torch::kCPU);
+      pred_depths = pred_depths.to(torch::kCPU);
+
+      Tensor concat_tensor = torch::cat({image, pred_colors, pred_depths}, 1);
+      fs::create_directories(base_exp_dir_ + "/images");
+      std::stringstream ss;
+      ss << std::setw(8) << std::setfill('0') << iter_step_ << "_" << idx << ".png";
+      utils::write_image_tensor(base_exp_dir_ + "/images/" + ss.str(), concat_tensor);
     }
 
     if (iter_step_ % save_freq_ == 0) {
@@ -117,11 +134,11 @@ void TrainManager::train()
       fs::create_directories(base_exp_dir_ + "/checkpoints/latest");
       torch::save(renderer_, base_exp_dir_ + "/checkpoints/latest/renderer.pt");
     }
-    const int64_t total_sec = timer.elapsed_seconds();
-    const int64_t total_m = total_sec / 60;
-    const int64_t total_s = total_sec % 60;
 
     if (iter_step_ % report_freq_ == 0) {
+      const int64_t total_sec = timer.elapsed_seconds();
+      const int64_t total_m = total_sec / 60;
+      const int64_t total_s = total_sec % 60;
       std::stringstream ss;
       ss << std::fixed;
       ss << "Time: " << std::setw(2) << std::setfill('0') << total_m << ":" << std::setw(2)
@@ -156,32 +173,4 @@ void TrainManager::update_ada_params()
   for (auto & g : optimizer_->param_groups()) {
     g.options().set_lr(lr);
   }
-}
-
-void TrainManager::visualize_image(int idx)
-{
-  torch::NoGradGuard no_grad_guard;
-
-  auto [rays_o, rays_d] = dataset_->get_all_rays_of_camera(idx);
-
-  rays_o = rays_o.to(torch::kCUDA);
-  rays_d = rays_d.to(torch::kCUDA);
-
-  const int ray_batch_size = 8192;
-  auto [pred_colors, pred_depths] = renderer_->render_all_rays(rays_o, rays_d, ray_batch_size);
-
-  pred_colors = pred_colors.to(torch::kCPU);
-  pred_depths = pred_depths.to(torch::kCPU);
-
-  int H = dataset_->height;
-  int W = dataset_->width;
-
-  Tensor img_tensor = torch::cat(
-    {dataset_->images[idx].to(torch::kCPU).reshape({H, W, 3}),
-     pred_colors.reshape({H, W, 3}), pred_depths.reshape({H, W, 1}).repeat({1, 1, 3})},
-    1);
-  fs::create_directories(base_exp_dir_ + "/images");
-  std::stringstream ss;
-  ss << iter_step_ << "_" << idx << ".png";
-  utils::write_image_tensor(base_exp_dir_ + "/images/" + ss.str(), img_tensor);
 }
