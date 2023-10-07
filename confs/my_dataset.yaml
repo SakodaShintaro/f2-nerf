@@ -12,8 +12,4 @@ train:
   var_loss_start: 5000
   var_loss_end: 10000
 
-renderer:
-  # Appearance embedding to handling unstable lighting conditions
-  use_app_emb: true
-
 dataset_path: None

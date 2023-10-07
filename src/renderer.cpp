@@ -15,7 +15,7 @@
 using Tensor = torch::Tensor;
 namespace F = torch::nn::functional;
 
-Renderer::Renderer(bool use_app_emb, int n_images) : use_app_emb_(use_app_emb)
+Renderer::Renderer(int n_images)
 {
   pts_sampler_ = std::make_shared<PtsSampler>();
 
@@ -25,7 +25,6 @@ Renderer::Renderer(bool use_app_emb, int n_images) : use_app_emb_(use_app_emb)
   shader_ = std::make_shared<SHShader>();
   register_module("shader", shader_);
 
-  // WARNING: Hard code here.
   app_emb_ = torch::randn({n_images, 16}, CUDAFloat) * .1f;
   app_emb_.requires_grad_(true);
   register_parameter("app_emb", app_emb_);
@@ -98,7 +97,7 @@ RenderResult Renderer::render(
      scene_feat.index({Slc(), Slc(1, torch::indexing::None)})},
     1);
 
-  if (mode == RunningMode::TRAIN && use_app_emb_) {
+  if (mode == RunningMode::TRAIN) {
     Tensor all_emb_idx =
       CustomOps::ScatterIdx(n_all_pts, sample_result_early_stop.pts_idx_bounds, emb_idx);
     shading_feat = CustomOps::ScatterAdd(app_emb_, all_emb_idx, shading_feat);

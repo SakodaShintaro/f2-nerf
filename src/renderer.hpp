@@ -26,7 +26,7 @@ class Renderer : public torch::nn::Module
   using Tensor = torch::Tensor;
 
 public:
-  Renderer(bool use_app_emb, int n_images);
+  Renderer(int n_images);
 
   RenderResult render(
     const Tensor & rays_o, const Tensor & rays_d, const Tensor & emb_idx, RunningMode mode);
@@ -45,7 +45,6 @@ private:
   std::shared_ptr<Hash3DAnchored> scene_field_;
   std::shared_ptr<SHShader> shader_;
 
-  const bool use_app_emb_;
   Tensor app_emb_;
 };
 

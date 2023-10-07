@@ -41,8 +41,7 @@ LocalizerCore::LocalizerCore(const LocalizerCoreParam & param) : param_(param)
 
   radius_ = (float)inference_params["normalizing_radius"];
 
-  const bool use_app_emb = (config["renderer"]["use_app_emb"].string() == "true");
-  renderer_ = std::make_shared<Renderer>(use_app_emb, n_images);
+  renderer_ = std::make_shared<Renderer>(n_images);
 
   torch::load(renderer_, base_exp_dir + "/checkpoints/latest/renderer.pt");
 

@@ -47,8 +47,7 @@ TrainManager::TrainManager(const std::string & conf_path)
   dataset_->save_inference_params(base_exp_dir_);
 
   // Renderer
-  const bool use_app_emb = (fs["renderer"]["use_app_emb"].string() == "true");
-  renderer_ = std::make_shared<Renderer>(use_app_emb, dataset_->n_images);
+  renderer_ = std::make_shared<Renderer>(dataset_->n_images);
   renderer_->to(torch::kCUDA);
 
   // Optimizer
