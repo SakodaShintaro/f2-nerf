@@ -29,7 +29,7 @@ Dataset::Dataset(const std::string & data_path)
     std::ifstream ifs(data_path + "/cams_meta.tsv");
     std::string line;
     std::getline(ifs, line);  // header
-    std::vector<Tensor> poses, intrinsics, dist_params, bounds;
+    std::vector<Tensor> poses_vec, intrinsics_vec, dist_params_vec;
     while (std::getline(ifs, line)) {
       std::istringstream iss(line);
       std::vector<std::string> tokens;
@@ -47,62 +47,60 @@ Dataset::Dataset(const std::string & data_path)
         pose.index_put_({i / 4, i % 4}, std::stof(tokens[i]));
       }
       pose = pose.reshape({3, 4});
-      poses.push_back(pose);
+      poses_vec.push_back(pose);
 
       Tensor intrinsic = torch::zeros({3, 3}, torch::kFloat32);
       for (int i = 0; i < INTRINSIC_NUM; i++) {
         intrinsic.index_put_({i / 3, i % 3}, std::stof(tokens[POSE_NUM + i]));
       }
       intrinsic = intrinsic.reshape({3, 3});
-      intrinsics.push_back(intrinsic);
+      intrinsics_vec.push_back(intrinsic);
 
       Tensor dist_param = torch::zeros({4}, torch::kFloat32);
       for (int i = 0; i < DISTORTION_NUM; i++) {
         dist_param.index_put_({i}, std::stof(tokens[POSE_NUM + INTRINSIC_NUM + i]));
       }
-      dist_params.push_back(dist_param);
+      dist_params_vec.push_back(dist_param);
 
       Tensor bound = torch::zeros({2}, torch::kFloat32);
       for (int i = 0; i < BOUNDS_NUM; i++) {
         bound.index_put_({i}, std::stof(tokens[POSE_NUM + INTRINSIC_NUM + DISTORTION_NUM + i]));
       }
-      bounds.push_back(bound);
     }
 
-    n_images_ = poses.size();
-    poses_ = torch::stack(poses, 0).contiguous().to(torch::kCUDA);
-    intrinsics_ = torch::stack(intrinsics, 0).contiguous().to(torch::kCUDA);
-    dist_params_ = torch::stack(dist_params, 0).contiguous().to(torch::kCUDA);
+    n_images = poses_vec.size();
+    poses = torch::stack(poses_vec, 0).contiguous().to(torch::kCUDA);
+    intrinsics = torch::stack(intrinsics_vec, 0).contiguous().to(torch::kCUDA);
+    dist_params = torch::stack(dist_params_vec, 0).contiguous().to(torch::kCUDA);
   }
 
   // Normalize scene
   {
-    Tensor cam_pos = poses_.index({Slc(), Slc(0, 3), 3}).clone();
-    center_ = cam_pos.mean(0, false);
-    Tensor bias = cam_pos - center_.unsqueeze(0);
-    radius_ = torch::linalg_norm(bias, 2, -1, false).max().item<float>();
-    cam_pos = (cam_pos - center_.unsqueeze(0)) / radius_;
-    poses_.index_put_({Slc(), Slc(0, 3), 3}, cam_pos);
-    poses_ = poses_.contiguous();
+    Tensor cam_pos = poses.index({Slc(), Slc(0, 3), 3}).clone();
+    center = cam_pos.mean(0, false);
+    Tensor bias = cam_pos - center.unsqueeze(0);
+    radius = torch::linalg_norm(bias, 2, -1, false).max().item<float>();
+    cam_pos = (cam_pos - center.unsqueeze(0)) / radius;
+    poses.index_put_({Slc(), Slc(0, 3), 3}, cam_pos);
+    poses = poses.contiguous();
   }
 
-  std::vector<Tensor> images;
+  std::vector<Tensor> images_vec;
   // Load images
   {
     ScopeWatch watch("LoadImages");
     const std::vector<std::string> image_paths = glob_image_paths(data_path + "/images/");
-    for (int i = 0; i < n_images_; i++) {
+    for (int i = 0; i < n_images; i++) {
       const std::string image_path = image_paths[i];
-      images.push_back(utils::read_image_tensor(image_path).to(torch::kCPU));
+      images_vec.push_back(utils::read_image_tensor(image_path).to(torch::kCPU));
     }
   }
 
-  std::cout << "Number of images: " << n_images_ << std::endl;
+  std::cout << "Number of images: " << n_images << std::endl;
 
-  // Prepare training images
-  height_ = images[0].size(0);
-  width_ = images[0].size(1);
-  image_tensors_ = torch::stack(images, 0).contiguous();
+  height = images_vec[0].size(0);
+  width = images_vec[0].size(1);
+  images = torch::stack(images_vec, 0).contiguous();
 }
 
 void Dataset::save_inference_params(const std::string & output_dir) const
@@ -111,33 +109,33 @@ void Dataset::save_inference_params(const std::string & output_dir) const
   ofs << std::fixed;
   ofs << "%YAML 1.2" << std::endl;
   ofs << "---" << std::endl;
-  ofs << "n_images: " << n_images_ << std::endl;
-  ofs << "height: " << height_ << std::endl;
-  ofs << "width: " << width_ << std::endl;
+  ofs << "n_images: " << n_images << std::endl;
+  ofs << "height: " << height << std::endl;
+  ofs << "width: " << width << std::endl;
 
   ofs << "intrinsic: [";
-  ofs << intrinsics_[0][0][0].item() << ", ";
-  ofs << intrinsics_[0][0][1].item() << ", ";
-  ofs << intrinsics_[0][0][2].item() << "," << std::endl;
+  ofs << intrinsics[0][0][0].item() << ", ";
+  ofs << intrinsics[0][0][1].item() << ", ";
+  ofs << intrinsics[0][0][2].item() << "," << std::endl;
   ofs << "            ";
-  ofs << intrinsics_[0][1][0].item() << ", ";
-  ofs << intrinsics_[0][1][1].item() << ", ";
-  ofs << intrinsics_[0][1][2].item() << "," << std::endl;
+  ofs << intrinsics[0][1][0].item() << ", ";
+  ofs << intrinsics[0][1][1].item() << ", ";
+  ofs << intrinsics[0][1][2].item() << "," << std::endl;
   ofs << "            ";
-  ofs << intrinsics_[0][2][0].item() << ", ";
-  ofs << intrinsics_[0][2][1].item() << ", ";
-  ofs << intrinsics_[0][2][2].item() << "]" << std::endl;
+  ofs << intrinsics[0][2][0].item() << ", ";
+  ofs << intrinsics[0][2][1].item() << ", ";
+  ofs << intrinsics[0][2][2].item() << "]" << std::endl;
 
-  ofs << "normalizing_center: [" << center_[0].item();
-  ofs << ", " << center_[1].item();
-  ofs << ", " << center_[2].item() << "]" << std::endl;
-  ofs << "normalizing_radius: " << radius_ << std::endl;
+  ofs << "normalizing_center: [" << center[0].item();
+  ofs << ", " << center[1].item();
+  ofs << ", " << center[2].item() << "]" << std::endl;
+  ofs << "normalizing_radius: " << radius << std::endl;
 }
 
 Rays Dataset::get_all_rays_of_camera(int idx)
 {
-  int H = height_;
-  int W = width_;
+  int H = height;
+  int W = width;
   Tensor ii = torch::linspace(0.f, H - 1.f, H, CUDAFloat);
   Tensor jj = torch::linspace(0.f, W - 1.f, W, CUDAFloat);
   auto ij = torch::meshgrid({ii, jj}, "ij");
@@ -145,28 +143,28 @@ Rays Dataset::get_all_rays_of_camera(int idx)
   Tensor j = ij[1].reshape({-1});
 
   auto [rays_o, rays_d] = get_rays_from_pose(
-    poses_[idx].unsqueeze(0), intrinsics_[idx].unsqueeze(0), torch::stack({i, j}, -1));
+    poses[idx].unsqueeze(0), intrinsics[idx].unsqueeze(0), torch::stack({i, j}, -1));
   return {rays_o, rays_d};
 }
 
 std::tuple<Rays, Tensor, Tensor> Dataset::sample_random_rays(int batch_size)
 {
   const auto CPULong = torch::TensorOptions().dtype(torch::kLong).device(torch::kCPU);
-  Tensor cam_indices = torch::randint(n_images_, {batch_size}, CPULong);
-  Tensor i = torch::randint(0, height_, batch_size, CPULong);
-  Tensor j = torch::randint(0, width_, batch_size, CPULong);
+  Tensor cam_indices = torch::randint(n_images, {batch_size}, CPULong);
+  Tensor i = torch::randint(0, height, batch_size, CPULong);
+  Tensor j = torch::randint(0, width, batch_size, CPULong);
   Tensor ij = torch::stack({i, j}, -1).to(torch::kCUDA).contiguous();
 
-  Tensor gt_colors = image_tensors_.view({-1, 3})
-                       .index({(cam_indices * height_ * width_ + i * width_ + j).to(torch::kLong)})
+  Tensor gt_colors = images.view({-1, 3})
+                       .index({(cam_indices * height * width + i * width + j).to(torch::kLong)})
                        .to(torch::kCUDA)
                        .contiguous();
   cam_indices = cam_indices.to(torch::kCUDA);
   cam_indices = cam_indices.to(torch::kInt32);
   ij = ij.to(torch::kInt32);
 
-  Tensor selected_poses = torch::index_select(poses_, 0, cam_indices);
-  Tensor selected_intrinsics = torch::index_select(intrinsics_, 0, cam_indices);
+  Tensor selected_poses = torch::index_select(poses, 0, cam_indices);
+  Tensor selected_intrinsics = torch::index_select(intrinsics, 0, cam_indices);
   auto [rays_o, rays_d] = get_rays_from_pose(selected_poses, selected_intrinsics, ij);
 
   return {{rays_o, rays_d}, gt_colors, cam_indices.to(torch::kInt32).contiguous()};

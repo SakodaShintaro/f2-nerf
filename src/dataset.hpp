@@ -14,7 +14,7 @@
 #include <tuple>
 #include <vector>
 
-class Dataset
+struct Dataset
 {
   using Tensor = torch::Tensor;
 
@@ -29,12 +29,11 @@ public:
 
   static std::vector<std::string> glob_image_paths(const std::string & input_dir);
 
-  int n_images_ = 0;
-  Tensor poses_, intrinsics_, dist_params_;
-  Tensor center_;
-  float radius_;
-  int height_, width_;
-  Tensor image_tensors_;
+  int n_images;
+  Tensor poses, images, intrinsics, dist_params;
+  Tensor center;
+  float radius;
+  int height, width;
 };
 
 #endif  // F2_NERF__DATASET_HPP_

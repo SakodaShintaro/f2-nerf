@@ -48,7 +48,7 @@ TrainManager::TrainManager(const std::string & conf_path)
 
   // Renderer
   const bool use_app_emb = (fs["renderer"]["use_app_emb"].string() == "true");
-  renderer_ = std::make_shared<Renderer>(use_app_emb, dataset_->n_images_);
+  renderer_ = std::make_shared<Renderer>(use_app_emb, dataset_->n_images);
   renderer_->to(torch::kCUDA);
 
   // Optimizer
@@ -173,11 +173,11 @@ void TrainManager::visualize_image(int idx)
   pred_colors = pred_colors.to(torch::kCPU);
   pred_depths = pred_depths.to(torch::kCPU);
 
-  int H = dataset_->height_;
-  int W = dataset_->width_;
+  int H = dataset_->height;
+  int W = dataset_->width;
 
   Tensor img_tensor = torch::cat(
-    {dataset_->image_tensors_[idx].to(torch::kCPU).reshape({H, W, 3}),
+    {dataset_->images[idx].to(torch::kCPU).reshape({H, W, 3}),
      pred_colors.reshape({H, W, 3}), pred_depths.reshape({H, W, 1}).repeat({1, 1, 3})},
     1);
   fs::create_directories(base_exp_dir_ + "/images");

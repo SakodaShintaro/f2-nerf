@@ -38,16 +38,16 @@ void infer(const std::string & config_path)
   const float noise = 0.5f / core.radius();
   std::cout << "noise = " << noise << std::endl;
 
-  for (int32_t i = 0; i < dataset.n_images_; i++) {
+  for (int32_t i = 0; i < dataset.n_images; i++) {
     std::cout << "\rTime " << static_cast<int64_t>(timer.elapsed_seconds()) << " " << i << "/"
-              << dataset.n_images_ << std::flush;
+              << dataset.n_images << std::flush;
     const std::string curr_dir =
       (std::stringstream() << save_dir << "/" << std::setfill('0') << std::setw(4) << i << "/")
         .str();
     fs::create_directories(curr_dir);
 
-    torch::Tensor initial_pose = dataset.poses_[i];
-    torch::Tensor image_tensor = dataset.image_tensors_[i];
+    torch::Tensor initial_pose = dataset.poses[i];
+    torch::Tensor image_tensor = dataset.images[i];
 
     image_tensor = utils::resize_image(image_tensor, core.infer_height(), core.infer_width());
     image_tensor = image_tensor.to(torch::kCUDA);

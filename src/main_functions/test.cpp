@@ -29,9 +29,9 @@ void test(const std::string & config_path)
   float score_sum = 0.0f;
   float time_sum = 0.0f;
 
-  for (int32_t i = 0; i < dataset.n_images_; i++) {
-    torch::Tensor initial_pose = dataset.poses_[i];
-    torch::Tensor image_tensor = dataset.image_tensors_[i];
+  for (int32_t i = 0; i < dataset.n_images; i++) {
+    torch::Tensor initial_pose = dataset.poses[i];
+    torch::Tensor image_tensor = dataset.images[i];
 
     image_tensor =
       utils::resize_image(image_tensor, localizer.infer_height(), localizer.infer_width());
@@ -51,8 +51,8 @@ void test(const std::string & config_path)
     utils::write_image_tensor(ss.str(), nerf_image);
   }
 
-  const float average_time = time_sum / dataset.n_images_;
-  const float average_score = score_sum / dataset.n_images_;
+  const float average_time = time_sum / dataset.n_images;
+  const float average_score = score_sum / dataset.n_images;
 
   std::ofstream summary(base_exp_dir + "/summary.tsv");
   summary << std::fixed;
