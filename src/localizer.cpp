@@ -256,26 +256,30 @@ std::vector<float> Localizer::evaluate_poses(
 Eigen::Matrix3d compute_rotation_average(
   const std::vector<Eigen::Matrix3d> & rotations, const std::vector<double> & weights)
 {
-  const double epsilon = 0.000001;
-  const int max_iters = 300;
-  Eigen::Matrix3d R = rotations[0];
-  for (int iter = 0; iter < max_iters; ++iter) {
-    Eigen::Vector3d rot_sum = Eigen::Vector3d::Zero();
-    for (int i = 0; i < rotations.size(); ++i) {
-      const Eigen::Matrix3d & rot = rotations[i];
-      gtsam::Rot3 g_rot = gtsam::Rot3(R.transpose() * rot);
-      rot_sum += weights[i] * gtsam::Rot3::Logmap(g_rot);
-    }
-
-    if (rot_sum.norm() < epsilon) {
-      return R;
-    } else {
-      Eigen::Matrix3d r = gtsam::Rot3::Expmap(rot_sum).matrix();
-      Eigen::Matrix3d s = R * r;
-      R = gtsam::Rot3(s).matrix();
-    }
+  // cf. https://stackoverflow.com/questions/12374087/average-of-multiple-quaternions
+  std::vector<Eigen::Quaterniond> quaternions;
+  for (const Eigen::Matrix3d & rot : rotations) {
+    Eigen::Quaterniond quat(rot);
+    quaternions.push_back(quat);
   }
-  return R;
+
+  Eigen::Vector4d cumulative(0.0, 0.0, 0.0, 0.0);
+  const Eigen::Quaterniond & front = quaternions[0];
+
+  for (Eigen::Quaterniond & q : quaternions) {
+    if (q.dot(front) < 0.0) {
+      q = Eigen::Quaterniond(-q.coeffs());
+    }
+    cumulative += q.coeffs();
+  }
+
+  cumulative /= quaternions.size();
+
+  Eigen::Quaterniond average_quaternion;
+  average_quaternion.coeffs() = cumulative;
+  average_quaternion.normalize();
+
+  return average_quaternion.toRotationMatrix();
 }
 
 Tensor Localizer::calc_average_pose(const std::vector<Particle> & particles)
