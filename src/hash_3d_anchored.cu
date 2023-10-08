@@ -22,75 +22,73 @@ constexpr float RES_BASE_POW_2 = 3.f;
 #define FlexType float
 #endif
 
+__device__ inline void calculate_pos_and_w(
+  const Eigen::Vector3f & pt, const int local_size, const int * const prim_pool,
+  const int level_idx, unsigned pos[8], float w[8])
+{
+  const int offset = level_idx * 3;
+  const unsigned pa = prim_pool[offset + 0];
+  const unsigned pb = prim_pool[offset + 1];
+  const unsigned pc = prim_pool[offset + 2];
+
+  const unsigned pos_x = static_cast<unsigned>(floorf(pt[0]));
+  const unsigned pos_y = static_cast<unsigned>(floorf(pt[1]));
+  const unsigned pos_z = static_cast<unsigned>(floorf(pt[2]));
+  pos[0] = ((pos_x * pa) ^ (pos_y * pb) ^ (pos_z * pc)) % local_size;
+  pos[1] = ((pos_x * pa) ^ (pos_y * pb) ^ ((pos_z + 1u) * pc)) % local_size;
+  pos[2] = ((pos_x * pa) ^ ((pos_y + 1u) * pb) ^ (pos_z * pc)) % local_size;
+  pos[3] = ((pos_x * pa) ^ ((pos_y + 1u) * pb) ^ ((pos_z + 1u) * pc)) % local_size;
+  pos[4] = (((pos_x + 1u) * pa) ^ (pos_y * pb) ^ (pos_z * pc)) % local_size;
+  pos[5] = (((pos_x + 1u) * pa) ^ (pos_y * pb) ^ ((pos_z + 1u) * pc)) % local_size;
+  pos[6] = (((pos_x + 1u) * pa) ^ ((pos_y + 1u) * pb) ^ (pos_z * pc)) % local_size;
+  pos[7] = (((pos_x + 1u) * pa) ^ ((pos_y + 1u) * pb) ^ ((pos_z + 1u) * pc)) % local_size;
+
+  const float a = pt[0] - floorf(pt[0]);
+  const float b = pt[1] - floorf(pt[1]);
+  const float c = pt[2] - floorf(pt[2]);
+
+  w[0] = (1.f - a) * (1.f - b) * (1.f - c);
+  w[1] = (1.f - a) * (1.f - b) * c;
+  w[2] = (1.f - a) * b * (1.f - c);
+  w[3] = (1.f - a) * b * c;
+  w[4] = a * (1.f - b) * (1.f - c);
+  w[5] = a * (1.f - b) * c;
+  w[6] = a * b * (1.f - c);
+  w[7] = a * b * c;
+}
+
 template <typename T>
 __global__ void Hash3DAnchoredForwardKernel(
   int n_points, int local_size, T * feat_pool, int * prim_pool, Eigen::Vector3f * bias_pool,
   Eigen::Vector3f * points_ptr, T * out_feat)
 {
-  int pts_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  int level_idx = blockIdx.y;
+  const int pts_idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const int level_idx = blockIdx.y;
   if (pts_idx >= n_points) {
     return;
   }
-
-  points_ptr = points_ptr + pts_idx;
-  out_feat = out_feat + pts_idx * (N_LEVELS * N_CHANNELS);
-
-  Eigen::Vector3f pt = points_ptr[0];
-  float mul = exp2f(
-    (RES_FINE_POW_2 - RES_BASE_POW_2) * float(level_idx) / float(N_LEVELS - 1) + RES_BASE_POW_2);
-  pt *= mul;
-  unsigned prim_a, prim_b, prim_c;
-  {
-    const int offset = level_idx * 3;
-    prim_a = prim_pool[offset + 0];
-    prim_b = prim_pool[offset + 1];
-    prim_c = prim_pool[offset + 2];
-  }
   feat_pool = feat_pool + local_size * level_idx;
 
-  pt = pt + bias_pool[level_idx];
+  const float mul = exp2f(
+    (RES_FINE_POW_2 - RES_BASE_POW_2) * float(level_idx) / float(N_LEVELS - 1) + RES_BASE_POW_2);
+  const Eigen::Vector3f pt = (points_ptr[pts_idx] * mul + bias_pool[level_idx]);
 
-  auto pos_x = static_cast<unsigned>(floorf(pt[0]));
-  auto pos_y = static_cast<unsigned>(floorf(pt[1]));
-  auto pos_z = static_cast<unsigned>(floorf(pt[2]));
+  float ws[8] = {};
+  unsigned pos[8] = {};
+  calculate_pos_and_w(pt, local_size, prim_pool, level_idx, pos, ws);
 
-  unsigned pos_000 = ((pos_x * prim_a) ^ ((pos_y)*prim_b) ^ ((pos_z)*prim_c)) % local_size;
-  unsigned pos_001 = ((pos_x * prim_a) ^ ((pos_y)*prim_b) ^ ((pos_z + 1u) * prim_c)) % local_size;
-  unsigned pos_010 = ((pos_x * prim_a) ^ ((pos_y + 1u) * prim_b) ^ ((pos_z)*prim_c)) % local_size;
-  unsigned pos_011 =
-    ((pos_x * prim_a) ^ ((pos_y + 1u) * prim_b) ^ ((pos_z + 1u) * prim_c)) % local_size;
-  unsigned pos_100 = (((pos_x + 1u) * prim_a) ^ ((pos_y)*prim_b) ^ ((pos_z)*prim_c)) % local_size;
-  unsigned pos_101 =
-    (((pos_x + 1u) * prim_a) ^ ((pos_y)*prim_b) ^ ((pos_z + 1u) * prim_c)) % local_size;
-  unsigned pos_110 =
-    (((pos_x + 1u) * prim_a) ^ ((pos_y + 1u) * prim_b) ^ ((pos_z)*prim_c)) % local_size;
-  unsigned pos_111 =
-    (((pos_x + 1u) * prim_a) ^ ((pos_y + 1u) * prim_b) ^ ((pos_z + 1u) * prim_c)) % local_size;
-
-  float a = pt[0] - floorf(pt[0]);
-  float b = pt[1] - floorf(pt[1]);
-  float c = pt[2] - floorf(pt[2]);
-
-  float w000 = (1.f - a) * (1.f - b) * (1.f - c);
-  float w001 = (1.f - a) * (1.f - b) * c;
-  float w010 = (1.f - a) * b * (1.f - c);
-  float w011 = (1.f - a) * b * c;
-  float w100 = a * (1.f - b) * (1.f - c);
-  float w101 = a * (1.f - b) * c;
-  float w110 = a * b * (1.f - c);
-  float w111 = a * b * c;
+  out_feat = out_feat + pts_idx * (N_LEVELS * N_CHANNELS);
 
 #pragma unroll
   for (int k = 0; k < N_CHANNELS; k++) {
-    out_feat[level_idx * N_CHANNELS + k] = (T)(w000 * float(feat_pool[pos_000 * N_CHANNELS + k]) +
-                                               w001 * float(feat_pool[pos_001 * N_CHANNELS + k]) +
-                                               w010 * float(feat_pool[pos_010 * N_CHANNELS + k]) +
-                                               w011 * float(feat_pool[pos_011 * N_CHANNELS + k]) +
-                                               w100 * float(feat_pool[pos_100 * N_CHANNELS + k]) +
-                                               w101 * float(feat_pool[pos_101 * N_CHANNELS + k]) +
-                                               w110 * float(feat_pool[pos_110 * N_CHANNELS + k]) +
-                                               w111 * float(feat_pool[pos_111 * N_CHANNELS + k]));
+    out_feat[level_idx * N_CHANNELS + k] = (T)(ws[0] * float(feat_pool[pos[0] * N_CHANNELS + k]) +
+                                               ws[1] * float(feat_pool[pos[1] * N_CHANNELS + k]) +
+                                               ws[2] * float(feat_pool[pos[2] * N_CHANNELS + k]) +
+                                               ws[3] * float(feat_pool[pos[3] * N_CHANNELS + k]) +
+                                               ws[4] * float(feat_pool[pos[4] * N_CHANNELS + k]) +
+                                               ws[5] * float(feat_pool[pos[5] * N_CHANNELS + k]) +
+                                               ws[6] * float(feat_pool[pos[6] * N_CHANNELS + k]) +
+                                               ws[7] * float(feat_pool[pos[7] * N_CHANNELS + k]));
   }
 }
 
@@ -103,66 +101,29 @@ __global__ void Hash3DAnchoredBackwardKernel(
   T * grad_embeds   // [ pool_size, n_channels ]
 )
 {
-  int pts_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  int level_idx = blockIdx.y;
+  const int pts_idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const int level_idx = blockIdx.y;
   if (pts_idx >= n_points) {
     return;
   }
   feat_pool = feat_pool + local_size * level_idx;
-  points_ptr = points_ptr + pts_idx;
-  grad_in = grad_in + (N_LEVELS * N_CHANNELS) * pts_idx + level_idx * N_CHANNELS;
-  Eigen::Vector3f pt = points_ptr[0];
-  float mul = exp2f(
+
+  const float mul = exp2f(
     (RES_FINE_POW_2 - RES_BASE_POW_2) * float(level_idx) / float(N_LEVELS - 1) + RES_BASE_POW_2);
-  pt *= mul;
-  unsigned prim_a, prim_b, prim_c;
-  {
-    const int offset = level_idx * 3;
-    prim_a = prim_pool[offset + 0];
-    prim_b = prim_pool[offset + 1];
-    prim_c = prim_pool[offset + 2];
-  }
+  const Eigen::Vector3f pt = (points_ptr[pts_idx] * mul + bias_pool[level_idx]);
+
+  float ws[8] = {};
+  unsigned pos[8] = {};
+  calculate_pos_and_w(pt, local_size, prim_pool, level_idx, pos, ws);
+
+  const float sign_x[8] = {-1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+  const float sign_y[8] = {-1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f};
+  const float sign_z[8] = {-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f};
+
+  grad_in = grad_in + (N_LEVELS * N_CHANNELS) * pts_idx + level_idx * N_CHANNELS;
 
   grad_points = grad_points + pts_idx * 3;
   grad_embeds = grad_embeds + local_size * level_idx;
-
-  pt = pt + bias_pool[level_idx];
-
-  unsigned pos_x = static_cast<unsigned>(floorf(pt[0]));
-  unsigned pos_y = static_cast<unsigned>(floorf(pt[1]));
-  unsigned pos_z = static_cast<unsigned>(floorf(pt[2]));
-
-  unsigned pos_000 = ((pos_x * prim_a) ^ ((pos_y)*prim_b) ^ ((pos_z)*prim_c)) % local_size;
-  unsigned pos_001 = ((pos_x * prim_a) ^ ((pos_y)*prim_b) ^ ((pos_z + 1u) * prim_c)) % local_size;
-  unsigned pos_010 = ((pos_x * prim_a) ^ ((pos_y + 1u) * prim_b) ^ ((pos_z)*prim_c)) % local_size;
-  unsigned pos_011 =
-    ((pos_x * prim_a) ^ ((pos_y + 1u) * prim_b) ^ ((pos_z + 1u) * prim_c)) % local_size;
-  unsigned pos_100 = (((pos_x + 1u) * prim_a) ^ ((pos_y)*prim_b) ^ ((pos_z)*prim_c)) % local_size;
-  unsigned pos_101 =
-    (((pos_x + 1u) * prim_a) ^ ((pos_y)*prim_b) ^ ((pos_z + 1u) * prim_c)) % local_size;
-  unsigned pos_110 =
-    (((pos_x + 1u) * prim_a) ^ ((pos_y + 1u) * prim_b) ^ ((pos_z)*prim_c)) % local_size;
-  unsigned pos_111 =
-    (((pos_x + 1u) * prim_a) ^ ((pos_y + 1u) * prim_b) ^ ((pos_z + 1u) * prim_c)) % local_size;
-
-  float a = pt[0] - floorf(pt[0]);
-  float b = pt[1] - floorf(pt[1]);
-  float c = pt[2] - floorf(pt[2]);
-
-  float w000 = (1.f - a) * (1.f - b) * (1.f - c);
-  float w001 = (1.f - a) * (1.f - b) * c;
-  float w010 = (1.f - a) * b * (1.f - c);
-  float w011 = (1.f - a) * b * c;
-  float w100 = a * (1.f - b) * (1.f - c);
-  float w101 = a * (1.f - b) * c;
-  float w110 = a * b * (1.f - c);
-  float w111 = a * b * c;
-
-  float ws[8] = {w000, w001, w010, w011, w100, w101, w110, w111};
-  unsigned pos[8] = {pos_000, pos_001, pos_010, pos_011, pos_100, pos_101, pos_110, pos_111};
-  float sign_x[8] = {-1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
-  float sign_y[8] = {-1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f};
-  float sign_z[8] = {-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f};
 
 #pragma unroll
   for (int d = 0; d < 8; d++) {
@@ -174,24 +135,12 @@ __global__ void Hash3DAnchoredBackwardKernel(
         atomicAdd((__half2 *)(grad_embeds + pos[d] * N_CHANNELS + k), cur_w);
       }
     }
-    atomicAdd(
-      grad_points + 0,
-      (T)(sign_x[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul * (float)grad_in[0]));
-    atomicAdd(
-      grad_points + 1,
-      (T)(sign_y[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul * (float)grad_in[0]));
-    atomicAdd(
-      grad_points + 2,
-      (T)(sign_z[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 0]) * mul * (float)grad_in[0]));
-    atomicAdd(
-      grad_points + 0,
-      (T)(sign_x[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul * (float)grad_in[1]));
-    atomicAdd(
-      grad_points + 1,
-      (T)(sign_y[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul * (float)grad_in[1]));
-    atomicAdd(
-      grad_points + 2,
-      (T)(sign_z[d] * (float)(feat_pool[pos[d] * N_CHANNELS + 1]) * mul * (float)grad_in[1]));
+    for (int k = 0; k < N_CHANNELS; k++) {
+      const float norm = (float)(feat_pool[pos[d] * N_CHANNELS + k]) * mul * (float)grad_in[k];
+      atomicAdd(grad_points + 0, (T)(sign_x[d] * norm));
+      atomicAdd(grad_points + 1, (T)(sign_y[d] * norm));
+      atomicAdd(grad_points + 2, (T)(sign_z[d] * norm));
+    }
   }
 }
 
